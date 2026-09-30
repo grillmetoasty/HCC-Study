@@ -1,0 +1,53 @@
+I am building a retrospective comparative-effectiveness cohort of patients with advanced/unresectable hepatocellular carcinoma treated first-line with either atezolizumab/bevacizumab or STRIDE (tremelimumab/durvalumab).
+
+For now, DO NOT build the cohort and DO NOT create permanent tables.
+
+First inspect the REACH data available to me and identify the best tables and columns for:
+
+- patient demographics
+- HCC diagnoses
+- medication administrations
+- medication orders
+- laboratory results
+- procedures
+- encounters/hospitalizations
+- mortality
+- oncology treatment plans if available
+- ECOG/performance status
+- Child-Pugh score or its components
+- ascites
+- hepatic encephalopathy
+- portal hypertension
+- esophageal/gastric varices
+- GI/variceal bleeding
+- EGD and variceal banding
+- prior TACE
+- Y90/TARE
+- ablation
+- liver-directed radiation
+- hepatic resection
+- provider/care site
+- OMOP concept and concept_ancestor vocabulary tables
+
+Prefer actual medication-administration data over medication orders for systemic therapy exposure.
+
+For each required domain, return:
+
+1. catalog.schema.table
+2. relevant columns
+3. whether the data are OMOP-standardized, Hopkins-native, or both
+4. approximate row counts if easy to obtain
+5. key limitations
+6. which table you recommend using for this study
+
+Also determine:
+
+- whether ECOG is available as a structured variable and approximately how often it is populated in oncology patients
+- whether Child-Pugh score/class is directly structured
+- whether albumin, total bilirubin, INR, creatinine, sodium, platelets, AST, ALT, alkaline phosphatase, and AFP are consistently represented as structured labs
+- whether drug administrations can distinguish atezolizumab, bevacizumab/biosimilars, durvalumab, and tremelimumab
+- whether REACH dates are shifted in a way that preserves valid cross-patient calendar year/month comparisons
+
+Do not infer or guess table names. Inspect the available schemas and report the actual mappings.
+
+At the end, give me a concise proposed source-table map for the study. Stop there and wait for the next instruction.
