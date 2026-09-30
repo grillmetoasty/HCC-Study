@@ -1,108 +1,218 @@
-*Used Manage Todo List*
+Use the currently attached working compute for all queries in this step.
 
-I'll write a single comprehensive Python diagnostic cell that captures every result and error systematically. This avoids cell-by-cell failures blocking downstream tests.
+Do NOT build the HCC cohort yet and do NOT create permanent tables.
 
-*Used Edit Asset, Read Asset By Id, Run Asset*
+Now that actual REACH table reads are working, validate the data-level assumptions that could not previously be confirmed.
 
-Steps 1-2 complete. Metadata works fine. Now Steps 3-4: DESCRIBE vs SELECT, plus DESCRIBE DETAIL for storage info.
+## 1. Validate patient join keys
 
-*Used Edit Asset, Read Asset By Id, Run Asset, Fetch Omitted Content*
+For each of these tables:
 
-Let me skip ahead to find the remaining diagnostic output.
+- `deid.derived.epic_patient`
+- `deid.derived.encounter_dx`
+- `deid.derived.med_admin`
+- `deid.derived.med_orders`
+- `deid.derived.treatment_plan`
+- `deid.derived.treatment_plan_orders`
+- `deid.derived.lab_results`
+- `deid.derived.epic_all_encounters`
+- `deid.derived.flowsheet_data`
+- `deid.derived.smartform_data`
 
-*Used Fetch Omitted Content*
+identify:
 
-The output is ~860K chars of repeated Java stack traces — every data-reading query (DESCRIBE TABLE, SELECT, DESCRIBE DETAIL) fails identically. Now let me run Steps 5-6: grants inspection and external locations, which are metadata-only operations.
+- patient identifier column
+- encounter identifier column, if present
+- treatment-plan identifier, if present
+- whether patient identifiers appear join-compatible across tables
 
-*Used Edit Asset, Read Asset By Id, Run Asset*
+Test several small joins and report the validated join strategy.
 
-Now let me run one final test — check `information_schema` access (virtual UC tables, not backed by Azure storage) to confirm the boundary.
+Do not assume the join key.
 
-*Used Edit Asset, Read Asset By Id, Run Asset, Fetch Omitted Content, Manage Todo List, Memory*
+## 2. Validate HCC diagnosis values
 
-Here is the complete diagnostic report.
+Query `deid.derived.encounter_dx`.
 
----
+Report:
 
-## Diagnostic Results
+- count of unique patients with `icd10_code = 'C22.0'`
+- count with ≥2 C22.0 diagnoses on separate dates
+- example rows
+- distinct `dx_qualifier` values for C22.0
+- distinct `primary_dx_yn` values
+- earliest and latest observed C22.0 dates
 
-### Step 1 — Identity & Context
+Also show whether ICD-9 diagnoses are represented in this table and, if so, how the coding system is indicated.
 
-| Query | Result |
-| --- | --- |
-| `current_user()` | `xzhao81@jh.edu` |
-| `current_catalog()` | `reach_users` |
-| `current_schema()` | `default` |
+## 3. Validate actual systemic-treatment medication names
 
-### Step 2 — Catalog/Schema Metadata Access: **ALL PASS**
-* `SHOW SCHEMAS IN deid` → 3 schemas (`derived`, `information_schema`, `omop`)
-* `SHOW TABLES IN deid.derived` → 67 tables
-* `SHOW TABLES IN deid.omop` → 41 tables
+Query distinct values from `deid.derived.med_admin` for records containing:
 
-### Step 3 — DESCRIBE TABLE vs SELECT: **ALL FAIL identically**
-Every data-touching query — `DESCRIBE TABLE`, `SELECT * LIMIT 1`, `DESCRIBE DETAIL` — fails with the same 403 on all three test tables (`epic_patient`, `lab_results`, `person`). Even `DESCRIBE TABLE` requires reading the Delta log, so it hits storage.
+- atezolizumab
+- bevacizumab
+- durvalumab
+- tremelimumab
+- nivolumab
+- ipilimumab
+- sorafenib
+- lenvatinib
+- cabozantinib
+- regorafenib
+- ramucirumab
+- pembrolizumab
 
-### Step 5 — Unity Catalog Grants: **COMPLETE — not the problem**
+Return:
 
-| Securable | Principal | Actions |
-| --- | --- | --- |
-| `CATALOG deid` | RIT REACH - Databricks Users | USE CATALOG |
-| `SCHEMA deid.derived` | RIT REACH - Databricks Users | EXECUTE, READ VOLUME, SELECT, USE SCHEMA |
-| `SCHEMA deid.omop` | RIT REACH - Databricks Users | EXECUTE, READ VOLUME, SELECT, USE SCHEMA |
-| Tables (inherited) | RIT REACH - Databricks Users | SELECT |
+- `generic_name`
+- `medication_name`
+- `medication_id`
+- `mar_action`
+- `route`
+- count of administrations
+- number of unique patients
 
-### Step 6 — External Locations & Storage Credentials
-* `SHOW EXTERNAL LOCATIONS` → **0 rows** (user lacks admin visibility)
-* `SHOW STORAGE CREDENTIALS` → **0 rows** (same)
+Specifically identify every bevacizumab biosimilar present.
 
-### Step 7 — Complete Error Anatomy
+Also list every distinct `mar_action` associated with these oncology drugs and indicate which clearly represent actual administration versus held/canceled/not given.
 
-| Field | Value |
-| --- | --- |
-| Error class | `[UNAUTHORIZED_ACCESS]` |
-| SQLSTATE | 42501 |
-| HTTP status | **403** |
-| HTTP method | GET |
-| Azure host | `pmdeidstor01.dfs.core.windows.net` |
-| Container | `warehouse` |
-| Path pattern | `__unitystorage/catalogs/08fa3d3d-.../tables/<table-uuid>/_delta_log` |
-| Azure error | `AuthorizationFailure` |
-| Inner exception | `CloudAccessDeniedException` |
-| Failure point | `AzureLogStore.listFrom` → `findLastCompleteCheckpoint` |
+Do not define treatment exposure yet; just report observed values.
 
-**SAS token analysis** (user delegation SAS):
-* `sp=rl` (read + list) — permissions look sufficient
-* `sr=d` (directory scope), `sdd=5` (depth limit)
-* `st=2026-09-30T13:24:49Z` (start), `se≈15:00-15:09Z` (expiry) — **NOT expired** at test time \~14:33Z
-* `ske=2026-09-30T15:24:49Z` (signing key expiry) — also not expired
-* `skoid=594fc4a0-e146-4a5c...` — signing identity (managed identity/service principal)
+## 4. Validate Beacon treatment-plan data
 
-**Despite a syntactically valid, unexpired SAS token with read+list permissions, Azure returns 403.** This means the problem is upstream of the token itself — the identity that generated the delegation key lacks authorization at the Azure IAM level.
+Search:
 
-### Step 8 — Boundary Test: `information_schema`
-Failed with a **different** error: `INSUFFICIENT_PERMISSIONS: User does not have USE CATALOG on Catalog 'system'` — a UC privilege issue, not a storage issue. This confirms that UC metadata queries and storage-backed queries fail for orthogonal reasons.
+- `deid.derived.treatment_plan`
+- `deid.derived.treatment_plan_orders`
 
----
+for plans containing:
 
-## Classification: **B — Broken/expired Unity Catalog storage credential**
+- atezolizumab
+- bevacizumab
+- durvalumab
+- tremelimumab
+- HCC
+- hepatocellular
 
-**Evidence supporting this classification:**
+Return representative distinct values for:
 
-* **Not A (missing UC SELECT/USE)**: Grants are complete — `RIT REACH - Databricks Users` has every required privilege.
-* **IS B (broken storage credential)**: The SAS delegation token is signed by managed identity `skoid=594fc4a0-e146-4a5c...`. The token is valid and unexpired, but Azure rejects it — meaning the signing identity itself has lost its Azure RBAC role assignment (e.g., `Storage Blob Data Contributor`) on storage account `pmdeidstor01`. Unity Catalog vends the SAS correctly, but the underlying Azure identity can no longer authorize it.
-* **Possible overlap with D/E**: If the storage account `pmdeidstor01` recently changed its firewall rules (e.g., restricted to specific VNets), the serverless compute IP ranges may be blocked. This would also produce a 403.
-* **Not F (compute incompatibility)**: The same error occurs on serverless and previously on classic cluster (Sep 30). Yesterday (Sep 29) classic worked, so this is time-dependent — not an access-mode issue.
+- `treatment_plan_name`
+- `protocol_display_name`
+- `treatment_goal`
+- `episode_type`
+- `plan_status`
+- `cycle_name`
+- `cycle_num`
+- `dx_name`
+- `icd10_code`
 
----
+Report whether Atezo/Bev and STRIDE can be reliably recognized from Beacon plan names or plan orders.
 
-## What the REACH/Databricks Administrator Needs to Inspect
+## 5. Validate ALBI laboratory components
 
-1. **Azure IAM on `pmdeidstor01`**: Check whether the service principal / managed identity `594fc4a0-e146-4a5c...` still has `Storage Blob Data Contributor` (or `Reader`) role on the storage account. This identity is the UC metastore's root storage credential. If the RBAC assignment was removed or expired, re-add it.
+Query `deid.derived.lab_results`.
 
-2. **UC Metastore root storage credential**: In the Databricks account console → Metastore → check the storage credential associated with catalog `deid` (catalog UUID `08fa3d3d-fbdb-4248-9595-7dec7364ff26`). Verify it references a valid, active Azure managed identity or service principal.
+Find actual observed values of:
 
-3. **Azure storage firewall on `pmdeidstor01`**: Check whether the storage account's firewall/networking settings have been changed to restrict access (e.g., "Allow access from selected virtual networks" or "Allow access from private endpoints only"). Serverless compute uses Databricks-managed VNets that must be allowed.
+- `component_name`
+- `component_base_name`
+- `loinc_code`
+- `loinc_desc`
+- `reference_unit`
 
-4. **Azure AD / Entra ID**: Check whether the managed identity or service principal has been disabled, deleted, or had its credentials rotated without updating the UC storage credential configuration.
+for:
 
-5. **Time-dependence**: This worked on Sep 29 (classic cluster) but fails universally on Sep 30, suggesting a credential rotation, RBAC expiry, or firewall change happened overnight.
+- albumin
+- total bilirubin
+- INR
+- creatinine
+- sodium
+- platelet count
+- AST
+- ALT
+- alkaline phosphatase
+- AFP
+
+For each lab report:
+
+- number of results
+- number of unique patients
+- common units
+- percentage with numeric `ord_num_value`
+- minimum/median/maximum numeric values after excluding clearly invalid entries
+
+Pay special attention to albumin and total bilirubin and determine whether units are consistent enough to calculate ALBI safely.
+
+## 6. Determine whether ECOG is actually structured
+
+Search distinct:
+
+- `meas_name`
+- `meas_disp_name`
+
+in `deid.derived.flowsheet_data`
+
+and:
+
+- `element_name`
+
+in `deid.derived.smartform_data`
+
+for case-insensitive terms:
+
+- ECOG
+- performance status
+- Karnofsky
+- KPS
+
+If matches exist, report:
+
+- exact field names
+- example values
+- number of unique patients
+- number of observations
+- earliest/latest dates
+
+Also estimate ECOG availability specifically among patients with C22.0.
+
+Do not infer ECOG from other clinical variables.
+
+## 7. Determine whether Child-Pugh is directly structured
+
+Search flowsheet and SmartForm fields for:
+
+- Child-Pugh
+- Child Pugh
+- Child-Pugh class
+- Child-Pugh score
+- ascites
+- encephalopathy
+
+Report exact matches, example values, and counts.
+
+Do not calculate Child-Pugh yet.
+
+## 8. Validate calendar-date behavior
+
+Using tables with large longitudinal coverage, report:
+
+- earliest and latest calendar years observed
+- counts of encounters by calendar year
+- counts of Atezo/Bev-related administrations by calendar year
+- counts of STRIDE-related administrations by calendar year
+
+Determine whether the observed treatment eras are clinically plausible.
+
+Also inspect any REACH documentation tables such as `deid.omop.cdm_source` or other metadata for information about date shifting.
+
+Do not assume that cross-patient calendar dates are valid solely because dates look plausible. Report what the data/documentation explicitly supports.
+
+## 9. Final output
+
+At the end give me a concise validation summary with:
+
+1. confirmed patient join key
+2. HCC patient count
+3. observed Atezo/Bev and STRIDE medication names
+4. valid MAR actions for actual administrations
+5.
