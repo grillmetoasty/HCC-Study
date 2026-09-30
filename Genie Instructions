@@ -1,147 +1,473 @@
-*Used Read Skill File, Manage Todo List*
+Using the validated REACH data mappings and the currently attached working compute, build the broad source cohort for the HCC comparative-effectiveness study.
 
-I'll build comprehensive validation cells and run them. Let me start with the join-key validation and HCC diagnosis checks.
+The goal of this step is to identify adults with HCC receiving apparent first-line systemic therapy with either:
 
-*Used Edit Asset, Read Asset By Id, Run Asset*
+1. atezolizumab + bevacizumab, or
+2. STRIDE = tremelimumab + durvalumab.
 
-The full-table COUNT queries timed out on a single-node cluster. Let me rewrite with much lighter queries — schema inspection + sampled joins only.
+Do NOT perform survival analysis, propensity-score modeling, treatment-effect modeling, or outcome analysis yet.
 
-*Used Edit Asset*
+Do NOT require ECOG or Child-Pugh for inclusion because structured availability is inadequate.
 
-Now let me add the remaining validation cells before running, to batch the work:
+Do NOT permanently delete borderline patients. Preserve explicit flags and reasons for exclusion.
 
-*Used Edit Asset*
+## 1. HCC phenotype
 
-Now let me add validation cells for medications, treatment plans, labs, ECOG, Child-Pugh, and calendar dates:
+Use:
 
-*Used Read Asset By Id, Edit Asset*
+`deid.derived.encounter_dx`
 
-Now the labs, ECOG, Child-Pugh, and calendar validations:
+Primary HCC definition:
 
-*Used Edit Asset*
+`icd10_code = 'C22.0'`
 
-Now let me get the cell nuids for all the new cells so I can run them:
+Require evidence of HCC before or around systemic therapy.
 
-*Used Read Asset By Id*
+For every patient create:
 
-Good. Now let me run the cells in sequence. I'll start with the join-key validation cell first since it was previously cancelled:
+- first_hcc_dx_date
+- last_hcc_dx_before_index
+- n_hcc_dx_before_index
+- hcc_dx_2_dates_flag
+- hcc_dx_within_30d_flag
+- hcc_dx_within_90d_flag
+- hcc_dx_within_365d_flag
 
-*Used Run Asset, Select Tools, Get Asset Execution Results*
+Do not include patients solely on the basis of cholangiocarcinoma, gallbladder cancer, generic liver cancer, or secondary liver metastases.
 
-Excellent — the join-key validation is nearly complete (4 of 5 joins tested successfully before timeout). Let me now run the HCC diagnosis validation cells:
+## 2. Define actual drug administrations
 
-*Used Run Asset*
+Use:
 
-HCC diagnosis data confirmed. Now the ICD-9 check, example rows, and medication cells:
+`deid.derived.med_admin`
 
-*Used Run Asset*
+Use `medication_name` as the primary drug-name field because `generic_name` was found to be largely/null and unreliable.
 
-Now the medication validation — this query may be heavier:
+Only count MAR actions corresponding to actual administration:
 
-*Used Run Asset*
+- `Given`
+- `New Bag`
+- `Restarted`
 
-Key finding: `generic_name` is NULL — identification relies on `medication_name`. Now the MAR actions cell:
+Do not count held, canceled, refused, missed, discontinued, or otherwise non-administered entries.
 
-*Used Run Asset*
+Identify all observed names corresponding to:
 
-MAR actions confirmed. Now treatment plans and labs:
+- atezolizumab
+- bevacizumab and all bevacizumab biosimilars
+- durvalumab
+- tremelimumab
 
-*Used Run Asset*
+Use case-insensitive normalized medication-name matching based on the exact values already identified during validation.
 
-Treatment plans confirmed — Atezo/Bev for HCC clearly identifiable. Now the remaining heavy cells — labs, ECOG, Child-Pugh, calendar:
+Preserve:
+- raw medication_name
+- medication_id
+- administration timestamp/date
+- MAR action
+- route
+- dose and dose unit if available
 
-*Used Run Asset, Get Asset Execution Results*
+Deduplicate obvious duplicate MAR records representing the same administration.
 
-Got albumin data (9.9M results, median 4.1 g/dL). The Python loop approach is too slow. Let me rewrite as a single efficient SQL query:
+## 3. Define Atezo/Bev initiation
 
-*Used Edit Asset*
+A candidate Atezo/Bev regimen requires:
 
-Now let me also add a second SQL cell for the albumin/bilirubin detail and run both:
+- actual atezolizumab administration, and
+- actual bevacizumab or bevacizumab-biosimilar administration
 
-*Used Edit Asset, Read Asset By Id*
+on the same calendar day.
 
-I see the V5 cell still has leftover Python code after the SQL. Let me clean it:
+Also create a secondary permissive definition allowing the two components within ±3 days.
 
-*Used Edit Asset, Read Asset By Id*
+Create:
 
-Let me just delete the problematic cell and create a clean SQL-only replacement:
+- first_atezo_date
+- first_bev_date
+- atezo_bev_same_day_flag
+- atezo_bev_within_3d_flag
 
-*Used Edit Asset, Read Asset By Id*
+For the primary candidate regimen definition, prefer same-day administration.
 
-Now add the clean V5 SQL cell before the V5b cell:
+Index date = earliest administration date belonging to the qualifying first regimen.
 
-*Used Edit Asset, Read Asset By Id*
+## 4. Define STRIDE initiation
 
-Now let me run V5, V5b, V6 (ECOG), V7 (Child-Pugh), and V8 (calendar) in sequence. These are the remaining validations:
+A candidate STRIDE regimen requires:
 
-*Used Run Asset*
+- actual tremelimumab administration, and
+- actual durvalumab administration
 
-The full lab_results table scan times out on this single-node cluster. Let me run individual lab queries with a narrower date range using `executeCode`:
+on the same calendar day.
 
-*Used Execute Code*
+Also create a secondary permissive definition allowing the two components within ±3 days.
 
-Albumin is comprehensive and consistent in g/dL. Now let me find total bilirubin — the `component_base_name` may not match `%total%`:
+Create:
 
-*Used Execute Code*
+- first_treme_date
+- first_durva_date
+- stride_same_day_flag
+- stride_within_3d_flag
 
-Found it — total bilirubin is `BILITOT`, not "bilirubin total". Let me now get stats for all key labs:
+Do not require repeat tremelimumab.
 
-*Used Execute Code*
+Index date = earliest administration date belonging to the qualifying regimen.
 
-Lab data validated. Now let me run ECOG, Child-Pugh, and calendar validations — these target smaller tables:
+## 5. Validate against Beacon oncology treatment plans
 
-*Used Run Asset, Get Asset Execution Results, Execute Code*
+Use:
 
-ECOG is structured! Now Child-Pugh search and calendar dates — let me run these via executeCode to avoid more timeouts:
+- `deid.derived.treatment_plan`
+- `deid.derived.treatment_plan_orders`
 
-*Used Execute Code*
+Link using the validated patient/treatment-plan identifiers from the prior step.
 
-Critical finding — the MAR action shifted from `Given` to `New Bag` in 2022. Now let me get the remaining data:
+For each candidate regimen determine whether there is a corresponding oncology plan compatible with:
 
-*Used Execute Code*
+- HCC
+- C22.0
+- atezolizumab/bevacizumab
+- tremelimumab/durvalumab
 
-All data collected. Let me save these findings and provide the comprehensive summary:
+Retain:
 
-*Used Memory*
+- beacon_plan_match_flag
+- beacon_hcc_match_flag
+- treatment_plan_name
+- protocol_display_name
+- treatment_goal
+- plan_start_date
+- plan_status
+- cycle number when available
 
-Now let me update the notebook cells to reflect the validated findings. Let me clean up V5–V8:
+Do not require Beacon matching yet.
 
-*Used Edit Asset*
+Instead report concordance between MAR-defined regimen and Beacon plan.
 
-Now update V6 (ECOG) to use the faster smartform-only approach:
+## 6. Link regimen to HCC
 
-*Used Edit Asset*
+Create a strong HCC-treatment-link flag.
 
-Now update V7 (Child-Pugh) similarly:
+Define:
 
-*Used Edit Asset*
+`hcc_treatment_match_flag = 1`
 
-Now update V8 to a fast SQL version:
+if either:
 
-*Used Edit Asset*
+A. C22.0 diagnosis exists within 365 days before index
 
-Now let me run all four updated cells:
+OR
 
-*Used Run Asset*
+B. the associated Beacon oncology treatment plan explicitly identifies HCC/C22.0.
 
-All 5 validation cells executed successfully. The data validation is now complete. Let me provide the comprehensive summary.
+Also create a stricter phenotype flag requiring:
 
-**V5 — Labs (ALBI-critical):**
-* **Albumin**: `component_base_name = 'ALBUMIN'`, g/dL, median 4.0–4.4, widely available across 363K+ patients (2025+ alone)
-* **Total Bilirubin**: `component_base_name = 'BILITOT'` (not "bilirubin total"), mg/dL, median 0.5, LOINC 1975-2
-* **INR**: `component_base_name = 'INR'`, dimensionless, median 1.08
-* **Sentinel value 9999999** must be filtered (`ord_num_value < 9999`)
-* ALBI formula can safely use ALBUMIN (g/dL) and BILITOT (mg/dL) with consistent units
+- ≥2 C22.0 diagnoses on separate dates, or
+- explicit HCC Beacon treatment-plan diagnosis.
 
-**V6 — ECOG**: Standard 0–4 scale in smartform. Only **154 HCC patients** (4%) have structured ECOG, with 351 observations. System-wide: \~12,200 observations across 6,500+ oncology patients.
+Retain both broad and strict definitions.
 
-**V7 — Child-Pugh**: **No direct structured score.** Ascites (263 obs / 112 pts) and encephalopathy (932 obs / 567 pts) exist in smartform but are sparse. Many encephalopathy entries are neonatal Sarnat exams (must exclude). Child-Pugh must be calculated from albumin + BILITOT + INR + ascites + encephalopathy.
+## 7. Determine prior systemic HCC therapy
 
-**V8 — Treatment eras:**
-* Atezolizumab: 2016–2026, 316–694 admins/yr from 2022+
-* Bevacizumab: 2013–2026, 4,800–7,700 admins/yr (steady growth)
-* Durvalumab (STRIDE): 2016–2026, ramping from 11 → 1,107 admins/yr
-* Tremelimumab: present but low volume (14–37/yr)
-* **MAR workflow shifted from `Given` to `New Bag` in 2022** — always filter `IN ('Given','New Bag','Restarted')`
-* CDM: OMOP v5.4, released 2026-09-10, JHME. No date-shifting documentation found.
-* Death dates: 815K patients, range 1900–2026
+Search all medication administrations and Beacon oncology treatment plans prior to index for evidence of systemic HCC treatment.
+
+At minimum search for:
+
+- sorafenib
+- lenvatinib
+- atezolizumab
+- bevacizumab in an HCC oncology regimen
+- durvalumab
+- tremelimumab
+- nivolumab
+- ipilimumab
+- pembrolizumab
+- regorafenib
+- cabozantinib
+- ramucirumab
+
+Do NOT classify prior:
+
+- TACE
+- Y90/TARE
+- ablation
+- SBRT/radiation
+- hepatic resection
+
+as prior systemic therapy.
+
+Create:
+
+- prior_hcc_systemic_flag
+- prior_hcc_systemic_drug
+- first_prior_hcc_systemic_date
+- most_recent_prior_hcc_systemic_date
+- days_prior_systemic_to_index
+
+Define:
+
+`first_line_candidate_flag = 1`
+
+when no prior systemic HCC therapy is identifiable before index.
+
+## 8. Determine available lookback
+
+Using the validated patient join key and encounter data, identify:
+
+- earliest clinical record before index
+- days of observable history before index
+
+Create:
+
+- days_preindex_observation
+- lookback_180d_flag
+- lookback_365d_flag
+
+Do not exclude patients for short lookback yet.
+
+## 9. Baseline ALBI eligibility
+
+Now add only the ALBI-critical baseline labs.
+
+Use:
+
+`deid.derived.lab_results`
+
+Validated lab definitions:
+
+- albumin: `component_base_name = 'ALBUMIN'`
+- total bilirubin: `component_base_name = 'BILITOT'`
+
+Filter invalid numeric sentinel values, including `ord_num_value >= 9999`.
+
+Validated units:
+
+- albumin: g/dL
+- bilirubin: mg/dL
+
+Find measurements within day −14 through day 0 relative to index.
+
+Do not use a result collected after the first index-drug administration.
+
+Pairing preference:
+
+1. same specimen/result date where possible
+2. otherwise same calendar day
+3. otherwise ≤24 hours apart
+
+If multiple valid pairs exist, select the pair closest to index.
+
+Convert:
+
+albumin_g_L = albumin_g_dL × 10
+
+bilirubin_umol_L = bilirubin_mg_dL × 17.104
+
+Calculate:
+
+ALBI =
+0.66 × log10(bilirubin_umol_L)
+− 0.085 × albumin_g_L
+
+Create:
+
+- baseline_albumin_g_dL
+- baseline_bilirubin_mg_dL
+- albumin_datetime
+- bilirubin_datetime
+- hours_between_labs
+- days_labs_before_index
+- baseline_ALBI
+
+Also create:
+
+traditional ALBI:
+- grade 1: ALBI ≤ −2.60
+- grade 2: −2.60 < ALBI ≤ −1.39
+- grade 3: ALBI > −1.39
+
+modified ALBI:
+- 1: ≤ −2.60
+- 2a: > −2.60 to ≤ −2.27
+- 2b: > −2.27 to ≤ −1.39
+- 3: > −1.39
+
+Create:
+
+- baseline_albi_available_flag
+- traditional_albi_grade
+- malbi_grade
+
+Keep continuous ALBI unrounded.
+
+## 10. ECOG
+
+Do NOT require ECOG for inclusion.
+
+Using the validated SmartForm ECOG field, extract the closest structured ECOG within −60 to 0 days where available.
+
+Create:
+
+- baseline_ecog
+- ecog_date
+- ecog_0_1_flag
+- ecog_missing_flag
+
+This will be used only for secondary analyses because structured ECOG coverage is low.
+
+## 11. Child-Pugh
+
+Do NOT require Child-Pugh for inclusion.
+
+Do NOT automatically calculate Child-Pugh from absence of ascites or encephalopathy diagnoses.
+
+If a patient happens to have sufficient structured data for a defensible Child-Pugh reconstruction, preserve it as an exploratory field, but do not spend significant compute time constructing it during this phase.
+
+Create:
+
+- child_pugh_available_flag
+
+Do not exclude based on this field.
+
+## 12. Primary candidate cohort definition
+
+Create a broad candidate cohort consisting of:
+
+- age ≥18
+- HCC-treatment match
+- Atezo/Bev or STRIDE initiation
+- apparent first-line systemic therapy
+- valid baseline ALBI
+
+Do NOT require:
+
+- ECOG
+- Child-Pugh
+- ALBI grade 1
+- absence of portal hypertension
+- absence of prior locoregional therapy
+
+Create:
+
+`primary_candidate_flag`
+
+based on those four main criteria.
+
+## 13. Preserve important exclusion/sensitivity flags
+
+For later analyses create, where easily available:
+
+- liver_transplant_history_flag
+- other_active_malignancy_flag
+- prior_systemic_hcc_flag
+- inadequate_180d_lookback_flag
+- inadequate_365d_lookback_flag
+- ecog_0_1_flag
+- baseline_decompensation_flag if obvious from structured diagnoses
+- prior_variceal_bleed_flag
+
+Do not use these as hard exclusions yet.
+
+## 14. Calendar dates
+
+Preserve:
+
+- index_date
+- index_year
+- index_month
+- index_quarter
+
+However, because REACH date-shifting behavior has not yet been confirmed, label all cross-patient calendar variables as:
+
+`calendar_date_validity_unconfirmed`
+
+Do not use calendar time to exclude, match, weight, or adjust patients yet.
+
+## 15. Create a scratch source-cohort table
+
+Create a versioned scratch table with one row per patient's earliest qualifying candidate first-line regimen.
+
+Suggested name:
+
+`hcc_albi_source_cohort_v1`
+
+Include:
+
+- patient identifier
+- age
+- index regimen
+- index date
+- component-drug dates
+- same-day / ±3-day regimen flags
+- HCC phenotype variables
+- Beacon validation variables
+- prior systemic treatment variables
+- lookback variables
+- baseline ALBI and mALBI
+- ECOG when available
+- sensitivity/exclusion flags
+
+## 16. Required QA output
+
+Return:
+
+### HCC
+1. Unique patients with C22.0.
+2. Unique patients with ≥2 C22.0 diagnoses.
+
+### Regimens
+3. Unique patients with qualifying same-day Atezo/Bev.
+4. Unique patients with qualifying ±3-day Atezo/Bev.
+5. Unique patients with qualifying same-day STRIDE.
+6. Unique patients with qualifying ±3-day STRIDE.
+
+### HCC linkage
+7. Number of regimen patients with HCC diagnosis within:
+   - 30 days
+   - 90 days
+   - 365 days.
+8. Number with explicit HCC Beacon matching.
+9. MAR–Beacon concordance by regimen.
+
+### First line
+10. Number remaining after excluding identifiable prior systemic HCC therapy.
+11. Prior systemic treatments responsible for exclusion.
+
+### ALBI
+12. Number and percentage with valid baseline ALBI.
+13. Baseline ALBI median and IQR by regimen.
+14. Distribution of:
+   - ALBI grade 1
+   - mALBI 2a
+   - mALBI 2b
+   - ALBI grade 3
+   by regimen.
+
+### ECOG
+15. Number and percentage with baseline ECOG.
+16. ECOG distribution among those with data.
+
+### Lookback
+17. Median pre-index observable history.
+18. Percentage with ≥180 and ≥365 days.
+
+### Final
+19. Final number satisfying `primary_candidate_flag`:
+   - Atezo/Bev
+   - STRIDE
+
+20. Produce an attrition table showing each criterion sequentially.
+
+21. Display 10 de-identified candidate rows from each regimen with:
+   - HCC diagnosis timing
+   - component-drug dates
+   - Beacon plan
+   - prior systemic-therapy status
+   - albumin
+   - bilirubin
+   - calculated ALBI
+
+Do not perform outcome analysis yet.
+
+At the end, explicitly identify any phenotype issue that could materially alter the Atezo/Bev or STRIDE sample size.
