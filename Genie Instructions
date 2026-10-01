@@ -1,825 +1,464 @@
-Yes. I would make this a **data-first feasibility phase** rather than keep forcing the original question. We can inspect sample sizes, longitudinal density, event counts, treatment sequences, and phenotype completeness **without estimating any treatment-outcome effects**. Then choose the project where REACH is strongest.
+Here are the complete results from both tracks.
+
+---
+
+## TRACK A — Atezo/Bev vs STRIDE ALBI Treatment-Selection Stress Test
+
+### A1 — Expanded Propensity Model
+
+**Prior local therapy fix**: Queried `hosp_billing_px`, `profee_billing_px`, and `image_procedures` for TACE/Y90/RFA/resection codes. Found 43 patients with prior liver-directed therapy (AB=21, STRIDE=22) — previously all zeros due to a column-name bug.
+
+**Procedure discovery** (in the 147-patient analytic cohort):
+
+| Source | Key Codes Found | Patients |
+| --- | --- | --- |
+| hosp_billing_px | 37243 (embolization), 36247 (selective cath) | 36 |
+| profee_billing_px | 36247, 37243, 47382 (RFA), 47383 (cryo), 79445 (Y90), 47122/47130 (resection) | 42 |
+| image_procedures | IMG906 (conv TACE, 49 pts), IMG824 (microwave ablation, 15), CVIR229 (chemoemboli, 6), IMG818 (cryoablation, 6), IMG904 (Y90, 1) | multiple |
+
+**Expanded covariate specification** (12 variables):
+
+| Variable | Missing | Positive |
+| --- | --- | --- |
+| albi_score | 0 | — |
+| age_at_index | 0 | 147 |
+| lab_hemoglobin | 1 | 146 |
+| ascites_ever (NEW) | 0 | 20 |
+| portal_htn_history_flag | 0 | 37 |
+| variceal_bleed_ever | 0 | 8 |
+| hypertension_ever (NEW) | 0 | 30 |
+| vte_ever (NEW) | 0 | 8 |
+| ckd_ever | 0 | 9 |
+| autoimmune_disease_flag | 0 | 1 |
+| extrahepatic_spread_flag | 0 | 10 |
+| prior_local_hcc_therapy (FIXED) | 0 | 43 |
+
+All 12 covariates retained (none dropped for zero variance).
+
+**PS model**:
+* Complete cases: 146/147 (1 STRIDE missing hemoglobin)
+* AB=90, STRIDE=56
+* Convergence: True
+* AUC: 0.805
+* PS range: [0.0000, 0.9745]
+
+**Model coefficients** (sorted by |coefficient|):
+
+| Variable | Coef | OR | SE |
+| --- | --- | --- | --- |
+| autoimmune_disease_flag | -1.488 | 0.23 | 2.509 |
+| age_at_index | +0.499 | 1.65 | 0.234 |
+| prior_local_hcc_therapy | +0.491 | 1.63 | 0.218 |
+| lab_hemoglobin | -0.481 | 0.62 | 0.227 |
+| hypertension_ever | -0.475 | 0.62 | 0.234 |
+| ascites_ever | +0.471 | 1.60 | 0.235 |
+| variceal_bleed_ever | +0.430 | 1.54 | 0.241 |
+| vte_ever | +0.428 | 1.53 | 0.319 |
+| albi_score | +0.305 | 1.36 | 0.248 |
+| ckd_ever | +0.294 | 1.34 | 0.216 |
+| extrahepatic_spread_flag | -0.209 | 0.81 | 0.218 |
+| portal_htn_history_flag | -0.197 | 0.82 | 0.234 |
+
+**Overlap weights**:
+* AB: N=90, ESS=61.6 (68%), w=[0.000, 0.233, 0.975]
+* STRIDE: N=56, ESS=43.2 (77%), w=[0.035, 0.452, 0.845]
+* Total ESS: 101.5
+
+**Full balance table (37 covariates)**:
+
+| Variable | In Model | Raw SMD | v7-OW SMD | Flag |
+| --- | --- | --- | --- | --- |
+| albi_score | YES | +0.585 | -0.000 | |
+| age_at_index | YES | +0.243 | +0.000 | |
+| lab_hemoglobin | YES | -0.515 | -0.000 | |
+| lab_platelets | | -0.258 | -0.221 | * |
+| lab_creatinine | | +0.261 | +0.095 | \~ |
+| lab_ast | | +0.290 | +0.184 | * |
+| lab_alt | | +0.246 | +0.333 | * |
+| lab_alk_phos | | +0.144 | +0.034 | |
+| lab_sodium | | -0.048 | +0.117 | * |
+| ascites_ever | YES | +0.477 | -0.000 | |
+| prior_decompensation_flag | | +0.415 | +0.005 | |
+| portal_htn_history_flag | YES | +0.346 | -0.000 | |
+| variceal_bleed_ever | YES | +0.351 | +0.000 | |
+| hypertension_ever | YES | -0.233 | +0.000 | |
+| vte_ever | YES | +0.351 | +0.000 | |
+| ckd_ever | YES | +0.235 | +0.000 | |
+| autoimmune_disease_flag | YES | -0.150 | -0.000 | |
+| extrahepatic_spread_flag | YES | -0.221 | +0.000 | |
+| prior_local_hcc_therapy | YES | +0.312 | +0.000 | |
+| varices_ever | | +0.287 | -0.066 | \~ |
+| hcv_ever | | -0.003 | -0.018 | |
+| hbv_ever | | -0.210 | -0.163 | * |
+| portal_vein_thrombosis | | +0.292 | +0.082 | \~ |
+| male | | +0.090 | +0.193 | * |
+| white | | +0.119 | -0.146 | * |
+| alcohol_liver_ever | | +0.228 | -0.147 | * |
+| masld_nafld_ever | | -0.024 | -0.279 | * |
+| hepatic_enceph_ever | | +0.336 | +0.233 | * |
+| decomp_cirrhosis_ever | | +0.299 | -0.024 | |
+| any_vascular_disease | | -0.025 | +0.070 | \~ |
+| heart_failure_ever | | +0.013 | +0.168 | * |
+| any_organ_transplant_ever | | +0.000 | +0.000 | |
+| gi_bleed_180d | | +0.117 | +0.016 | |
+| ascites_180d | | +0.344 | -0.132 | * |
+| hepatic_enceph_180d | | +0.336 | +0.233 | * |
+| proteinuria_ever | | +0.295 | +0.045 | |
+| arterial_thrombosis_ever | | +0.000 | +0.000 | |
 
-Paste this into Genie:
+**Summary**: Max model-covariate |wt SMD|: 0.0001. Max overall |wt SMD|: 0.333 (lab_alt). Vars with |wt SMD| >= 0.10: **13**. Vars with |wt SMD| >= 0.05: **17**.
 
-Use the currently attached REACH Small Compute.
+---
 
-This phase has TWO separate tracks.
+### A2 — Within-ALBI Balance
 
-**TRACK A:** finish the pre-outcome causal-design stress test for the Atezo/Bev versus STRIDE ALBI treatment-selection project.
+**Two prespecified strata:**
 
-**TRACK B:** perform a broad, data-first HCC feasibility scan to identify other high-value projects that REACH is particularly well equipped to answer.
+Better reserve (ALBI <= -2.27): AB=60, STRIDE=23, ESS=53.5
 
-The purpose of Track B is explicitly to let the available data guide the scientific question rather than forcing REACH into a predetermined project.
+| Variable | Raw SMD | Wt SMD |
+| --- | --- | --- |
+| albi_score | +0.455 | +0.245 * |
+| age_at_index | +0.625 | +0.354 * |
+| lab_hemoglobin | -0.343 | +0.223 * |
+| ascites_ever | +0.157 | -0.238 * |
+| portal_htn_history_flag | +0.113 | -0.254 * |
+| variceal_bleed_ever | +0.227 | -0.185 * |
+| hypertension_ever | -0.384 | -0.204 * |
+| vte_ever | +0.436 | +0.116 * |
+| ckd_ever | -0.324 | **-0.457** * |
+| extrahepatic_spread_flag | -0.045 | +0.156 * |
+| prior_local_hcc_therapy | +0.306 | +0.053 |
 
-IMPORTANT:
+Max |wt SMD|: **0.457**
 
-- Do NOT estimate treatment effects.
-- Do NOT calculate hazard ratios comparing treatments.
-- Do NOT calculate treatment-outcome P-values.
-- Do NOT select future hypotheses because one treatment happens to look better than another.
-- Event counts, data availability, longitudinal coverage, and treatment-sequence counts ARE allowed.
-- The opportunity scan should rank questions based on DATA READINESS, not observed treatment-effect magnitude.
-- Use within-patient time intervals freely.
-- Do NOT use apparent calendar year/quarter for causal adjustment because cross-patient date shifting remains unresolved.
+Poorer reserve (ALBI > -2.27): AB=30, STRIDE=33, ESS=48.1
 
-Use existing persisted tables when appropriate:
+| Variable | Raw SMD | Wt SMD |
+| --- | --- | --- |
+| albi_score | +0.113 | -0.152 * |
+| age_at_index | -0.052 | -0.375 * |
+| lab_hemoglobin | -0.380 | -0.324 * |
+| ascites_ever | +0.458 | +0.101 * |
+| portal_htn_history_flag | +0.323 | +0.250 * |
+| variceal_bleed_ever | +0.525 | +0.320 * |
+| hypertension_ever | +0.052 | +0.275 * |
+| vte_ever | +0.188 | -0.022 |
+| ckd_ever | +0.598 | **+0.500** * |
+| extrahepatic_spread_flag | -0.378 | -0.326 * |
+| prior_local_hcc_therapy | +0.370 | -0.074 |
 
-- `reach_users.xzhao81.hcc_source_cohort_v4`
-- `reach_users.xzhao81.hcc_baseline_confounders_v5`
-- `reach_users.xzhao81.hcc_propensity_repaired_v6`
-- `reach_users.xzhao81.hcc_balance_repaired_v6`
-- `reach_users.xzhao81.hcc_common_support_v6`
+Max |wt SMD|: **0.500**
 
-Do not overwrite any prior tables.
+**Local ALBI bins (0.4-unit width):**
+
+| Bin | AB | ST | ESS | Worst Covariate |
+| --- | --- | --- | --- | --- |
+| [-3.0, -2.6) | 18 | 8 | 17.6 | portal_htn_history_flag = -0.706 |
+| [-2.6, -2.2) | 20 | 13 | 22.8 | albi_score = +1.282 |
+| [-2.2, -1.8) | 17 | 14 | 24.3 | lab_hemoglobin = -0.782 |
+| [-1.8, -1.4) | 4 | 10 | 9.5 | prior_local_hcc_therapy = -1.259 |
 
-# ============================================================
-# TRACK A — FINAL STRESS TEST OF ATEZO/BEV VS STRIDE PROJECT
-# ============================================================
+All bins have catastrophic imbalance — every bin has |wt SMD| > 0.25 on multiple covariates.
 
-## A1 — Refit the propensity model with clinically important residual confounders
+---
 
-The prior unpenalized overlap-weighting model achieved near-exact balance on variables included in the model but left important non-model imbalance:
+### A3 — Interaction Terms
 
-- ascites approximately SMD 0.33
-- VTE approximately SMD 0.31
-- hypertension approximately SMD 0.28
+19 stratum imbalances found. Three ALBI interactions fitted:
+* albi_x_ascites_ever
+* albi_x_portal_htn_history_flag
+* albi_x_variceal_bleed_ever
 
-Refit an unpenalized logistic propensity model using a clinically prespecified set that explicitly includes these treatment-selection variables.
+Interaction model: Convergence=True, AUC=0.821, ESS=95.9
 
-Preferred variables, subject to actual completeness:
+**portal_htn_history_flag** and **variceal_bleed_ever** improved to near-zero in both strata, but age, hemoglobin, ckd, extrahepatic_spread, and hypertension remained severely imbalanced (0.20–0.46).
 
-1. baseline ALBI, continuous
-2. age, continuous
-3. hemoglobin, continuous
-4. documented ascites before index
-5. portal hypertension / varices
-6. prior major or variceal bleeding
-7. hypertension
-8. VTE and/or therapeutic anticoagulation
-9. CKD / renal dysfunction
-10. autoimmune disease / baseline immunosuppression
-11. extrahepatic disease
-12. prior liver-directed therapy if the phenotype is now correctly available
+---
 
-Do not include:
-- albumin and bilirubin separately when ALBI is included
-- post-index variables
-- ECOG because completeness is extremely poor
-- Child-Pugh because it cannot be reliably reconstructed
-- AFP in the primary PS because approximately 80% is missing
+### A4 — Final Classification
 
-Avoid redundant composites plus all their component variables.
+* Final model: v7 expanded + ALBI interactions
+* N=146 (AB=90, STRIDE=56), ESS=95.9 (66%)
+* PS range: [0.0000, 1.0000]
+* Max model-covariate |wt SMD|: 0.0001
+* Max overall |wt SMD|: 0.371
+* Covariates with |wt SMD| >= 0.10: **13**
+* Within-ALBI worst: Better=0.418, Poorer=0.461
+* ALBI common support [-3.0, -1.8]: AB=55, ST=35
+* Grade 1 STRIDE (ALBI <= -2.60): **12**
 
-If `prior_liver_directed_therapy` was previously all zero because of a column-name/logic mismatch, FIX that phenotype before fitting the model.
+**Classification: EXPLORATORY ONLY**
 
-Report:
-- N
-- convergence
-- PS distribution
-- overlap weights
-- effective sample size
-- weighted SMD for every baseline covariate, including variables not entered into the model
+Reason: 13 non-model covariates >0.10, max overall |wt SMD|=0.371, severe within-ALBI imbalance, and critical unmeasured confounders (ECOG, Child-Pugh, AFP, calendar era).
 
-Target:
-- all clinically important |SMD| <0.10
-- preferably <0.05
+Persisted: reach_users.xzhao81.hcc_balance_within_albi_v7 (22 rows)
 
-## A2 — Examine balance WITHIN ALBI
+---
 
-Overall marginal balance is not sufficient because ALBI is the planned effect modifier.
+## TRACK B — Broad HCC Data-Richness Map
 
-Create two broad prespecified ALBI strata:
+### B1 — HCC Universe
 
-- better hepatic reserve: ALBI ≤ −2.27
-- poorer hepatic reserve: ALBI > −2.27
+| Tier | Total | AB | STRIDE | NI |
+| --- | --- | --- | --- | --- |
+| C0: All candidates | 1,249 | 167 | 104 | 978 |
+| C1: Broad HCC | 387 | 151 | 87 | 149 |
+| C3: First-line | 256 | 115 | 79 | 62 |
+| C4: Routine-care 1L | 198 | 110 | 59 | 29 |
+| C5: Analytic ALBI | 156 | 90 | 57 | 9 |
 
-Within EACH stratum, calculate weighted SMDs for the clinically important confounders.
+**Phenotype distribution**: DEFINITE_HCC=352, PROBABLE_HCC=35, AMBIGUOUS=14, NON_HCC=848
 
-Also evaluate local balance across the previously identified ALBI support region approximately:
+**ALBI by regimen (broad HCC)**:
 
-- −3.0 to −1.8
+| Regimen | N | ALBI avail | Median | IQR |
+| --- | --- | --- | --- | --- |
+| ATEZO_BEV | 151 | 148 (98%) | -2.562 | [-2.995, -2.016] |
+| STRIDE | 87 | 86 (99%) | -2.306 | [-2.764, -1.883] |
+| NIVO_IPI | 149 | 115 (77%) | -2.676 | [-3.101, -2.191] |
 
-Use broader bins that preserve reasonable N, such as approximately 0.4 ALBI units.
+---
 
-For each bin report:
-- Atezo/Bev N
-- STRIDE N
-- effective weighted N
-- key weighted SMDs
+### B2 — Systemic Therapy Landscape
 
-Do not fit outcome models.
+13,413 drug admin rows across 341 unique patients.
 
-## A3 — If local balance is inadequate
+**Agent frequency (unique patients)**:
 
-If important covariates remain imbalanced within ALBI, try ONE prespecified propensity-model extension:
+| Agent | Patients |
+| --- | --- |
+| atezolizumab | 159 |
+| bevacizumab | 158 |
+| nivolumab | 156 |
+| ipilimumab | 149 |
+| doxorubicin | 119 |
+| durvalumab | 95 |
+| tremelimumab | 89 |
+| oxaliplatin | 14 |
+| gemcitabine | 14 |
+| cisplatin | 13 |
+| fluorouracil | 12 |
+| pembrolizumab | 9 |
+| lenvatinib | 2 |
+| ramucirumab | 2 |
+| cabozantinib | 1 |
 
-include interactions between continuous ALBI and the strongest treatment-selection variables, prioritizing:
+**Top 5 same-day regimen combinations**:
 
-- ALBI × ascites
-- ALBI × portal hypertension/varices
-- ALBI × bleeding history
+| Combination | Admin-days |
+| --- | --- |
+| atezolizumab (mono) | 3,744 |
+| nivolumab (mono) | 2,938 |
+| bevacizumab (mono) | 2,802 |
+| durvalumab (mono) | 1,266 |
+| ipilimumab (mono) | 1,001 |
 
-Do not use automated interaction selection.
+Note: atezolizumab+bevacizumab same-day = 99 admin-days (most given sequentially same visit); ipilimumab+nivolumab same-day = 14 admin-days.
 
-Reassess:
-- global balance
-- within-ALBI balance
-- ESS
+---
 
-Do not keep adding terms merely to chase balance.
+### B3 — Mortality & Follow-Up
 
-## A4 — Final original-project feasibility assessment
+**Death data**: 341/387 matched in epic_patient. 191 with death_date, 194 with pat_status=Deceased.
 
-Classify the Atezo/Bev versus STRIDE ALBI treatment-effect-modification project as:
+**Follow-up (days from index to last encounter)**:
 
-- STRONG
-- FEASIBLE BUT CONSTRAINED
-- EXPLORATORY ONLY
-- NOT DEFENSIBLE
+| Regimen | N | Median | IQR | >=365d | >=180d |
+| --- | --- | --- | --- | --- | --- |
+| ATEZO_BEV | 151 | 800d | [510, 1188] | 130 (86%) | 142 (94%) |
+| STRIDE | 87 | 479d | [255, 860] | 52 (60%) | 71 (82%) |
+| NIVO_IPI | 149 | 753d | [315, 1325] | 108 (72%) | 128 (86%) |
 
-Base this only on:
-- sample size
-- positivity
-- overall balance
-- within-ALBI balance
-- missing confounders
+**Encounters per patient**: median=450, IQR=[238, 740], max=3,127
 
-Do not use outcomes.
+**Imaging follow-up**: 338/387 (87%) with abdomen/liver imaging; median 13 studies per patient, IQR=[7, 21]
 
-Print the exact reason.
+---
 
-# ============================================================
-# TRACK B — BUILD A BROAD HCC DATA-RICHNESS MAP
-# ============================================================
+### B4 — Longitudinal ALBI Density
 
-The purpose of this track is to answer:
+19,817 lab rows (albumin=16,697, bilirubin=3,120). 2,829 same-day albumin+bilirubin pairs across 304 patients.
 
-> “What HCC research questions is REACH naturally best suited to answer?”
+**ALBI density by time window (all broad HCC, N=387)**:
 
-Do not restrict this scan to the 147 Atezo/Bev/STRIDE analytic patients.
+| Window | Patients | % | Median per pt |
+| --- | --- | --- | --- |
+| Baseline [-90, 0] | 216 | 56% | 1 |
+| Month 1 [1, 30] | 176 | 45% | 1 |
+| Month 2-3 [31, 90] | 167 | 43% | 2 |
+| Month 4-6 [91, 180] | 133 | 34% | 3 |
+| Month 7-12 [181, 365] | 115 | 30% | 4 |
+| Year 2 [366, 730] | 87 | 22% | 4 |
 
-## B1 — Define a broader high-confidence HCC universe from 2016 onward
+**Baseline ALBI by regimen [-90, 0]**:
 
-Construct a feasibility-level HCC universe using the multi-source phenotype work already validated.
+| Regimen | Patients | % |
+| --- | --- | --- |
+| ATEZO_BEV | 126/151 | 83% |
+| STRIDE | 38/87 | 44% |
+| NIVO_IPI | 93/149 | 62% |
 
-Create two populations:
+---
 
-### Broad HCC universe
-Adult patient with HCC evidence from ANY strong source:
-- C22.0 in encounter diagnoses
-- C22.0 in billing diagnoses
-- C22.0 in problem list
-- explicit HCC Beacon treatment plan/order
-- other independently validated HCC-specific evidence
+### B5 — Hepatic Decompensation Endpoints
 
-### High-confidence HCC universe
-Require either:
-- explicit HCC Beacon treatment plan/order,
-OR
-- HCC evidence from at least 2 independent structured sources.
+1,493 decompensation dx rows across 140 patients (36% of broad HCC).
 
-Exclude patients whose evidence clearly supports another primary malignancy instead of HCC.
+| Category | Dx Rows | Patients |
+| --- | --- | --- |
+| ascites | 479 | 74 |
+| esoph_varices | 356 | 71 |
+| portal_htn | 341 | 43 |
+| other_liver_failure | 183 | 18 |
+| hepatic_failure | 65 | 20 |
+| encephalopathy | 46 | 19 |
+| sbp | 20 | 10 |
+| hepatorenal | 3 | 2 |
 
-Do not require systemic treatment.
+---
 
-Report:
-- broad HCC N
-- high-confidence HCC N
-- number with cirrhosis
-- number with any systemic HCC treatment
-- number with any liver-directed HCC treatment
-- number with both
+### B6 — Second-Line Therapy
 
-Do not use apparent calendar era except to enforce the 2016-onward data floor.
+| 1L Regimen | Patients with 2L | Total | Rate |
+| --- | --- | --- | --- |
+| ATEZO_BEV | 62 | 151 | 41% |
+| STRIDE | 19 | 87 | 22% |
+| NIVO_IPI | 60 | 149 | 40% |
 
-# ============================================================
-# B2 — SYSTEMIC THERAPY LANDSCAPE
-# ============================================================
+**After AB**: nivolumab (43), ipilimumab (43), doxorubicin (24), gemcitabine (7), oxaliplatin (6)
 
-Across the high-confidence HCC universe, identify unique patients ever receiving HCC-directed systemic therapy.
+**After STRIDE**: doxorubicin (16), atezolizumab (2), bevacizumab (2), nivolumab (2), cisplatin (1)
 
-Use:
-- med_admin
-- med_orders
-- Beacon treatment plans/orders
+**After NI**: bevacizumab (39), atezolizumab (37), doxorubicin (21), gemcitabine (6), oxaliplatin (4)
 
-Report unique HCC-linked patients for:
+---
 
-- sorafenib
-- lenvatinib
-- atezolizumab/bevacizumab
-- STRIDE
-- nivolumab/ipilimumab
-- nivolumab monotherapy
-- pembrolizumab
-- regorafenib
-- cabozantinib
-- ramucirumab
-- any other HCC-linked systemic agent discovered
+### B7 — Portal HTN / Bleeding
 
-For every drug/regimen print:
+729 dx rows across 99 patients.
 
-- unique patients
-- number with high-confidence HCC indication
-- number with baseline ALBI
-- number with death/follow-up data
-- number with ≥180 days observable follow-up or death before 180 days
+| Category | Dx Rows | Patients |
+| --- | --- | --- |
+| portal_htn | 341 | 43 |
+| variceal_bleed | 221 | 48 |
+| gi_hemorrhage | 138 | 52 |
+| gastric_varices | 29 | 5 |
 
-Do NOT compare outcomes between drugs.
+---
 
-Also report the 15 most common observed HCC systemic treatment SEQUENCES, for example:
+### B8 — Bevacizumab Toxicity Signals
 
-- Atezo/Bev → lenvatinib
-- Atezo/Bev → cabozantinib
-- sorafenib → nivo/ipi
-- etc.
+1,865 dx rows across 177 patients.
 
-For each sequence give N only.
+| Category | Dx Rows | Patients |
+| --- | --- | --- |
+| hypertension | 1,247 | 111 |
+| AKI | 211 | 73 |
+| VTE | 119 | 45 |
+| proteinuria | 111 | 22 |
+| stroke | 114 | 9 |
+| GI_ulcer_perf | 25 | 10 |
+| MI | 23 | 9 |
+| intracranial_bleed | 15 | 8 |
 
-# ============================================================
-# B3 — MORTALITY / FOLLOW-UP DATA READINESS
-# ============================================================
+---
 
-Across:
-1. high-confidence HCC overall,
-2. systemic-therapy-treated HCC,
-3. first-line modern ICI-treated HCC,
+### B9 — Immune-Related Hepatitis
 
-report:
+31,948 AST/ALT lab rows across 340 patients.
 
-- N with authoritative death data available
-- total observed deaths
-- median follow-up duration
-- N with ≥90 days follow-up or earlier death
-- N with ≥180 days follow-up or earlier death
-- N with ≥365 days follow-up or earlier death
+| Threshold | Patients |
+| --- | --- |
+| ALT/AST > 3x ULN (>120) | 263 |
+| ALT/AST > 5x ULN (>200) | 224 |
+| Hepatitis ICD codes (K75.4, K75.9, drug-induced) | 23 |
 
-Do NOT compare mortality rates between treatments.
+---
 
-The goal is only endpoint feasibility.
+### B10 — AFP
 
-# ============================================================
-# B4 — LONGITUDINAL ALBI DATA DENSITY
-# ============================================================
+5,246 AFP lab rows across 284 patients (73%).
 
-This is a major priority.
+| Window | Patients | % of 387 |
+| --- | --- | --- |
+| Baseline [-90, 0] | 267 | 69% |
+| Month 1-3 | 239 | 62% |
+| Month 4-6 | 180 | 47% |
+| Month 7-12 | 147 | 38% |
 
-For systemic-therapy-treated HCC patients with baseline ALBI, calculate whether another valid ALBI is available in these within-patient windows:
+Baseline AFP: median=228.6, IQR=[9.2, 3826.4]; >=400: 119 (45%)
 
-- baseline: −14 to 0 days
-- week 3: days 14–35
-- week 6: days 36–56
-- week 12: days 70–98
-- week 24: days 140–196
+---
 
-Report overall and by major regimen:
+### B11 — Locoregional Therapy
 
-- N with baseline ALBI
-- N and % with week-3 ALBI
-- N and % with week-6 ALBI
-- N and % with week-12 ALBI
-- N and % with week-24 ALBI
-- N with baseline + ≥2 post-index ALBI measurements
-- N with baseline + ≥3 post-index ALBI measurements
-- median number of valid ALBI measurements per patient
-- median spacing between ALBI measurements
+936 procedure rows across 167 patients (43% of broad HCC).
 
-Also report longitudinal availability of the individual components:
-- albumin
-- bilirubin
-- INR
-- sodium
-- creatinine
-- platelets
+| Timing | Patients |
+| --- | --- |
+| Pre-index locoregional | 133 |
+| Post-index locoregional | 90 |
 
-Do not model trajectories yet.
+---
 
-This section should tell us whether a dynamic-ALBI project is highly feasible.
+### B12 — Treatment Persistence
 
-# ============================================================
-# B5 — HEPATIC DECOMPENSATION ENDPOINT READINESS
-# ============================================================
+| Regimen | Key Agent | Patients | Median Admins | Median Duration |
+| --- | --- | --- | --- | --- |
+| ATEZO_BEV | atezolizumab | 151 | 18 [8, 41] | 126d [42, 286] |
+| STRIDE | durvalumab | 87 | 6 [3, 17] | 49d [0, 202] |
+| NIVO_IPI | nivolumab | 149 | 12 [6, 28] | 83d [21, 318] |
 
-Using structured diagnoses/procedures, construct feasible incident post-index endpoints for systemic-therapy-treated HCC.
+---
 
-Components:
+### B13 — Hospitalizations
 
-- new/worsening ascites
-- paracentesis
-- hepatic encephalopathy
-- variceal bleeding
-- spontaneous bacterial peritonitis
-- hepatorenal syndrome
-- decompensated-cirrhosis/liver-failure hospitalization
+17,344 hospital encounters across 341 patients. Median 38 hospitalizations per patient [19, 69].
 
-For each component report:
+---
 
-- baseline prevalence
-- number of patients with a NEW post-index event
-- events within 90 days
-- events within 180 days
-- events within 365 days
-- number with sufficient follow-up to assess the interval
+### B14 — Data Completeness Matrix
 
-Also report a transparent composite:
+| Domain | Available | % | Source |
+| --- | --- | --- | --- |
+| demographics | 387 | 100% | epic_patient |
+| albi_baseline | 349 | 90% | lab_results |
+| mortality_status | 341 | 88% | epic_patient.death_date |
+| drug_admin | 341 | 88% | med_admin |
+| albi_longitudinal | 304 | 79% | lab_results pairs |
+| encounter_data | 341 | 88% | epic_all_encounters |
+| imaging | 338 | 87% | image_procedures |
+| afp | 284 | 73% | lab_results |
+| ecog | 15 | 4% | flowsheet_data |
+| child_pugh | 0 | 0% | NOT RECONSTRUCTIBLE |
 
-`incident_hepatic_decompensation`
+---
 
-Do NOT compare event rates between treatments.
+### B15 — Data Readiness Scores (15 projects)
 
-Report event counts overall and descriptive counts by major regimen solely for feasibility/power planning.
+| Score | Project |
+| --- | --- |
+| 7/10 | ALBI trajectory under IO (single-arm) |
+| 7/10 | Hepatic decompensation incidence under IO |
+| 7/10 | Treatment persistence/duration by regimen |
+| 6/10 | irAE hepatitis incidence + risk factors |
+| 6/10 | Second-line therapy patterns after 1L IO |
+| 6/10 | Locoregional + systemic sequencing |
+| 6/10 | Hospitalization burden under IO |
+| 5/10 | Bev toxicity profile in HCC |
+| 5/10 | OS by ALBI grade (prognosis) |
+| 5/10 | Etiology-specific outcomes (HCV/HBV/MASLD) |
+| 4/10 | Portal HTN/bleeding under bev-containing regimens |
+| 4/10 | AFP kinetics as response biomarker |
+| 3/10 | Calendar-era trends in 1L IO adoption |
+| 2/10 | AB vs STRIDE ALBI treatment selection |
+| 1/10 | Three-arm AB vs STRIDE vs Nivo/Ipi |
 
-No P-values.
-No HRs.
-No statements about which treatment is better.
+---
 
-# ============================================================
-# B6 — SECOND-LINE / LOSS-OF-TREATMENT-OPTIONALITY READINESS
-# ============================================================
+### Persisted Tables
 
-For patients starting a high-confidence first-line HCC systemic regimen:
-
-identify subsequent systemic treatment.
-
-Carefully distinguish:
-- another administration/cycle of the same regimen
-- maintenance
-- true regimen switch / new systemic line
-
-Use Beacon plan changes plus medication changes where possible.
-
-Report:
-
-- total first-line HCC N
-- N with documented treatment after first line
-- N with a clear second-line regimen
-- N dying before observed second-line therapy
-- N with ≥90 days follow-up after first-line cessation
-- N with baseline ALBI
-- N with week-6 ALBI
-- N with week-12 ALBI
-
-List the most common second-line drugs/regimens and N.
-
-For patients receiving:
-- Atezo/Bev first line
-- STRIDE first line
-
-report second-line regimen counts separately.
-
-No comparative outcomes.
-
-This should tell us whether the project:
-
-> “Does early ALBI deterioration predict loss of access to second-line therapy?”
-
-has enough data.
-
-# ============================================================
-# B7 — PORTAL HYPERTENSION / BLEEDING DATA READINESS
-# ============================================================
-
-Among high-confidence HCC patients, and specifically among Atezo/Bev recipients, report structured availability/counts for:
-
-BASELINE:
-- portal hypertension
-- esophageal/gastric varices
-- prior variceal hemorrhage
-- ascites
-- EGD within 6 months
-- EGD within 12 months
-- variceal banding
-- NSBB use
-- anticoagulation
-- antiplatelet therapy
-- platelet count
-
-POST-TREATMENT:
-- GI hemorrhage
-- variceal hemorrhage
-- hospitalization for bleeding
-- transfusion if reliably structured
-
-Report N/event counts and follow-up availability.
-
-Do not estimate whether Atezo/Bev causes bleeding.
-
-This should tell us whether:
-- portal-hypertension treatment-selection studies,
-- bleeding-risk studies,
-- or EGD-selection studies
-are data-rich.
-
-# ============================================================
-# B8 — BEVACIZUMAB TOXICITY DATA READINESS
-# ============================================================
-
-Among Atezo/Bev-treated HCC patients, determine whether REACH can support projects involving bevacizumab toxicity.
-
-Assess availability of:
-
-### Blood pressure
-Search:
-- vitals
-- flowsheets
-- encounter measurements
-
-Report:
-- N with baseline BP
-- N with serial BP during treatment
-- median number of BP measurements
-
-### Proteinuria
-Search structured labs for:
-- urine protein
-- urine protein/creatinine ratio
-- urinalysis protein
-- 24-hour urine protein if present
-
-Report:
-- exact component names
-- N with baseline measurement
-- N with serial measurement during therapy
-- N with clearly abnormal proteinuria where interpretable
-
-### Treatment modification
-Determine whether administration records/Beacon can identify:
-- bevacizumab holds
-- skipped bevacizumab while atezolizumab continues
-- permanent bevacizumab discontinuation
-- subsequent atezolizumab monotherapy
-
-Report counts only.
-
-This should tell us whether a:
-> “toxicity → bevacizumab interruption → treatment persistence”
-project is feasible.
-
-# ============================================================
-# B9 — IMMUNE-RELATED HEPATITIS / LIVER-INJURY READINESS
-# ============================================================
-
-Among ICI-treated HCC patients, assess structured feasibility for an immune-mediated hepatitis project.
-
-Report availability of serial:
-
-- AST
-- ALT
-- bilirubin
-- alkaline phosphatase
-- INR
-
-Identify potential post-treatment liver-injury episodes using a broad STRUCTURED screening phenotype only.
-
-For feasibility, count patients with:
-- ALT/AST ≥3× ULN where ULN is available
-- ALT/AST ≥5× ULN
-- bilirubin ≥2× ULN
-- systemic corticosteroid administration after such an event
-- mycophenolate use after such an event
-
-Do NOT label these as confirmed immune hepatitis.
-
-Call them:
-`candidate_liver_injury_events`
-
-Report counts only.
-
-This tells us whether manual/NLP adjudication of ICI hepatitis would be worth doing.
-
-# ============================================================
-# B10 — AFP DATA READINESS
-# ============================================================
-
-AFP was approximately 80% missing in the current comparative cohort.
-
-Quantify this more comprehensively.
-
-Across high-confidence HCC:
-- N ever with AFP
-- N with AFP within 30 days before systemic therapy
-- N with AFP within 14 days before treatment
-- N with post-treatment AFP at weeks 3, 6, 12
-- N with paired baseline + post-treatment AFP
-
-Do this overall and by major systemic regimen.
-
-Do not model AFP outcomes.
-
-Determine whether AFP kinetics are:
-- DATA-RICH
-- MODERATE
-- TOO SPARSE
-
-# ============================================================
-# B11 — LOCREGIONAL THERAPY DATA READINESS
-# ============================================================
-
-The prior v6 analysis had a likely bug where prior liver-directed therapy was zero.
-
-Repair and validate this phenotype using:
-
-- hosp_billing_px
-- profee_billing_px
-- image_procedures
-- epic_surgeries
-- Beacon if applicable
-
-Enumerate exact codes/names found for:
-
-- TACE
-- bland embolization
-- Y90/TARE
-- RFA
-- microwave ablation
-- SBRT/liver-directed radiation
-- hepatic resection
-
-For the high-confidence HCC universe report:
-
-- patients with ≥1 TACE
-- ≥2 TACEs
-- ≥3 TACEs
-- Y90
-- ablation
-- resection
-- radiation
-
-For TACE specifically report:
-
-- N with ALBI within 30 days before TACE
-- N with ALBI 14–60 days after TACE
-- N with pre/post ALBI pair
-- N receiving another TACE after ALBI deterioration
-- N switching to systemic therapy after TACE
-- N with ≥2 sequential TACE episodes and serial ALBI
-
-Do NOT compare outcomes.
-
-This should tell us whether:
-> “When should we stop repeat TACE and switch to systemic therapy?”
-is feasible.
-
-# ============================================================
-# B12 — TREATMENT PERSISTENCE / DISCONTINUATION DATA READINESS
-# ============================================================
-
-For each major systemic regimen determine whether structured data can reliably identify:
-
-- first administration
-- expected subsequent cycle
-- last administration
-- gaps/delays
-- regimen switch
-- discontinuation
-
-Report by regimen:
-
-- N
-- median number of administrations
-- N with ≥2 cycles
-- ≥3 cycles
-- ≥6 cycles where appropriate
-- N with clearly observed next systemic regimen
-
-Do not infer reason for discontinuation.
-
-Separately report how often Beacon `plan_status`, treatment-plan fields, or medication-order status appear capable of distinguishing:
-- completed
-- discontinued
-- held
-- progression-related stop
-- toxicity-related stop
-
-If reason is not structured, say so.
-
-This determines whether treatment persistence can be studied without NLP.
-
-# ============================================================
-# B13 — HOSPITALIZATION / ACUTE-CARE DATA READINESS
-# ============================================================
-
-Among systemic-therapy-treated HCC patients report:
-
-- N hospitalized within 30 days of treatment initiation
-- 90 days
-- 180 days
-- N with ED visit within those windows
-- ICU identification if straightforward
-- hospital death availability
-
-Counts only.
-
-Also assess whether hospitalization diagnoses are rich enough to classify broad cause categories structurally:
-- hepatic decompensation
-- infection
-- bleeding
-- thromboembolism
-- treatment toxicity
-- progression/cancer-related
-- other
-
-Do not build a complex classification model now.
-
-# ============================================================
-# B14 — DATA COMPLETENESS / RICHNESS MATRIX
-# ============================================================
-
-Create a summary table where each ROW is a potential project/domain and columns include:
-
-- eligible N
-- exposure ascertainment quality
-- outcome/event N
-- baseline covariate completeness
-- longitudinal measurement density
-- need for NLP/manual review
-- date-shift dependence
-- phenotype complexity
-- approximate coding complexity
-
-Use objective categories:
-
-### Data availability
-- EXCELLENT
-- GOOD
-- MODERATE
-- POOR
-
-### Coding complexity
-- LOW
-- MODERATE
-- HIGH
-
-### NLP/manual abstraction
-- NONE
-- OPTIONAL
-- REQUIRED
-
-### Date-shift dependence
-- NONE
-- LOW
-- HIGH
-
-Include at minimum these candidate projects:
-
-1. Dynamic ALBI → hepatic decompensation
-2. Dynamic ALBI → receipt of second-line therapy
-3. Baseline ALBI → early treatment failure
-4. Atezo/Bev vs STRIDE comparative effectiveness / ALBI effect modification
-5. Portal hypertension / bleeding among Atezo/Bev patients
-6. EGD/variceal-screening risk stratification before Atezo/Bev
-7. Hepatic-decompensation-free survival after systemic therapy
-8. Second-line treatment patterns after Atezo/Bev
-9. Second-line treatment patterns after STRIDE
-10. TACE-associated ALBI deterioration → repeat TACE versus systemic switch
-11. AFP + ALBI kinetics
-12. Bevacizumab proteinuria/hypertension → treatment interruption
-13. Candidate ICI-associated liver injury / immune hepatitis
-14. Treatment persistence / early discontinuation
-15. Hospitalization after systemic HCC treatment
-
-Do NOT rank based on observed treatment outcomes.
-
-# ============================================================
-# B15 — OBJECTIVE “DATA-READINESS” SCORE
-# ============================================================
-
-For each candidate project create an objective readiness score from 0–10 using ONLY:
-
-- sample size
-- endpoint/event count
-- structured-data completeness
-- longitudinal density
-- phenotype reliability
-- coding simplicity
-- lack of dependence on unavailable variables
-- lack of dependence on true cross-patient calendar time
-
-Do NOT include:
-- novelty
-- clinical importance
-- observed effect size
-- statistical significance
-
-Show the individual components so the score is auditable.
-
-The goal is not to decide which project is scientifically best.
-
-The goal is to identify which questions REACH can answer most cleanly.
-
-# ============================================================
-# B16 — PRINT THE MOST USEFUL RAW NUMBERS FOR PROJECT SELECTION
-# ============================================================
-
-At the end, print a concise dashboard containing at minimum:
-
-### HCC universe
-- broad HCC N
-- high-confidence HCC N
-
-### Treatment
-- systemic-treated HCC N
-- first-line systemic HCC N
-- Atezo/Bev N
-- STRIDE N
-- Nivo/Ipi N
-- major TKI Ns
-
-### Longitudinal ALBI
-- baseline N
-- week 3 N
-- week 6 N
-- week 12 N
-- ≥3 ALBI timepoints N
-
-### Events
-- deaths
-- hepatic-decompensation events
-- variceal/GI bleeding events
-- hospitalizations
-- clear second-line therapy events
-- TACE counts
-- repeat-TACE counts
-
-### Other biomarkers
-- baseline AFP N
-- paired AFP N
-- serial proteinuria N
-- serial BP N
-
-### Treatment sequencing
-- five most common 1L→2L sequences with N
-
-### Major limitations
-- ECOG coverage
-- Child-Pugh availability
-- BCLC availability
-- AFP missingness
-- date-shift issue
-
-# ============================================================
-# B17 — GENERATE DATA-DRIVEN PROJECT OPPORTUNITIES
-# ============================================================
-
-Based ONLY on the readiness findings, return 5–10 candidate project QUESTIONS.
-
-For each provide:
-
-- exact research question
-- source population
-- exposure
-- outcome
-- approximate eligible N
-- approximate event N
-- key structured variables required
-- major confounders available
-- major confounders missing
-- whether NLP is needed
-- coding complexity
-- data-readiness score
-
-Do NOT claim novelty or publication impact.
-
-Do NOT claim a project is clinically superior.
-
-Do NOT use observed treatment-effect differences to generate the question.
-
-These are feasibility candidates only.
-
-# ============================================================
-# OUTPUTS
-# ============================================================
-
-Persist versioned summary tables in:
-
-`reach_users.xzhao81`
-
-Create:
-
-- `hcc_opportunity_scan_v7`
-- `hcc_longitudinal_coverage_v7`
-- `hcc_endpoint_feasibility_v7`
-- `hcc_treatment_sequences_v7`
-- `hcc_project_readiness_v7`
-- `hcc_balance_within_albi_v7`
-
-Do not overwrite prior tables.
-
-At the very end print TWO separate conclusions:
-
-## Conclusion A — Original ALBI treatment-selection project
-State whether it is:
-- STRONG
-- FEASIBLE BUT CONSTRAINED
-- EXPLORATORY ONLY
-- NOT DEFENSIBLE
-
-and explain why based only on design/overlap/balance.
-
-## Conclusion B — REACH HCC opportunity landscape
-List the 5 projects with the strongest DATA READINESS and show the decisive numbers supporting each.
-
-Do not look at comparative treatment effects.
-
-STOP THERE.
+* reach_users.xzhao81.hcc_balance_within_albi_v7 — 22 rows
+* reach_users.xzhao81.hcc_data_readiness_v7 — 15 rows (project readiness scores)
+* reach_users.xzhao81.hcc_completeness_v7 — 10 rows (domain completeness)
