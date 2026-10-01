@@ -1,312 +1,853 @@
-%md
-# HCC v8 Complete Cohort Intelligence Report
-
-*Generated from all 22 validation parts. All numbers are validated counts from REACH de-identified data (2016-present).*
-
----
-
-## 1. HCC Universe
-
-| Metric | N | % of broad |
-|---|---|---|
-| **Broad HCC** (>=1 diagnostic source) | **3,999** | 100% |
-| High-confidence HCC (Beacon OR >=2 sources) | **2,544** | 63.6% |
-| Encounter dx (C22.0) | 3,359 | 84.0% |
-| Hospital billing dx | 2,739 | 68.5% |
-| Problem list | 1,658 | 41.5% |
-| Beacon treatment plan | 544 | 13.6% |
-| Linked to epic_patient | 3,999 | **100%** |
-| Deceased (death_date) | 1,633 | 40.8% |
-| pat_status=Deceased (no death_date) | 57 | 1.4% |
-
----
-
-## 2. Systemic Therapy Landscape
-
-### 2A. Per-Drug Patient Counts (med_admin \| med_orders \| union)
-
-| Drug | med_admin | med_orders | Union | High-conf HCC |
-|---|---|---|---|---|
-| **nivolumab** | 1 | 321 | **321** | 303 |
-| **bevacizumab** | 10 | 182 | **182** | 172 |
-| **atezolizumab** | 0 | 176 | **176** | 168 |
-| **ipilimumab** | 0 | 167 | **167** | 161 |
-| **lenvatinib** | 9 | 165 | **165** | 159 |
-| **durvalumab** | 0 | 152 | **152** | 132 |
-| **tremelimumab** | 0 | 90 | **90** | 89 |
-| **sorafenib** | 9 | 90 | **90** | 81 |
-| **pembrolizumab** | 1 | 79 | **79** | 65 |
-| **cabozantinib** | 3 | 76 | **76** | 72 |
-| **ramucirumab** | 0 | 13 | **13** | 11 |
-| **regorafenib** | 0 | 11 | **11** | 9 |
-
-**Critical finding**: `med_admin` has near-zero IV drug records; `med_orders` is the primary data source for all drugs.
-
-### 2B. Combination Regimen Counts (Beacon + med_orders union)
-
-| Regimen | Beacon plans | Both drugs in med_orders | **Union** | v4 cohort |
-|---|---|---|---|---|
-| AB (atezo+bev) | 171 | 154 | **184** | 167 |
-| STRIDE (treme+durva) | 85 | 90 | **104** | 104 |
-| Nivo/Ipi | 137 | 167 | **181** | 978\* |
-
-\*v4 NI included all cancers, not HCC-specific.
-
-### 2C. Administration Cadence (validated against clinical expectations)
-
-| Drug | Patients | Admin episodes | Median interval | Expected |
-|---|---|---|---|---|
-| atezolizumab | 176 | 1,696 | 21.0d | q3wk \~21d |
-| bevacizumab | 182 | 1,424 | 21.0d | q3wk \~21d |
-| durvalumab | 152 | 747 | 28.0d | q4wk \~28d |
-| tremelimumab | 90 | 95 | 280.0d | single-dose |
-| nivolumab | 321 | 2,364 | 27.0d | q4wk \~28d |
-| ipilimumab | 167 | 509 | 21.0d | q3wk |
-| pembrolizumab | 79 | 707 | 21.0d | q3wk \~21d |
-| sorafenib | 90 | 184 | 26.5d | oral refill |
-| lenvatinib | 165 | 306 | 37.0d | oral refill |
-| cabozantinib | 76 | 123 | 33.0d | oral refill |
-| ramucirumab | 13 | 58 | 14.0d | q2wk \~14d |
-| regorafenib | 11 | 15 | 33.0d | oral refill |
-
-All intervals match expected clinical dosing.
-
-### 2D. Cytotoxic Chemo Reclassification
-
-* 5,178 cytotoxic admin rows across 870 patients
-* **865 TACE-associated** (locoregional, not systemic)
-* **5 truly systemic** chemo patients
-* 2 uncertain route
-* v7's "119 systemic doxorubicin" was almost entirely TACE-associated
-
----
-
-## 3. Lines of Therapy
-
-| Metric | N |
-|---|---|
-| Classifiable 1L therapy | **538** |
-| >=2 lines | **88** |
-| >=3 lines | **13** |
-
-### 1L Distribution
-
-| 1L Regimen | N |
-|---|---|
-| AB | 149 |
-| Nivo_mono | 145 |
-| NI | 92 |
-| STRIDE | 78 |
-| Pembro | 42 |
-| Durva_mono | 24 |
-| Lenvatinib | 5 |
-| Ram | 2 |
-| Sorafenib | 1 |
+Use the currently attached REACH Small Compute.
 
-### Top 1L->2L Sequences
+Use the validated v8 outputs as the starting point:
 
-| Sequence | N |
-|---|---|
-| AB -> NI | **40** |
-| Nivo_mono -> AB | 10 |
-| Nivo_mono -> NI | 8 |
-| STRIDE -> AB | 7 |
-| AB -> STRIDE | 5 |
-| Pembro -> NI | 3 |
-| STRIDE -> Nivo_mono | 2 |
-| NI -> AB | 2 |
-| Lenvatinib -> AB | 2 |
+- `reach_users.xzhao81.hcc_universe_v8`
+- `reach_users.xzhao81.hcc_systemic_therapy_episodes_v8`
+- `reach_users.xzhao81.hcc_lines_of_therapy_v8`
+- `reach_users.xzhao81.hcc_locoregional_episodes_v8`
+- `reach_users.xzhao81.hcc_longitudinal_biomarkers_v8`
+- `reach_users.xzhao81.hcc_incident_endpoints_v8`
 
----
+The purpose of v9 is NOT to estimate treatment effects.
 
-## 4. Mortality & Follow-Up
+The purpose is to determine whether REACH contains a credible clinical-equipoise population for the question:
 
-| Regimen | N | Deaths | Median FU | IQR | >=1yr FU |
-|---|---|---|---|---|---|
-| AB | 184 | 109 (59%) | 328d | 238-417 | 1 |
-| STRIDE | 104 | 60 (58%) | 736d | 554-919 | 2 |
-| NI | 181 | 91 (50%) | 704d | 426-903 | 2 |
-| TKI | 297 | 190 (64%) | 987d | 371-1749 | 16 |
+> Among patients with HCC reassessed after TACE who remain reasonable candidates for either another TACE or systemic therapy, when should clinicians repeat TACE versus transition to systemic treatment?
 
-**Note**: FU is from first systemic to last encounter. AB has shorter FU (newer regimen); TKI has deepest FU (earlier era).
+A major secondary objective is to determine whether change in hepatic reserve after TACE, especially change in ALBI, could eventually be studied as a treatment-effect modifier.
 
----
+The validated v8 data showed approximately:
 
-## 5. ALBI Trajectory Coverage
+- 1,066 TACE patients
+- 2,533 TACE episodes
+- 866 patients with paired pre/post-TACE ALBI
+- 590 with repeat TACE plus serial ALBI
+- 86 with subsequent systemic treatment
+- 606 with an observable:
+  TACE → post-TACE ALBI → repeat TACE or systemic-treatment trajectory
 
-### 5A. Longitudinal ALBI (same-day albumin+bilirubin pairs)
+Radiology text is available and must now be incorporated into feasibility assessment.
 
-* Total paired lab rows: **171,436** across **3,599 patients** (90% of HCC universe)
+Do NOT perform:
+- survival comparisons
+- hazard ratios
+- treatment-effect estimates
+- outcome-based model selection
+- P-value fishing
 
-| Regimen | N | BL(-14d) | BL(-90d) | BL+wk3 | BL+wk6 | BL+wk12 | BL+wk24 | BL+>=2post | BL+>=3post |
-|---|---|---|---|---|---|---|---|---|---|
-| AB | 184 | 29 | 37 | 22 | 20 | 17 | 16 | 28 | 27 |
-| STRIDE | 104 | 9 | 15 | 6 | 2 | 3 | 3 | 8 | 8 |
-| NI | 181 | 41 | 52 | 37 | 30 | 26 | 34 | 41 | 40 |
-| TKI | 297 | 200 | 267 | 150 | 113 | 112 | 94 | 182 | 177 |
-| ALL_SYSTEMIC | 309 | 208 | 278 | 153 | 118 | 116 | 99 | 188 | 183 |
+Do NOT use apparent calendar year as a causal variable because cross-patient date shifting remains unresolved.
 
-**Key bottleneck**: STRIDE has only 9 patients with strict (-14d,0) baseline ALBI.
+Within-patient time intervals are acceptable.
 
-### 5B. AFP Coverage
+# ============================================================
+# PART 1 — REVALIDATE THE TACE EPISODE COHORT
+# ============================================================
 
-* AFP ever measured: **2,418 / 3,999** (60.5%)
-* 17,014 AFP lab rows
-* Primary LOINC: 53962-7 (16,598 of 17,014)
+Start from high-confidence adult HCC patients.
 
-| Regimen | N | BL(-30d) | BL(-14d) | wk3 | wk6 | wk12 |
-|---|---|---|---|---|---|---|
-| AB | 184 | 30 | 22 | 22 | 20 | 17 |
-| STRIDE | 104 | 10 | 6 | 5 | 3 | 4 |
-| NI | 181 | 36 | 29 | 31 | 24 | 20 |
-| TKI | 297 | 172 | 131 | 113 | 87 | 78 |
+Use `hcc_locoregional_episodes_v8` and source procedure tables to confirm unique TACE episodes.
 
-v5 reported \~80% AFP missing (narrow 147-pt cohort), v7 found 69% baseline (387 pts), v8 finds 60.5% across all 3,999.
+For each patient assign:
 
----
+- TACE episode number:
+  - TACE_1
+  - TACE_2
+  - TACE_3
+  - etc.
+- TACE date
+- procedure source
+- procedure name/code
+- conventional TACE vs DEB-TACE if distinguishable
 
-## 6. Locoregional Therapy
+Collapse duplicate billing/procedure rows representing the same TACE session.
 
-| Modality | Patients | Episodes | >=2 episodes | >=3 episodes |
-|---|---|---|---|---|
-| **TACE** | **1,066** | **2,533** | 644 | 345 |
-| Y90 | 130 | 161 | 29 | 2 |
-| Ablation | 285 | 420 | 102 | 33 |
-| Resection | 225 | 229 | 4 | 0 |
-| SBRT | 152 | 448 | 148 | 148 |
+Report:
 
-### TACE + ALBI Opportunity (Part 17)
+- unique TACE patients
+- unique TACE episodes
+- N with ≥2 episodes
+- N with ≥3 episodes
+- median interval between consecutive TACE episodes
 
-| Metric | N |
-|---|---|
-| Pre-TACE ALBI (-30d,0) | 1,001 |
-| Post-TACE ALBI (14-60d) | 891 |
-| **Paired pre+post ALBI** | **866** |
-| >=2 TACE + serial ALBI | 590 |
-| TACE -> subsequent systemic | 86 |
-| Full trajectory (TACE->ALBI->TACE2 or systemic) | **606** |
+Manually audit at least 20 randomly selected patients with multiple TACE episodes.
 
----
+# ============================================================
+# PART 2 — DEFINE POST-TACE REASSESSMENT IMAGING
+# ============================================================
 
-## 7. Hospitalizations (Deduplicated)
+Use `deid.derived.radiology_text` plus imaging procedure information.
 
-| Metric | Value |
-|---|---|
-| Patients with inpatient admissions | 3,713 |
-| Total unique admissions | 62,869 |
-| Median admissions/patient | **8** |
-| IQR | 3-20 |
-| Max | 228 |
+First inspect the exact schema of `radiology_text`.
 
-**v7 correction**: v7 reported median 38 "hospitalizations" — that counted encounter *rows*, not unique admissions.
+Determine:
 
----
+- patient join key
+- study date
+- modality
+- body region
+- procedure name
+- report text
+- impression text if separate
 
-## 8. Hepatic Decompensation (Incident, Post-Index, Systemic-Treated Only)
+For each TACE episode identify the FIRST qualifying liver-focused:
 
-| Component | Any dx (all HCC) | Prevalent | At-risk | New <=90d | <=180d | <=365d |
-|---|---|---|---|---|---|---|
-| Ascites | 782 | 33 | 33 | 16 | 21 | **27** |
-| Encephalopathy | 366 | 8 | 12 | 6 | 7 | **8** |
-| SBP | 64 | 0 | 2 | 0 | 0 | **1** |
-| Variceal hemorrhage | 114 | 6 | 3 | 0 | 1 | **1** |
-| Hepatorenal | 32 | 0 | 2 | 1 | 1 | **1** |
-| Liver failure | 253 | 5 | 6 | 4 | 4 | **4** |
-
----
-
-## 9. Bleeding/Portal HTN (AB/Bev Patients, N=182-184)
-
-| Endpoint | Any dx | Prevalent | At-risk | New <=90d | <=180d | <=365d |
-|---|---|---|---|---|---|---|
-| Portal HTN | 23 | 4 | 180 | 0 | 0 | 0 |
-| Varices | 48 | 9 | 175 | 0 | 0 | 2 |
-| GI hemorrhage | 29 | 5 | 179 | 0 | 2 | 2 |
-| Variceal bleed | 8 | 1 | 183 | 0 | 0 | 0 |
-
-**Very low incident bleeding post-AB start**. Most events are pre-existing.
-
----
-
-## 10. Bevacizumab Toxicity (Bev-Exposed HCC, N=182)
-
-| Toxicity | Any dx | Pre-existing | New post-bev |
-|---|---|---|---|
-| Hypertension | 78 | 22 | 7 |
-| Proteinuria | 47 | 6 | 5 |
-| AKI | 36 | 3 | 5 |
-| VTE | 36 | 5 | 6 |
-| Arterial thrombosis | 14 | 3 | 3 |
-
----
-
-## 11. Post-ICI Liver Injury (ICI-Treated HCC, N=469)
-
-Reference ULN from data: ALT=44, AST=39, Bilirubin=1.2
-
-| Marker | Threshold | Patients (post-ICI) |
-|---|---|---|
-| ALT | >=3x ULN | 38 (8.1%) |
-| ALT | >=5x ULN | 23 (4.9%) |
-| AST | >=3x ULN | 58 (12.4%) |
-| AST | >=5x ULN | 39 (8.3%) |
-| Bilirubin | >=2x ULN | 36 (7.7%) |
-
----
-
-## 12. Text Data Discovery
-
-| Table | Status |
-|---|---|
-| `deid.derived.radiology_text` | Exists |
-| `deid.derived.pathology_text` | Exists |
-| `deid.derived.ptnotes_text` | Exists |
-| `deid.derived.epic_notes_metadata` | Exists |
-| Liver CT/MRI procedures | 3,637 pts, 32,902 procs |
-
-No staging, tumor registry, or structured cancer staging tables found.
-
----
-
-## 13. Persisted v8 Output Tables
-
-| Table | Rows |
-|---|---|
-| `reach_users.xzhao81.hcc_universe_v8` | 3,999 |
-| `reach_users.xzhao81.hcc_systemic_therapy_episodes_v8` | 8,228 |
-| `reach_users.xzhao81.hcc_lines_of_therapy_v8` | 538 |
-| `reach_users.xzhao81.hcc_locoregional_episodes_v8` | 5,896 |
-| `reach_users.xzhao81.hcc_longitudinal_biomarkers_v8` | 188,450 |
-| `reach_users.xzhao81.hcc_incident_endpoints_v8` | 1,611 |
-| `reach_users.xzhao81.hcc_opportunity_validation_v8` | 10 |
-
----
-
-## 14. Research Opportunity Scores
-
-| Score | Project | Key Evidence | Limitation |
-|---|---|---|---|
-| **9/10** | TACE+ALBI trajectory | 866 paired pre/post, 590 serial+repeat | None — strongest project |
-| **8/10** | Radiology/pathology NLP staging | Free-text tables exist, 32K imaging procs | Requires NLP pipeline build |
-| **7/10** | AB vs NI comparative effectiveness | AB=184, NI=181, balanced; deaths AB=109, NI=91 | ALBI BL limited for STRIDE |
-| **7/10** | Post-ICI hepatotoxicity incidence | ICI=469; ALT>=3xULN=38 | Cross-sectional, no matched control |
-| **7/10** | TKI real-world outcomes | N=297, deaths=190, med_FU=987d | Mostly pre-ICI era |
-| **6/10** | AB vs STRIDE | AB=184, STRIDE=104 | STRIDE BL ALBI only n=9 |
-| **6/10** | TACE -> systemic transition | 86 pts full trajectory | Moderate N |
-| **5/10** | Lines of therapy sequencing | AB->NI=40 dominant | Small N for inference |
-| **5/10** | Decompensation safety endpoint | Ascites 27 at 1yr | Low event rates |
-| **4/10** | Bev bleeding risk | Bev=182, variceal=8 | Most bleeding prevalent, underpowered |
-
----
-
-## 15. Key Methodological Corrections from v7
-
-| Issue | v7 (wrong) | v8 (corrected) |
-|---|---|---|
-| HCC universe | 387 (treatment candidates only) | **3,999** (all REACH) |
-| TKI capture | sorafenib=2, lenvatinib=2, cabo=1 | sorafenib=**90**, lenvatinib=**165**, cabo=**76** |
-| "Systemic doxorubicin" | 119 patients | **5** truly systemic, 865 TACE-associated |
-| Hospitalizations | Median 38 (encounter rows) | Median **8** (unique admissions) |
-| IV drug source | med_admin (sparse) | **med_orders** (primary) |
-| Combo identification | Same-day med_admin pairs (0 results) | **Beacon plans + med_orders** |
-| AFP coverage | \~80% missing (v5) / 69% (v7) | **60.5%** ever measured (all HCC) |
+- CT abdomen/liver
+OR
+- MRI abdomen/liver
+
+occurring:
+
+**21–90 days after TACE**
+
+Also report availability in sensitivity windows:
+
+- 21–60 days
+- 21–120 days
+
+Create:
+
+- `reassessment_imaging_date`
+- `days_tace_to_imaging`
+- `imaging_modality`
+- `radiology_text_available_flag`
+
+Report by TACE episode number:
+
+- TACE_1 with reassessment imaging
+- TACE_2 with reassessment imaging
+- TACE_3 with reassessment imaging
+
+Do not perform NLP yet until the reports have been characterized.
+
+# ============================================================
+# PART 3 — CHARACTERIZE RADIOLOGY REPORT LANGUAGE
+# ============================================================
+
+On a representative sample of post-TACE reports, search for terminology including:
+
+### LI-RADS treatment-response language
+- LR-TR
+- viable
+- nonviable
+- equivocal
+- treatment response
+- treated observation
+- treatment cavity
+
+### Tumor viability / response language
+- residual
+- residual enhancement
+- arterial enhancement
+- washout
+- viable tumor
+- recurrent tumor
+- recurrence
+- progression
+- stable
+- decreased
+- increased
+- complete response
+- partial response
+
+### Tumor burden
+- lesion
+- mass
+- observation
+- cm
+- mm
+- multifocal
+- bilobar
+- innumerable
+- infiltrative
+
+### New disease
+- new lesion
+- new observation
+- new hepatic lesion
+
+### Vascular invasion
+- portal vein tumor thrombus
+- tumor thrombus
+- vascular invasion
+- portal vein invasion
+
+### Extrahepatic disease
+- metastatic
+- metastasis
+- lymphadenopathy
+- pulmonary metastasis
+- osseous metastasis
+
+Print approximately 30–50 representative report snippets containing these concepts.
+
+Do NOT expose unnecessary PHI or full raw reports.
+
+The goal is to determine whether reliable structured abstraction is feasible.
+
+# ============================================================
+# PART 4 — BUILD A FIRST-PASS RADIOLOGY PHENOTYPE
+# ============================================================
+
+Using transparent SQL/regex/rule-based methods, create preliminary variables:
+
+### Treatment response
+- `lrtr_viable_flag`
+- `lrtr_nonviable_flag`
+- `lrtr_equivocal_flag`
+- `residual_viable_disease_flag`
+
+### Progression
+- `new_intrahepatic_lesion_flag`
+- `radiographic_progression_flag`
+
+### Distribution
+- `multifocal_flag`
+- `bilobar_flag`
+- `infiltrative_flag`
+
+### Advanced disease
+- `portal_vein_tumor_thrombus_flag`
+- `macrovascular_invasion_flag`
+- `extrahepatic_spread_radiology_flag`
+
+### Tumor burden
+Attempt to extract:
+- largest viable lesion size
+- largest lesion size
+
+ONLY if the text patterns are sufficiently reliable.
+
+Do not force numeric extraction if reports are too heterogeneous.
+
+# ============================================================
+# PART 5 — MANUALLY VALIDATE THE RADIOLOGY PHENOTYPE
+# ============================================================
+
+Create a manual-validation sample of approximately 100 reports, enriched for:
+
+- apparent viable disease
+- apparent nonviable disease
+- progression
+- vascular invasion
+- extrahepatic spread
+- ambiguous cases
+
+For each display:
+
+- limited relevant report text
+- rule-based classification
+
+Assess whether the rule-based labels appear clinically sensible.
+
+Report approximate:
+- agreement
+- obvious false positives
+- obvious false negatives
+- ambiguous fraction
+
+Do not claim formal sensitivity/specificity unless true manual gold-standard adjudication is performed.
+
+If rule-based extraction is inadequate, state that radiology NLP/manual abstraction will be REQUIRED before causal analysis.
+
+# ============================================================
+# PART 6 — DEFINE THE POST-TACE DECISION TIME
+# ============================================================
+
+Primary candidate time zero:
+
+**date of first qualifying post-TACE reassessment CT/MRI occurring 21–90 days after TACE**
+
+This represents the clinical reassessment point.
+
+For each reassessment ensure the patient:
+
+- is alive
+- has not already started a new systemic HCC regimen before reassessment
+- has not undergone another TACE before reassessment
+- remains observable in REACH
+
+Create:
+
+`eligible_reassessment_flag`
+
+Do NOT require adequate hepatic reserve yet.
+
+# ============================================================
+# PART 7 — DEFINE MANAGEMENT AFTER REASSESSMENT
+# ============================================================
+
+Look forward from reassessment imaging.
+
+Within:
+- 30 days
+- 60 days
+- 90 days
+- 120 days
+
+identify the FIRST major HCC treatment strategy.
+
+Classify into mutually exclusive groups:
+
+1. `REPEAT_TACE`
+2. `START_SYSTEMIC`
+3. `Y90`
+4. `ABLATION`
+5. `RESECTION`
+6. `RADIATION`
+7. `OTHER_HCC_TREATMENT`
+8. `NO_OBSERVED_TREATMENT`
+
+For the primary future comparison, the candidate branches are:
+
+- REPEAT_TACE
+versus
+- START_SYSTEMIC
+
+Do not automatically discard the other branches.
+
+Report counts at each follow-up window.
+
+# ============================================================
+# PART 8 — VALIDATE SYSTEMIC SWITCHES FROM RAW SOURCES
+# ============================================================
+
+Do NOT rely blindly on the v8 lines-of-therapy table because some systemic line classification remained questionable.
+
+For every post-TACE systemic switch, verify directly using:
+
+- med_orders
+- Beacon treatment plans
+- treatment_plan_orders
+
+Identify the exact first systemic regimen.
+
+Include:
+
+- Atezo/Bev
+- STRIDE
+- Nivo/Ipi
+- lenvatinib
+- sorafenib
+- cabozantinib
+- pembrolizumab
+- nivolumab
+- other HCC-linked systemic therapy
+
+Report:
+
+- total systemic-switch patients
+- exact regimen distribution
+- confidence of systemic-treatment identification
+
+Do not count TACE-associated cytotoxic drugs as systemic treatment.
+
+# ============================================================
+# PART 9 — MAP MULTIPLE CLINICAL DECISION NODES
+# ============================================================
+
+Do NOT assume the first post-TACE reassessment is necessarily the best study point.
+
+Construct separate decision-node populations after:
+
+### Node A
+TACE #1 → reassessment
+
+### Node B
+TACE #2 → reassessment
+
+### Node C
+TACE #3 → reassessment
+
+For each node report:
+
+- total reassessed N
+- repeat-TACE N
+- systemic-switch N
+- other-treatment N
+- untreated/observation N
+- paired ALBI N
+- radiology-text N
+
+The goal is to determine which clinical decision node has the strongest combination of:
+
+- sample size
+- both management branches represented
+- tumor-response information
+- hepatic-reserve information
+
+# ============================================================
+# PART 10 — DEFINE PRE-TACE AND POST-TACE ALBI
+# ============================================================
+
+For every decision node calculate:
+
+### Pre-TACE ALBI
+Closest valid ALBI within:
+- 30 days before TACE through TACE day
+
+### Post-TACE ALBI
+Closest valid ALBI occurring:
+- 14–60 days after TACE
+
+BUT:
+
+the post-TACE ALBI must occur BEFORE:
+- repeat TACE
+- systemic-treatment initiation
+- another major liver-directed treatment
+
+Prefer ALBI closest to reassessment imaging.
+
+Create:
+
+- `pre_tace_albi`
+- `post_tace_albi`
+- `delta_albi`
+
+Define:
+
+`delta_albi = post_tace_albi - pre_tace_albi`
+
+Therefore:
+- positive delta = worsening hepatic reserve
+- negative delta = improving ALBI
+
+Also create:
+- pre/post mALBI
+- change in mALBI category
+
+Do NOT choose an ALBI-change threshold yet.
+
+# ============================================================
+# PART 11 — CHARACTERIZE THE ALBI CHANGE DISTRIBUTION
+# ============================================================
+
+For each decision node report:
+
+- N with paired ALBI
+- mean/SD
+- median/IQR
+- 5th/25th/50th/75th/95th percentiles
+
+Report counts with approximately:
+
+- ΔALBI ≤ −0.5
+- −0.5 to −0.25
+- −0.25 to +0.25
+- +0.25 to +0.5
+- > +0.5
+
+These categories are descriptive only.
+
+Do not use them for outcome modeling.
+
+# ============================================================
+# PART 12 — DEFINE TUMOR-RESPONSE PHENOTYPES
+# ============================================================
+
+At reassessment classify patients, when possible, into:
+
+1. `NO_VIABLE_DISEASE`
+2. `RESIDUAL_LIVER_CONFINED_DISEASE`
+3. `INTRAHEPATIC_PROGRESSION`
+4. `MACROVASCULAR_INVASION`
+5. `EXTRAHEPATIC_PROGRESSION`
+6. `UNCLASSIFIABLE`
+
+The most important potential clinical-equipoise group is:
+
+`RESIDUAL_LIVER_CONFINED_DISEASE`
+
+because these patients may plausibly be candidates for either:
+
+- another TACE
+or
+- systemic therapy
+
+Do not assume that every patient with progression is TACE eligible.
+
+# ============================================================
+# PART 13 — IDENTIFY STRONG NON-EQUIPOISE PATIENTS
+# ============================================================
+
+Create flags for characteristics that may strongly dictate treatment.
+
+### Strong reasons AGAINST repeat TACE
+Potentially:
+
+- major ALBI deterioration
+- severe hepatic decompensation
+- new/refractory ascites
+- encephalopathy
+- macrovascular invasion
+- extrahepatic spread
+- infiltrative tumor phenotype
+- major deterioration in bilirubin
+- poor renal function where relevant
+
+### Strong reasons FOR locoregional management / against systemic transition
+Examples may include:
+
+- completely liver-limited residual disease
+- very limited residual tumor burden
+
+Do NOT create exclusions yet.
+
+First measure their prevalence.
+
+# ============================================================
+# PART 14 — BUILD THE CANDIDATE CLINICAL-EQUIPOISE COHORT
+# ============================================================
+
+Construct several nested populations.
+
+### E0 — All post-TACE reassessments
+
+### E1 — Active residual/recurrent HCC
+Exclude clear complete/nonviable response.
+
+### E2 — Liver-confined active disease
+Exclude:
+- definite extrahepatic progression
+- definite major vascular invasion
+
+### E3 — Clinically plausible repeat-TACE/systemic candidates
+E2 plus no clearly catastrophic hepatic decompensation.
+
+Do NOT require Child-Pugh because it is not reliably available.
+
+Use objective structured hepatic reserve instead:
+- ALBI
+- bilirubin
+- INR
+- creatinine
+- sodium
+- ascites
+- encephalopathy
+
+### E4 — Treatment-decision cohort
+E3 restricted to patients who actually receive within 90 days:
+
+- repeat TACE
+OR
+- systemic therapy
+
+For each population report branch counts.
+
+# ============================================================
+# PART 15 — BASELINE VARIABLES AT THE DECISION NODE
+# ============================================================
+
+Measure variables strictly BEFORE the management decision.
+
+Include:
+
+### Patient
+- age
+- sex
+- race/ethnicity
+
+### Hepatic reserve
+- pre-TACE ALBI
+- post-TACE ALBI
+- ΔALBI
+- albumin
+- bilirubin
+- INR
+- creatinine
+- sodium
+- platelets
+- ascites
+- encephalopathy
+- prior decompensation
+
+### Tumor characteristics
+from radiology where reliable:
+- residual viable disease
+- lesion size
+- multifocal disease
+- bilobar disease
+- new lesions
+- macrovascular invasion
+- extrahepatic disease
+
+### Tumor marker
+- AFP nearest reassessment
+
+### Treatment history
+- TACE number
+- prior Y90
+- prior ablation
+- prior resection
+- prior radiation
+- prior systemic therapy
+
+### Utilization
+- inpatient admissions before reassessment
+- ED visits
+
+### Site
+- facility/department where appropriate
+
+Do not include anything measured after repeat TACE/systemic initiation.
+
+# ============================================================
+# PART 16 — DATA COMPLETENESS AT THE DECISION NODE
+# ============================================================
+
+For E4 report missingness separately in:
+
+- repeat-TACE
+- systemic-switch
+
+for every major candidate confounder.
+
+Classify:
+
+- <10% missing = EXCELLENT
+- 10–20% = GOOD
+- 20–40% = MODERATE
+- >40% = POOR
+
+Particularly report:
+
+- post-TACE ALBI
+- AFP
+- radiographic response
+- lesion burden
+- macrovascular invasion
+- extrahepatic spread
+
+# ============================================================
+# PART 17 — RAW CLINICAL EQUIPOISE / BALANCE ASSESSMENT
+# ============================================================
+
+Compare repeat-TACE versus systemic-switch patients in E4.
+
+Calculate raw standardized mean differences for all measured pretreatment variables.
+
+Do NOT fit outcome models.
+
+Report:
+
+- maximum |SMD|
+- number >0.10
+- number >0.20
+- variables most strongly determining treatment choice
+
+This tells us whether treatment selection is overwhelmingly deterministic.
+
+# ============================================================
+# PART 18 — PROPENSITY / COMMON-SUPPORT FEASIBILITY
+# ============================================================
+
+Fit an exploratory TREATMENT-ASSIGNMENT model only.
+
+Outcome:
+
+`SYSTEMIC_SWITCH = 1`
+`REPEAT_TACE = 0`
+
+Use a parsimonious clinically motivated set such as:
+
+- post-TACE ALBI
+- ΔALBI
+- age
+- AFP if usable
+- residual viable disease burden
+- multifocal/bilobar disease
+- vascular invasion
+- extrahepatic disease
+- ascites/decompensation
+- TACE episode number
+- prior locoregional treatment
+
+Do NOT use downstream outcomes.
+
+Assess:
+
+- propensity distribution
+- empirical common support
+- overlap-weight ESS
+- weighted SMDs
+
+Do NOT optimize AUC.
+
+The critical question is:
+
+> Are there genuinely similar patients who received each strategy?
+
+# ============================================================
+# PART 19 — ASSESS EQUIPOISE WITHIN ΔALBI
+# ============================================================
+
+Because ΔALBI may become the eventual treatment-effect modifier, examine whether both treatments are represented across the continuous ΔALBI distribution.
+
+Report treatment counts using descriptive bins such as:
+
+- ≤−0.5
+- −0.5 to −0.25
+- −0.25 to +0.25
+- +0.25 to +0.5
+- >+0.5
+
+Also use finer quantile-based bins if necessary.
+
+Within each reasonable ΔALBI region report:
+
+- repeat TACE N
+- systemic switch N
+- key covariate balance
+
+Do not fit a treatment × ΔALBI outcome model.
+
+The purpose is to determine whether such a model would eventually be identifiable.
+
+# ============================================================
+# PART 20 — COMPARE THE DIFFERENT DECISION NODES
+# ============================================================
+
+Create a decision-node feasibility table comparing:
+
+- after TACE #1
+- after TACE #2
+- after TACE #3
+
+Columns:
+
+- total reassessments
+- liver-confined active disease N
+- repeat-TACE N
+- systemic-switch N
+- paired ALBI %
+- radiology phenotype %
+- AFP %
+- common-support %
+- overlap-weight ESS
+- max weighted SMD
+- ΔALBI support
+- coding/NLP complexity
+
+Determine which node offers the strongest **clinical equipoise and data completeness**.
+
+Do not choose based on outcomes.
+
+# ============================================================
+# PART 21 — TEST ALTERNATIVE DEFINITIONS OF THE DECISION WINDOW
+# ============================================================
+
+Sensitivity only.
+
+Compare treatment classification within:
+
+- 60 days after reassessment
+- 90 days
+- 120 days
+
+Determine whether branch assignments are stable.
+
+Also quantify patients who receive:
+
+- repeat TACE first, then systemic therapy shortly thereafter
+- systemic first, then locoregional treatment
+
+Create an explicit rule for the FIRST post-reassessment strategy.
+
+# ============================================================
+# PART 22 — FINAL GO / NO-GO REPORT
+# ============================================================
+
+At the end answer these questions directly.
+
+1. How many patients have a first-TACE reassessment CT/MRI?
+2. How many have interpretable radiology text?
+3. How many have residual liver-confined active HCC?
+4. Among those, how many receive:
+   - repeat TACE
+   - systemic therapy?
+5. How many have paired pre/post-TACE ALBI before that decision?
+6. What is the distribution of ΔALBI?
+7. Are both strategies represented across the ΔALBI continuum?
+8. What are the strongest determinants of repeat TACE versus systemic switch?
+9. Is there adequate propensity/common support?
+10. Does overlap weighting achieve acceptable balance?
+11. Which decision node—after TACE #1, #2, or #3—has the strongest clinical equipoise?
+12. Is radiology-rule extraction adequate, or will formal NLP/manual adjudication be necessary?
+13. Is the eventual causal question:
+
+> “Repeat TACE versus systemic therapy after post-TACE reassessment”
+
+classified as:
+
+- STRONG
+- FEASIBLE BUT CONSTRAINED
+- EXPLORATORY ONLY
+- NOT DEFENSIBLE
+
+14. Is `ΔALBI × treatment` effect-modification analysis:
+
+- STRONG
+- FEASIBLE BUT CONSTRAINED
+- EXPLORATORY ONLY
+- NOT IDENTIFIABLE
+
+Do NOT look at mortality or comparative treatment outcomes to answer these questions.
+
+# ============================================================
+# SECONDARY OPPORTUNITY SCAN
+# ============================================================
+
+If repeat TACE versus systemic switch has poor equipoise, do not stop.
+
+Using the SAME post-TACE reassessment population, print counts for alternative genuine decision branches:
+
+- repeat TACE vs Y90
+- repeat TACE vs ablation
+- repeat TACE vs observation
+- systemic therapy vs observation
+
+For each report:
+
+- branch N
+- radiology completeness
+- ALBI completeness
+- rough common-support assessment
+
+This is feasibility only.
+
+Do not estimate outcomes.
+
+# ============================================================
+# OUTPUT TABLES
+# ============================================================
+
+Persist:
+
+- `hcc_tace_reassessment_v9`
+- `hcc_tace_radiology_phenotype_v9`
+- `hcc_tace_decision_nodes_v9`
+- `hcc_tace_equipoise_cohort_v9`
+- `hcc_tace_propensity_feasibility_v9`
+- `hcc_tace_albi_support_v9`
+
+Do not overwrite v8 or earlier tables.
+
+# ============================================================
+# COMPLETION REQUIREMENT
+# ============================================================
+
+Do not finish with a plan or ask whether I want you to continue.
+
+Execute and debug every part.
+
+At the end print:
+
+Part 1: COMPLETE
+...
+Part 22: COMPLETE
+
+For any failed part:
+`INCOMPLETE — [exact reason]`
+
+STOP before comparative outcomes.
