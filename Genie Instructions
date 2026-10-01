@@ -1,115 +1,718 @@
-*Used Memory, Manage Todo List, Read Asset By Id, Fetch Omitted Content*
+Use the currently attached REACH Small Compute.
 
-This is a massive but well-specified cohort adjudication rebuild. Let me create a new notebook for the v3 pipeline and start with schema discovery for the newly required tables.
+Use the persisted unified v4 tables, especially:
 
-*Used Select Tools, Create Asset*
+`reach_users.xzhao81.hcc_source_cohort_v4`
 
-Good — the new notebook is created. Now let me navigate to it with a detailed continue message describing the full task context so the notebook agent can execute the pipeline.
+For the PRIMARY comparative-effectiveness analysis, restrict to:
 
-*Used Open Asset*
+- Cohort 5 analytic ALBI cohort
+- `index_regimen IN ('ATEZO_BEV','STRIDE')`
 
-I've created HCC_Cohort_v3_Adjudication and navigated to it with the full 22-part specification translated into an executable 10-phase pipeline. The notebook agent will now build the complete v3 adjudication pipeline with:
+Expected approximate sample:
 
-**Key improvements over v1:**
-* Multi-source HCC evidence matrix (encounter_dx + billing + problem list + OMOP + Beacon + text)
-* Active competing-malignancy detection (NSCLC, CRC, cholangiocarcinoma, etc.)
-* Concurrent chemotherapy analysis to distinguish HCC from NSCLC indications
-* Dose-pattern analysis (treme 300mg HCC vs 75mg NSCLC)
-* 5-tier indication confidence (DEFINITE_HCC → NON_HCC)
-* Clinical trial identification via `protocol_is_research_yn`
-* Prior therapy from med_admin + med_orders + Beacon
-* Regulatory era flags (with DATE_VALIDITY_UNCONFIRMED caveat)
-* 5 cohort definitions (Cohort 0–4) without premature exclusion
-* Full audit tables for non-C22.0 and pre-approval candidates
+- Atezo/Bev: 90
+- STRIDE: 57
+- total: 147
 
-*Used Memory, Read Skill File*
+Do NOT include Nivo/Ipi in the primary propensity analysis because only 9 analytic-ready patients are available.
 
-Good, I have full context from v1. Let me begin building the v3 pipeline. I'll start by setting up the notebook title and Phase 0 schema discovery.
+Preserve Nivo/Ipi separately as an exploratory descriptive cohort.
 
-*Used Manage Todo List*
+Do NOT perform survival/outcome modeling yet.
 
-Now let me set up the notebook title and begin Phase 0:
+The goals are:
 
-*Used Edit Asset*
+1. construct a high-quality baseline confounder table,
+2. characterize why clinicians may have selected Atezo/Bev vs STRIDE,
+3. assess raw covariate balance,
+4. estimate propensity scores,
+5. determine whether sufficient clinical overlap/positivity exists for a credible comparative-effectiveness analysis.
 
-Now let me add Phase 0 — Schema Discovery:
+All covariates must be measured BEFORE the index treatment.
 
-*Used Edit Asset, Run Asset*
+---
 
-Phase 0 complete. Key new schemas discovered:
-- **hosp_billing_dx**: has `icd10_code`, `cancer_status`, `diagnosis_type` — excellent for billing-level HCC evidence
-- **problem_list**: has `icd10_code`, `problem_status`, `chronic_yn`, `noted_date` — persistent HCC diagnoses
-- **med_orders**: has `dose`, `unit`, `therapeutic_class`, `pharmaceutical_class` — critical for oral TKIs and dose extraction
-- **OMOP HCC**: concept_id **4101758** = Hepatocellular carcinoma (SNOMED)
-- No dedicated tumor registry table found
+# PART 1 — VERIFY PRIMARY ANALYTIC COHORT
 
-Now Phase 1 — Regimen Candidates:
+Start from Cohort 5 and confirm:
 
-*Used Edit Asset, Run Asset*
+- unique patient count
+- Atezo/Bev count
+- STRIDE count
+- baseline ALBI availability
+- no duplicated patients
+- one index treatment per patient
 
-Phase 1a done — 282K drug-date records materialised. Now Phase 1b — regimen pairing:
+Also preserve:
 
-*Used Edit Asset, Run Asset*
+- index_date
+- index_regimen
+- baseline_ALBI
+- mALBI grade
+- HCC indication confidence
+- regimen confidence
+- lookback duration
+- research-protocol flag
+- prior systemic HCC flag
 
-Phase 1 complete. Candidate counts match v1 exactly (167 AB + 104 STRIDE = 271). Critical tremelimumab dose finding: 76% single-dose (HCC-consistent), sig=300 dominant. Let me continue with Phase 2:
+Do not include research-protocol patients.
 
-*Used Manage Todo List, Edit Asset, Run Asset*
+---
 
-Phase 2 done in 55s. The HCC evidence matrix reveals **16 AB + 15 STRIDE with zero HCC sources** (consistent with v1). Most patients with HCC have 5-6 independent sources. OMOP join failed (person_id mapping issue — will note). Now Phase 3-4 — competing malignancies + Beacon adjudication:
+# PART 2 — DEMOGRAPHICS
 
-*Used Edit Asset, Run Asset*
+Extract baseline:
 
-Phases 3-5 delivered critical adjudication signals. **18 AB patients have NSCLC + concurrent platinum/taxane** (IMpower150 signal). **95/104 STRIDE patients have 300mg tremelimumab** (HCC-diagnostic). Now Phase 6 — the confidence scoring engine:
+- age at index
+- sex
+- race
+- ethnicity
 
-*Used Edit Asset, Run Asset*
+Use the validated patient table.
 
-The confidence scoring is remarkably clean: **238 DEFINITE_HCC** (identical to v1's C22.0 count), **2 PROBABLE_HCC** (new recoveries), **31 NON_HCC** (confirmed). Now Phases 7-9 — prior therapy, regulatory era, cohort tiers + ALBI:
+Do not use variables unavailable before index.
 
-*Used Edit Asset, Run Asset*
+---
 
-Cohort tiers built successfully. Now the final phase — audit tables and comprehensive QA report:
+# PART 3 — BASELINE LIVER FUNCTION
 
-*Used Manage Todo List, Edit Asset, Run Asset*
+Using structured labs, extract the closest valid measurement BEFORE index.
 
-The Python variable from an earlier cell may have been lost. Let me fix by re-reading from the materialised temp views:
+Preferred window:
+- day −30 through day 0
 
-*Used Edit Asset, Run Asset, Execute Code*
+Prioritize values closest to but before the first treatment administration.
 
-The compute is on a different notebook. Let me debug directly in the v3 notebook:
+Extract:
 
-*Used Edit Asset, Run Asset*
+- albumin
+- total bilirubin
+- INR
+- creatinine
+- sodium
+- AST
+- ALT
+- alkaline phosphatase
+- platelet count
+- hemoglobin
+- AFP
 
-The `v3_concurrent_chemo` view was overwritten — it has row-level data instead of aggregated flags. Let me fix Phase 10 to rebuild the aggregation inline, and remove the debug cell:
+Retain:
+- value
+- unit
+- measurement date
+- days from measurement to index
 
-*Used Edit Asset*
+Create:
 
-Now let me update the Phase 10 cell to rebuild the concurrent chemo aggregation:
+- AFP ≥400 ng/mL
+- thrombocytopenia categories if useful
 
-*Used Edit Asset, Run Asset*
+Do not substitute post-index labs.
 
-It ran successfully. Let me fetch the full QA report output:
+Keep baseline ALBI continuous as the primary hepatic-reserve variable.
 
-*Used Fetch Omitted Content*
+---
 
-The full QA report is complete with all 27 items. Let me now finalize the TODO and save results:
+# PART 4 — BASELINE HEPATIC DECOMPENSATION
 
-*Used Manage Todo List, Memory*
+Search structured diagnoses/procedures before index.
 
-The v3 adjudication pipeline is complete across 8 cells in HCC_Cohort_v3_Adjudication. Here's the summary:
+Create separate history flags for:
 
-**5 Cohort Tiers** — each successively more restrictive:
+- ascites
+- paracentesis
+- hepatic encephalopathy
+- spontaneous bacterial peritonitis
+- hepatorenal syndrome
+- decompensated cirrhosis
+- prior liver-failure hospitalization
 
-| Tier | AB | STRIDE | Total | Definition |
-| --- | --- | --- | --- | --- |
-| 0 | 167 | 104 | 271 | All regimen candidates |
-| 1 | 151 | 87 | 238 | HCC confirmed (DEFINITE/PROBABLE) |
-| 2 | 138 | 69 | 207 | DEFINITE + HIGH regimen confidence |
-| 3 | 108 | 63 | 171 | + first-line |
-| 4 | 103 | 58 | 161 | + routine care (no trial) |
+For each create:
 
-**Critical v3 improvements over v1:**
-* **6-source HCC evidence matrix** (encounter_dx, billing, problem_list, admit_dx, Beacon plan, Beacon orders) — most confirmed HCC patients have 5-6 concordant sources
-* **31 NON_HCC patients identified** — 19/31 have NSCLC diagnoses near index; 18/31 have explicit NSCLC Beacon plans (e.g., "PACLITAXEL, CARBOPLATIN WITH BEVACIZUMAB FOR LUNG CANCER")
-* **Concurrent platinum detected** — 14 AB patients received carboplatin/cisplatin within ±7 days (IMpower150 lung pattern)
-* **Tremelimumab dose adjudication** — 95/104 STRIDE candidates had 300mg (HCC-specific), zero had 75mg (NSCLC)
-* **Pre-approval audit**: all 5 pre-approval AB patients were NON_HCC (lung cancer); 12/18 pre-approval STRIDE were in HCC clinical trials
+- ever before index
+- within 180 days before index
+
+Do NOT infer absence of decompensation solely from missing SmartForm data.
+
+Diagnosis/procedure absence should be treated as no documented event, not proof that the condition was clinically absent.
+
+Create a summary:
+
+`prior_decompensation_flag`
+
+defined transparently from the component variables.
+
+---
+
+# PART 5 — PORTAL HYPERTENSION / BLEEDING RISK
+
+These are especially important confounders because they may drive avoidance of bevacizumab.
+
+Extract before index:
+
+- portal hypertension diagnosis
+- esophageal varices
+- gastric varices
+- history of variceal hemorrhage
+- other GI bleeding
+- EGD
+- variceal banding
+- paracentesis
+- splenomegaly if reliably coded
+- nonselective beta blocker use:
+  - carvedilol
+  - propranolol
+  - nadolol
+
+Create:
+
+- portal_hypertension_history_flag
+- varices_history_flag
+- prior_variceal_bleed_flag
+- major_GI_bleed_180d_flag
+- EGD_12mo_flag
+- variceal_banding_12mo_flag
+- NSBB_use_flag
+
+Keep the individual components in addition to composite variables.
+
+---
+
+# PART 6 — BEVACIZUMAB-SELECTION VARIABLES
+
+Extract baseline factors that might lead clinicians away from Atezo/Bev:
+
+### Cardiovascular
+- hypertension
+- number of antihypertensive medications
+- coronary artery disease
+- myocardial infarction
+- stroke/TIA
+- peripheral arterial disease
+- heart failure
+
+### Renal/proteinuria
+- CKD
+- baseline creatinine/eGFR if structured
+- proteinuria diagnosis
+- urine protein
+- urine protein/creatinine ratio when available
+
+### Thrombosis/bleeding
+- VTE
+- arterial thrombosis
+- therapeutic anticoagulation
+- antiplatelet therapy
+- major bleeding history
+
+Use a clinically reasonable pre-index window:
+- comorbidity history: ever or prior year
+- medications: active/recent within approximately 90 days
+- acute vascular events: prior 6–12 months
+
+Do not create an opaque aggregate score yet.
+
+---
+
+# PART 7 — IMMUNOTHERAPY / CTLA-4 SELECTION VARIABLES
+
+Extract factors that could influence avoidance of STRIDE or CTLA-4 therapy:
+
+- autoimmune disease
+- inflammatory bowel disease
+- rheumatoid arthritis
+- lupus
+- multiple sclerosis or other major neurologic autoimmune disease
+- autoimmune hepatitis
+- solid organ transplant
+- chronic systemic corticosteroid use
+- non-steroid immunosuppressive therapy
+
+Create:
+
+- autoimmune_disease_flag
+- solid_organ_transplant_flag
+- baseline_systemic_steroid_flag
+- baseline_immunosuppression_flag
+
+Use medication orders and administrations as appropriate.
+
+---
+
+# PART 8 — HCC DISEASE BURDEN / PROGNOSTIC VARIABLES
+
+Using structured data only for now, extract where reliably available:
+
+- AFP
+- extrahepatic metastatic disease
+- portal vein tumor thrombosis
+- macrovascular invasion
+- other vascular invasion
+- lymph-node metastases
+- bone metastases
+- lung metastases
+
+Search Beacon diagnosis fields, encounter diagnoses, billing diagnoses, and problem list.
+
+Do NOT infer absence if unavailable.
+
+Create individual flags plus:
+
+`extrahepatic_spread_flag`
+
+If BCLC stage is directly structured, extract it.
+
+If not directly structured, do NOT attempt a complex reconstructed BCLC classification during this phase.
+
+---
+
+# PART 9 — LIVER DISEASE ETIOLOGY
+
+Create mutually nonexclusive baseline flags for:
+
+- chronic HBV
+- chronic HCV
+- alcohol-associated liver disease
+- MASLD/MASH/NAFLD
+- autoimmune hepatitis
+- other/cryptogenic cirrhosis
+
+Use diagnosis data and relevant antiviral treatment evidence where appropriate.
+
+Do not force every patient into exactly one category if multiple etiologies are documented.
+
+---
+
+# PART 10 — PRIOR HCC LOCAL THERAPY
+
+Use the validated structured procedure sources.
+
+Before index identify:
+
+- TACE
+- bland embolization
+- Y90/TARE
+- RFA
+- microwave ablation
+- SBRT/liver radiation
+- hepatic resection
+
+Create:
+
+- prior_TACE_flag
+- prior_Y90_flag
+- prior_ablation_flag
+- prior_liver_radiation_flag
+- prior_resection_flag
+- any_prior_liver_directed_therapy_flag
+
+Also record:
+- number of procedures where reliable
+- most recent procedure date
+- days from last liver-directed therapy to index
+
+These treatments do not make the patient non-first-line for systemic therapy.
+
+---
+
+# PART 11 — HEALTHCARE UTILIZATION / GENERAL FITNESS PROXIES
+
+Because structured ECOG coverage is inadequate, capture objective pre-index proxies without claiming that they substitute for ECOG.
+
+Within 180 days before index calculate:
+
+- number of inpatient admissions
+- total inpatient days if feasible
+- number of ED visits
+- number of outpatient encounters
+
+Also extract:
+- BMI or weight closest to index where available
+
+Do NOT create an inferred ECOG score.
+
+---
+
+# PART 12 — SITE / PROVIDER VARIABLES
+
+Where permitted and sufficiently populated, extract:
+
+- treating facility
+- oncology department
+- treating provider
+
+Create de-identified provider/site grouping suitable for analysis.
+
+These may capture treatment-selection practice variation.
+
+Do not report individually identifiable provider results in final outputs.
+
+---
+
+# PART 13 — CALENDAR TIME
+
+Preserve:
+
+- apparent index year
+- apparent index quarter
+
+BUT:
+
+REACH cross-patient date-shifting validity is still not confirmed.
+
+Therefore:
+
+- do not use calendar time in the primary propensity model yet;
+- label these fields `DATE_VALIDITY_UNCONFIRMED`.
+
+If documentation now available in REACH explicitly confirms preservation of calendar year/quarter across patients, report that evidence before using calendar variables.
+
+---
+
+# PART 14 — MISSINGNESS REPORT
+
+For every candidate baseline covariate report:
+
+- available n
+- missing n
+- missing percentage overall
+- missing percentage in Atezo/Bev
+- missing percentage in STRIDE
+
+Do not automatically impute anything yet.
+
+Categorize variables as:
+
+### High completeness
+<10% missing
+
+### Moderate
+10–30%
+
+### Poor
+>30%
+
+Recommend which variables are suitable for the primary propensity model based on clinical relevance and completeness.
+
+---
+
+# PART 15 — UNADJUSTED BASELINE TABLE
+
+Create a baseline characteristics table comparing:
+
+ATEZO_BEV vs STRIDE.
+
+Report:
+
+- n
+- median/IQR or mean/SD as appropriate
+- counts/percentages
+- standardized mean difference (SMD)
+
+Do NOT use hypothesis-test P-values as the primary balance metric.
+
+Use absolute SMD.
+
+Flag:
+
+- |SMD| ≥0.10
+- |SMD| ≥0.20
+
+Produce a sorted list of the most imbalanced treatment-selection variables.
+
+---
+
+# PART 16 — PRE-SPECIFY A PARSIMONIOUS PROPENSITY MODEL
+
+Because the cohort is only approximately 147 patients with approximately 57 STRIDE patients, do NOT put dozens of sparse variables into an unrestricted ordinary logistic model.
+
+Create a parsimonious clinically informed model prioritizing factors that plausibly influence BOTH treatment selection and prognosis.
+
+Core candidate variables should include, if sufficiently complete:
+
+1. baseline ALBI, continuous
+2. age
+3. sex
+4. AFP, preferably transformed or clinically categorized
+5. prior hepatic decompensation
+6. portal hypertension / varices
+7. recent major bleeding
+8. anticoagulation
+9. CKD / renal function
+10. hypertension / vascular disease
+11. autoimmune disease / immunosuppression
+12. extrahepatic disease
+13. macrovascular/portal vein invasion
+14. prior liver-directed therapy
+15. liver disease etiology
+16. healthcare utilization proxy
+17. site/provider group if appropriate
+
+Do NOT include ECOG or Child-Pugh in the primary model because missingness is extreme.
+
+Do NOT include post-index variables.
+
+Avoid redundant variables in the same model.
+
+For example:
+- do not include baseline ALBI + albumin + bilirubin simultaneously unless there is a specific reason;
+- do not include a composite portal-hypertension variable plus every component unless model size allows it.
+
+---
+
+# PART 17 — HANDLE CONTINUOUS VARIABLES APPROPRIATELY
+
+Do not arbitrarily categorize:
+
+- age
+- ALBI
+- AFP
+- creatinine
+
+unless required for robustness or sparse data.
+
+Consider:
+
+- ALBI continuous
+- age continuous
+- log1p(AFP)
+- renal function continuous
+
+Keep the propensity model parsimonious.
+
+---
+
+# PART 18 — ESTIMATE PROPENSITY SCORES
+
+Outcome must be:
+
+`STRIDE = 1`
+`ATEZO_BEV = 0`
+
+Fit the prespecified baseline treatment-assignment model.
+
+Because of limited sample size, compare:
+
+### Model A
+Standard logistic regression.
+
+### Model B
+Regularized logistic regression if standard estimation is unstable or affected by separation.
+
+Do NOT use outcome information when selecting the propensity model.
+
+Return for every patient:
+
+- propensity score = P(STRIDE | baseline covariates)
+
+---
+
+# PART 19 — ASSESS POSITIVITY / COMMON SUPPORT
+
+This is a critical go/no-go analysis.
+
+Report by treatment:
+
+- minimum PS
+- 5th percentile
+- 25th percentile
+- median
+- 75th percentile
+- 95th percentile
+- maximum
+
+Plot or summarize the propensity-score distributions for:
+
+- Atezo/Bev
+- STRIDE
+
+Calculate:
+
+- proportion of Atezo/Bev within common support
+- proportion of STRIDE within common support
+
+Identify patients with near-deterministic treatment assignment, such as:
+
+- PS <0.05
+- PS >0.95
+
+Also inspect overlap specifically across baseline ALBI.
+
+Report whether poor overlap occurs preferentially at:
+
+- ALBI 1
+- mALBI 2a
+- mALBI 2b/3
+
+Do NOT delete non-overlap patients yet.
+
+---
+
+# PART 20 — COMPUTE OVERLAP WEIGHTS
+
+If PS overlap is reasonable, calculate overlap weights:
+
+For STRIDE:
+`weight = 1 - PS`
+
+For Atezo/Bev:
+`weight = PS`
+
+Normalize if useful for reporting.
+
+Do NOT use these for outcome modeling yet.
+
+Report:
+
+- sum of weights
+- effective sample size overall
+- effective sample size by treatment
+- minimum/maximum weights
+
+---
+
+# PART 21 — ASSESS BALANCE AFTER OVERLAP WEIGHTING
+
+Recalculate all baseline SMDs after overlap weighting.
+
+Primary target:
+
+`|SMD| < 0.10`
+
+Preferred:
+
+`|SMD| < 0.05`
+
+Create a Love-plot-style table containing:
+
+- variable
+- unweighted SMD
+- weighted SMD
+
+Report:
+
+1. maximum absolute SMD before weighting
+2. maximum absolute SMD after weighting
+3. number of variables with |SMD| >0.10 after weighting
+4. which variables remain imbalanced
+
+Do not change the propensity model solely to chase perfect empirical balance without clinical justification.
+
+---
+
+# PART 22 — ALBI-SPECIFIC OVERLAP
+
+Because ALBI is the eventual effect modifier, examine it especially carefully.
+
+Report:
+
+### Raw
+- ALBI median/IQR by treatment
+- full observed range
+- mALBI distribution
+
+### Weighted
+- weighted mean/median ALBI by treatment
+- weighted distribution
+- weighted SMD
+
+Also report patient counts by approximately:
+
+- ALBI ≤−2.60
+- −2.60 to −2.27
+- −2.27 to −1.39
+- >−1.39
+
+for each treatment.
+
+Identify ALBI regions where either treatment has very few patients.
+
+This will determine whether a continuous treatment × ALBI interaction can be estimated reliably.
+
+---
+
+# PART 23 — DO NOT YET MODEL OUTCOMES
+
+Do NOT query/model:
+
+- death
+- overall survival
+- hospitalization outcomes
+- hepatic decompensation outcomes
+- treatment discontinuation
+- second-line therapy
+
+during propensity-model development.
+
+The treatment-assignment model should be constructed without seeing outcome associations.
+
+---
+
+# PART 24 — PRESERVE NIVO/IPI EXPLORATORY DATA
+
+For the 9 Cohort-5 Nivo/Ipi patients:
+
+produce only a descriptive baseline table:
+
+- age
+- sex
+- ALBI
+- mALBI
+- AFP
+- portal hypertension
+- decompensation
+- prior liver-directed therapy
+- apparent calendar era
+
+Do NOT include them in propensity weighting.
+
+Clearly label this cohort exploratory/immature.
+
+---
+
+# PART 25 — OUTPUT TABLES
+
+Create versioned outputs in:
+
+`reach_users.xzhao81`
+
+Do NOT overwrite v3/v4.
+
+Create:
+
+- `hcc_baseline_confounders_v5`
+- `hcc_propensity_scores_v5`
+- `hcc_overlap_weights_v5`
+- `hcc_baseline_balance_v5`
+
+Also preserve the complete code used to define each phenotype.
+
+---
+
+# FINAL REPORT
+
+At the end report:
+
+1. exact Atezo/Bev and STRIDE N
+2. baseline missingness by variable
+3. most imbalanced baseline variables before adjustment
+4. propensity-score distribution by treatment
+5. common-support percentage by treatment
+6. number of patients with PS <0.05 or >0.95
+7. effective sample size after overlap weighting
+8. maximum SMD before weighting
+9. maximum SMD after weighting
+10. variables remaining >0.10 after weighting
+11. raw and weighted ALBI overlap
+12. whether the data support:
+    - continuous treatment × ALBI modeling,
+    - only categorical mALBI interaction,
+    - or insufficient treatment overlap
+13. any baseline confounder that appears impossible to measure adequately in REACH
+14. exploratory Nivo/Ipi descriptive results
+
+STOP THERE.
+
+Do not examine outcomes yet.
