@@ -1,52 +1,399 @@
-*Used Memory, Read Skill File, Manage Todo List*
+Use the currently attached REACH Small Compute.
 
-Let me first discover the v4 table schema and Cohort 5 contents:
+Use:
 
-*Used Select Tools, Read Table*
+- `reach_users.xzhao81.hcc_baseline_confounders_v5`
+- `reach_users.xzhao81.hcc_source_cohort_v4`
 
-Good — the v4 table has 36 columns including all cohort tier flags, ALBI, demographics, and era indicators. Let me start building the pipeline. First, the title cell and cohort verification:
+Primary population:
+- analytic ALBI cohort
+- Atezo/Bev versus STRIDE only
 
-*Used Edit Asset, Run Asset, Fetch Omitted Content*
+Expected N:
+approximately 90 Atezo/Bev and 57 STRIDE before complete-case restrictions.
 
-Cohort confirmed: **90 AB + 57 STRIDE = 147**. mALBI shows clear imbalance (AB=46% Grade 1 vs STRIDE=47% mALBI_2b). Now building the massive baseline covariate extraction. Let me do Parts 2-3 (demographics already in v4 + baseline labs):
+Do NOT examine outcomes yet.
 
-*Used Edit Asset, Run Asset*
+The previous propensity analysis used L2-regularized logistic regression and produced inadequate post-overlap-weighting balance:
 
-Several labs (sodium, platelets, hemoglobin, AFP) returned zero — the `component_base_name` values differ from my guess. Let me discover the correct names and fix:
+- maximum raw |SMD| ≈ 0.58
+- maximum weighted |SMD| ≈ 0.25
+- 8/13 variables remained |SMD| >0.10
+- ALBI remained substantially imbalanced
 
-*Used Edit Asset, Run Asset*
+This phase should determine whether that reflects:
+A. the penalized propensity implementation,
+B. inadequate propensity specification,
+C. lack of clinical common support,
+or
+D. a genuinely non-identifiable treatment comparison.
 
-Excellent — the lab names are `NA`, `PLT`, `HGB` (not the full words). Diagnosis flags reveal the expected pattern: **STRIDE patients have more decompensation (68% vs 48%) and portal hypertension (35% vs 19%)** — classic bev-avoidance confounding. Now let me build the remaining labs, assemble everything, and run the propensity analysis:
+## STEP 1 — REPRODUCE THE V5 COHORT EXACTLY
 
-*Used Edit Asset, Run Asset*
+Confirm:
 
-Baseline assembled: 147 × 75 columns, 30 variables with HIGH completeness. AFP is POOR (80% missing). Now the core propensity analysis — Parts 15-22:
+- Atezo/Bev N
+- STRIDE N
+- patients excluded because of missing propensity covariates
+- exact variables used in the previous PS model
 
-*Used Edit Asset, Run Asset*
+Do not silently change cohort membership.
 
-The propensity analysis is complete with rich results. Now the final cells — Nivo/Ipi descriptive + output tables + final report:
+## STEP 2 — VERIFY THE OVERLAP-WEIGHT IMPLEMENTATION
 
-*Used Edit Asset, Run Asset, Fetch Omitted Content*
+For treatment:
 
-All 4 output tables saved and the final report is complete. Let me rename the notebook:
+STRIDE = 1
+ATEZO_BEV = 0
 
-*Used Select Tools, Rename Title*
+For estimated propensity score:
 
-Now let me update the project memory:
+e(X) = P(STRIDE | X)
 
-*Used Memory*
+Define overlap weights:
 
-The v5 propensity pipeline is complete. Here's the summary:
+STRIDE:
+w = 1 - e(X)
 
-**Pipeline completed across 7 cells** in HCC Propensity Score Analysis v5:
+Atezo/Bev:
+w = e(X)
 
-**Key findings:**
-* **Cohort**: 90 AB + 56 STRIDE = 146 in PS model (1 dropped for missing platelets)
-* **Largest raw imbalances**: ALBI (|SMD|=0.58), hemoglobin (0.51), ascites (0.51), decompensation (0.43) — STRIDE patients are sicker, consistent with bev-avoidance channeling
-* **PS model**: 13-variable L2-regularized logistic (AUC=0.738), top predictors: ALBI, age, CKD, variceal bleed
-* **Overlap weighting** reduces max |SMD| from 0.583 to 0.251, but **8 of 13 variables remain imbalanced** (>0.10). ALBI residual SMD=0.25 is the largest
-* **ESS**: 128.7 (AB=82.7, STRIDE=52.7) — adequate for main effects only
-* **Treatment×ALBI interaction**: INSUFFICIENT overlap (STRIDE Grade 1 only n=12)
-* **Critical gaps**: ECOG, AFP (80% missing), BCLC, Child-Pugh all unmeasured
+Confirm that this was the formula used in v5.
 
-**4 output tables persisted** to `reach_users.xzhao81`: `hcc_baseline_confounders_v5`, `hcc_propensity_scores_v5`, `hcc_overlap_weights_v5`, `hcc_baseline_balance_v5`
+Recalculate weighted means and standardized mean differences manually for several covariates, especially:
+
+- ALBI
+- age
+- hemoglobin
+- prior decompensation
+
+to ensure the previous balance calculations are correct.
+
+## STEP 3 — FIT AN UNPENALIZED PARSIMONIOUS LOGISTIC PROPENSITY MODEL
+
+Do NOT use L1 or L2 regularization for the primary overlap-weighting model.
+
+Use ordinary maximum-likelihood logistic regression with an intercept.
+
+Use a prespecified parsimonious covariate set chosen for clinical confounding, not predictive AUC.
+
+Candidate core covariates:
+
+1. baseline ALBI, continuous
+2. age, continuous
+3. hemoglobin, continuous
+4. prior hepatic decompensation
+5. portal hypertension / varices composite
+6. prior major or variceal bleeding
+7. CKD / baseline renal dysfunction
+8. autoimmune disease or baseline immunosuppression
+9. extrahepatic disease / metastatic disease
+10. prior liver-directed HCC therapy
+
+If anticoagulation is sufficiently common, include it either separately or as part of the bleeding/thrombotic clinical-selection block.
+
+Avoid redundant component variables.
+
+For example:
+- do not include ALBI plus albumin plus bilirubin;
+- do not include prior_decompensation plus every individual decompensation component unless needed;
+- do not include portal-hypertension composite plus all of its components.
+
+Do not optimize the model for AUC.
+
+The propensity model's purpose is covariate balance, not treatment prediction.
+
+## STEP 4 — CHECK FOR SEPARATION / INSTABILITY
+
+For the unpenalized model report:
+
+- convergence
+- coefficient estimates
+- standard errors
+- any extremely large coefficients
+- predicted PS range
+- evidence of complete or quasi-complete separation
+
+If ordinary logistic regression converges adequately, use it as Model 1.
+
+If it clearly fails because of separation, do not immediately revert to L2 regularization and call the problem solved.
+
+Instead proceed to the direct-balancing approaches below.
+
+## STEP 5 — RECOMPUTE OVERLAP WEIGHTS FROM UNPENALIZED PS
+
+Using Model 1, calculate overlap weights.
+
+Then recompute balance for every baseline covariate.
+
+Report:
+
+- max |SMD|
+- number >0.10
+- number >0.05
+- effective sample size overall and by treatment
+
+IMPORTANT:
+
+For covariates included as linear terms in an unpenalized logistic propensity model, overlap weighting should produce extremely close mean balance.
+
+If this does not occur, investigate the implementation before proceeding.
+
+## STEP 6 — DIRECT COVARIATE-BALANCING SENSITIVITY ANALYSIS
+
+If meaningful imbalance remains, fit a balancing approach whose objective is explicitly covariate balance.
+
+Preferred options, depending on installed packages:
+
+A. Covariate Balancing Propensity Score (CBPS)
+
+or
+
+B. entropy balancing / stable balancing weights
+
+Do NOT use outcomes.
+
+Target balance on the same clinically prespecified covariates.
+
+At minimum balance the first moments of:
+
+- ALBI
+- age
+- hemoglobin
+
+and prevalence of:
+
+- decompensation
+- portal hypertension/varices
+- bleeding
+- CKD
+- autoimmune/immunosuppression
+- extrahepatic disease
+- prior liver-directed therapy
+
+If feasible without destabilizing weights, also balance the second moment of ALBI because ALBI is the planned effect modifier.
+
+Report effective sample size and weight distribution.
+
+## STEP 7 — DEFINE THE EMPIRICAL COMMON-SUPPORT REGION
+
+Do not assume every patient has a clinically plausible counterfactual treatment.
+
+Using the unpenalized propensity scores, report:
+
+- minimum / maximum PS by treatment
+- 1st / 5th / 10th percentiles
+- 25th / 50th / 75th
+- 90th / 95th / 99th percentiles
+
+Define empirical common support as the intersection of the observed PS ranges:
+
+lower bound =
+max(min PS in Atezo/Bev, min PS in STRIDE)
+
+upper bound =
+min(max PS in Atezo/Bev, max PS in STRIDE)
+
+Also report results using a prespecified sensitivity restriction:
+
+0.10 ≤ PS ≤ 0.90
+
+Do NOT permanently delete patients.
+
+Create flags:
+- `empirical_common_support_flag`
+- `ps_0_10_to_0_90_flag`
+
+Report N by treatment under each restriction.
+
+## STEP 8 — CREATE A CLINICAL-EQUIPOISE COHORT
+
+Separately define a clinically motivated subgroup in which either regimen plausibly could have been chosen.
+
+Do not use outcomes to define it.
+
+Construct a candidate clinical-equipoise flag excluding patients with very strong baseline reasons to avoid bevacizumab, such as documented:
+
+- recent major GI/variceal hemorrhage
+- severe/recent clinically significant bleeding
+- clearly active high-risk variceal disease if structured
+- severe uncontrolled hypertension if reliably identifiable
+- clinically significant proteinuria if reliably identifiable
+- recent major arterial thrombotic event
+
+Also flag, rather than necessarily exclude, strong reasons to avoid CTLA-4 treatment:
+
+- major active autoimmune disease
+- significant baseline immunosuppression
+- solid-organ transplantation
+
+Report exactly which rule removes each patient.
+
+Do not over-engineer this definition if variables are poorly measured.
+
+Create:
+`clinical_equipoise_flag`
+
+## STEP 9 — COMPARE FOUR TARGET POPULATIONS
+
+Report balance and sample size under:
+
+A. all analytic patients
+
+B. empirical PS common-support cohort
+
+C. PS 0.10–0.90 cohort
+
+D. clinical-equipoise cohort
+
+For each show:
+
+- Atezo/Bev N
+- STRIDE N
+- effective sample size after weighting
+- maximum weighted |SMD|
+- number of covariates with |SMD| >0.10
+
+Do NOT choose the cohort based on outcomes.
+
+## STEP 10 — ALBI SUPPORT MUST BE EXAMINED DIRECTLY
+
+Because ALBI is the planned effect modifier, propensity overlap alone is not enough.
+
+For each treatment display the distribution of continuous ALBI.
+
+Report:
+
+- N
+- median/IQR
+- min/max
+- 5th/10th/25th/50th/75th/90th/95th percentile
+
+Also report treatment counts within:
+
+- ALBI ≤ −2.60
+- >−2.60 to ≤−2.27
+- >−2.27 to ≤−1.39
+- >−1.39
+
+Then perform a finer descriptive assessment using 0.2-unit ALBI bins.
+
+For each ALBI bin report:
+- Atezo/Bev N
+- STRIDE N
+
+Identify regions in which either treatment has:
+- <5 patients
+- <10 patients
+
+Do not fit an outcome interaction yet.
+
+## STEP 11 — DEFINE A DATA-SUPPORTED ALBI REGION
+
+Using treatment counts/density only, not outcomes, determine the ALBI interval over which both regimens have meaningful representation.
+
+Create:
+
+`albi_common_support_flag`
+
+The chosen interval must be transparent and based only on treatment-support considerations.
+
+Do not automatically use the full ALBI range if one arm has essentially no observations at the extremes.
+
+Report the resulting N by treatment.
+
+## STEP 12 — ASSESS WHETHER CONTINUOUS EFFECT-MODIFICATION MODELING IS PLAUSIBLE
+
+Without using outcomes, classify feasibility as:
+
+### GOOD
+Both treatments have meaningful representation across most of the ALBI continuum and weighted balance is adequate.
+
+### LIMITED
+A continuous interaction may be estimable only over a restricted common-support interval.
+
+### POOR
+One treatment is too sparse across clinically important ALBI regions for credible continuous interaction modeling.
+
+Base this on:
+- ALBI counts/density
+- propensity support
+- effective sample size
+- baseline balance
+
+Do not base it on outcome significance.
+
+## STEP 13 — DO NOT DEFAULT TO mALBI CATEGORIES
+
+Do not conclude that categorical mALBI is automatically preferable merely because continuous interaction is difficult.
+
+With small cells, categorization may make the problem worse.
+
+Explicitly report treatment counts in each mALBI category and assess whether an interaction by category would be statistically credible.
+
+## STEP 14 — MISSING CONFOUNDERS
+
+Explicitly discuss the likely residual-confounding implications of unavailable/inadequately measured:
+
+- ECOG
+- Child-Pugh
+- BCLC stage
+- AFP
+
+Do not pretend that weighting solves these missing variables.
+
+Assess whether available proxies partially capture them:
+
+- prior hospitalization
+- decompensation
+- ALBI
+- metastatic disease
+- vascular invasion
+- liver-directed treatment
+
+but clearly distinguish proxy adjustment from direct measurement.
+
+## STEP 15 — CALENDAR-TIME CONFOUNDING
+
+Do not ignore calendar time.
+
+The two regimens entered routine practice at different times.
+
+Because REACH absolute date shifting has not yet been confirmed, do not put year/quarter into the propensity model yet.
+
+Instead create a prominent unresolved flag:
+
+`calendar_time_confounding_unresolved = 1`
+
+and report that confirmation of cross-patient calendar-date validity is required before final causal analysis.
+
+## STEP 16 — FINAL GO/NO-GO REPORT
+
+Give me a direct methodological assessment:
+
+1. Does unpenalized logistic overlap weighting achieve adequate balance?
+2. If not, does CBPS/entropy balancing?
+3. What is the final effective sample size?
+4. How many patients remain in PS common support?
+5. How many remain in clinical equipoise?
+6. What is the usable ALBI interval?
+7. How many Atezo/Bev and STRIDE patients fall inside that interval?
+8. Is continuous treatment × ALBI modeling:
+   - GOOD
+   - LIMITED
+   - POOR?
+9. Would categorical mALBI interaction be better or worse?
+10. What major unmeasured confounding remains?
+11. Is the study defensible enough to proceed to outcomes?
+
+Do NOT examine outcome data.
+
+Persist versioned outputs:
+
+- `hcc_propensity_repaired_v6`
+- `hcc_balance_repaired_v6`
+- `hcc_common_support_v6`
+
+Do not overwrite previous versions.
+
+STOP THERE.
