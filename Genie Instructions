@@ -1,853 +1,1215 @@
-Use the currently attached REACH Small Compute.
+Continue on the REACH Small Compute cluster.
 
-Use the validated v8 outputs as the starting point:
+This phase is focused specifically on **MEDICAL ONCOLOGY / SYSTEMIC THERAPY HCC research opportunities**.
 
-- `reach_users.xzhao81.hcc_universe_v8`
-- `reach_users.xzhao81.hcc_systemic_therapy_episodes_v8`
-- `reach_users.xzhao81.hcc_lines_of_therapy_v8`
-- `reach_users.xzhao81.hcc_locoregional_episodes_v8`
-- `reach_users.xzhao81.hcc_longitudinal_biomarkers_v8`
-- `reach_users.xzhao81.hcc_incident_endpoints_v8`
+Do NOT prioritize TACE or IR questions in this phase.
 
-The purpose of v9 is NOT to estimate treatment effects.
+The goal is to identify clinical decision points where:
 
-The purpose is to determine whether REACH contains a credible clinical-equipoise population for the question:
+1. two or more systemic treatment strategies are genuinely plausible for similar HCC patients;
+2. there is sufficient representation of BOTH strategies in REACH;
+3. the factors driving treatment selection can be measured adequately;
+4. outcomes and follow-up are sufficiently dense;
+5. the comparison is not fundamentally destroyed by lack of positivity;
+6. the question is clinically meaningful to a GI medical oncologist.
 
-> Among patients with HCC reassessed after TACE who remain reasonable candidates for either another TACE or systemic therapy, when should clinicians repeat TACE versus transition to systemic treatment?
+The highest-priority candidate decision node to investigate is:
 
-A major secondary objective is to determine whether change in hepatic reserve after TACE, especially change in ALBI, could eventually be studied as a treatment-effect modifier.
+**What systemic therapy should be used after first-line Atezo/Bev?**
 
-The validated v8 data showed approximately:
+Potential subsequent strategies include:
+- TKI
+- nivolumab/ipilimumab
+- STRIDE
+- ramucirumab in AFP-high patients
+- potentially individual TKIs such as lenvatinib, cabozantinib, sorafenib, or regorafenib
 
-- 1,066 TACE patients
-- 2,533 TACE episodes
-- 866 patients with paired pre/post-TACE ALBI
-- 590 with repeat TACE plus serial ALBI
-- 86 with subsequent systemic treatment
-- 606 with an observable:
-  TACE → post-TACE ALBI → repeat TACE or systemic-treatment trajectory
+However, DO NOT assume any of these comparisons are feasible.
 
-Radiology text is available and must now be incorporated into feasibility assessment.
+The data must establish feasibility.
 
-Do NOT perform:
-- survival comparisons
-- hazard ratios
-- treatment-effect estimates
-- outcome-based model selection
-- P-value fishing
-
-Do NOT use apparent calendar year as a causal variable because cross-patient date shifting remains unresolved.
-
-Within-patient time intervals are acceptable.
+Other systemic decision nodes should also be explored.
 
 # ============================================================
-# PART 1 — REVALIDATE THE TACE EPISODE COHORT
+# NON-NEGOTIABLE HIGH-ASSURANCE VALIDATION PROTOCOL
 # ============================================================
 
-Start from high-confidence adult HCC patients.
+The previous analyses have demonstrated that plausible-looking results can be wrong because of:
 
-Use `hcc_locoregional_episodes_v8` and source procedure tables to confirm unique TACE episodes.
+- sparse `med_admin`
+- incomplete oral-drug ascertainment
+- incorrect line-of-therapy algorithms
+- TACE-associated doxorubicin being mistaken for systemic chemotherapy
+- duplicate encounter rows
+- treatment-indication contamination from other cancers
+- conflicting ALBI availability counts
+- inconsistent follow-up calculations
 
-For each patient assign:
+Therefore every major result in this phase must pass a **THREE-LAYER VALIDATION SYSTEM** before being used.
 
-- TACE episode number:
-  - TACE_1
-  - TACE_2
-  - TACE_3
-  - etc.
-- TACE date
-- procedure source
-- procedure name/code
-- conventional TACE vs DEB-TACE if distinguishable
+A result that does not pass validation must be labeled:
 
-Collapse duplicate billing/procedure rows representing the same TACE session.
+`UNVALIDATED — DO NOT USE FOR PROJECT SELECTION`
 
-Report:
-
-- unique TACE patients
-- unique TACE episodes
-- N with ≥2 episodes
-- N with ≥3 episodes
-- median interval between consecutive TACE episodes
-
-Manually audit at least 20 randomly selected patients with multiple TACE episodes.
+Do not silently proceed with it.
 
 # ============================================================
-# PART 2 — DEFINE POST-TACE REASSESSMENT IMAGING
+# QA LAYER 1 — SOURCE TRIANGULATION
 # ============================================================
 
-Use `deid.derived.radiology_text` plus imaging procedure information.
+For every systemic regimen/drug, independently ascertain exposure from:
 
-First inspect the exact schema of `radiology_text`.
+A. `med_orders`
 
-Determine:
+B. Beacon:
+- `treatment_plan`
+- `treatment_plan_orders`
 
-- patient join key
-- study date
-- modality
-- body region
-- procedure name
-- report text
-- impression text if separate
+C. `med_admin` when available
 
-For each TACE episode identify the FIRST qualifying liver-focused:
+For oral TKIs, `med_orders` and Beacon are expected to be more informative than MAR.
 
-- CT abdomen/liver
-OR
-- MRI abdomen/liver
+For IV drugs, require concordance with expected treatment-plan structure and/or administration pattern.
 
-occurring:
+Print counts from EACH source separately before creating a union.
 
-**21–90 days after TACE**
+For every drug/regimen report:
 
-Also report availability in sensitivity windows:
+- source A N
+- source B N
+- source C N
+- pairwise overlaps
+- 3-source overlap
+- union N
 
-- 21–60 days
-- 21–120 days
+If sources disagree substantially, investigate before continuing.
 
-Create:
-
-- `reassessment_imaging_date`
-- `days_tace_to_imaging`
-- `imaging_modality`
-- `radiology_text_available_flag`
-
-Report by TACE episode number:
-
-- TACE_1 with reassessment imaging
-- TACE_2 with reassessment imaging
-- TACE_3 with reassessment imaging
-
-Do not perform NLP yet until the reports have been characterized.
+Do NOT simply union inconsistent sources and call the result correct.
 
 # ============================================================
-# PART 3 — CHARACTERIZE RADIOLOGY REPORT LANGUAGE
+# QA LAYER 2 — INDICATION TRIANGULATION
 # ============================================================
 
-On a representative sample of post-TACE reports, search for terminology including:
+Many relevant medications are used in cancers other than HCC.
 
-### LI-RADS treatment-response language
-- LR-TR
-- viable
-- nonviable
-- equivocal
-- treatment response
-- treated observation
-- treatment cavity
+For every treatment episode determine whether it is HCC-directed using THREE independent signals where possible:
 
-### Tumor viability / response language
-- residual
-- residual enhancement
-- arterial enhancement
-- washout
-- viable tumor
-- recurrent tumor
-- recurrence
-- progression
-- stable
-- decreased
-- increased
-- complete response
-- partial response
+1. Beacon treatment plan explicitly indicates HCC / C22.0.
+2. HCC diagnosis from ≥2 independent diagnostic sources around the treatment episode.
+3. No stronger competing malignancy explains the regimen.
 
-### Tumor burden
-- lesion
-- mass
-- observation
-- cm
-- mm
-- multifocal
-- bilobar
-- innumerable
-- infiltrative
+Competing malignancies should explicitly include:
 
-### New disease
-- new lesion
-- new observation
-- new hepatic lesion
+- melanoma
+- RCC
+- NSCLC
+- colorectal cancer
+- gastric/GEJ cancer
+- thyroid cancer
+- cholangiocarcinoma
+- other malignancies relevant to the specific drug
 
-### Vascular invasion
-- portal vein tumor thrombus
-- tumor thrombus
-- vascular invasion
-- portal vein invasion
+Examples requiring special caution:
 
-### Extrahepatic disease
-- metastatic
-- metastasis
-- lymphadenopathy
-- pulmonary metastasis
-- osseous metastasis
+- nivo/ipi: melanoma, RCC, NSCLC, etc.
+- lenvatinib: thyroid/RCC
+- cabozantinib: RCC/thyroid
+- sorafenib: RCC/thyroid
+- ramucirumab: gastric/GEJ and other settings
+- atezolizumab/bevacizumab: NSCLC
 
-Print approximately 30–50 representative report snippets containing these concepts.
+Classify every systemic episode:
 
-Do NOT expose unnecessary PHI or full raw reports.
+- HCC_HIGH_CONFIDENCE
+- HCC_PROBABLE
+- AMBIGUOUS
+- NON_HCC
 
-The goal is to determine whether reliable structured abstraction is feasible.
+Only HIGH-confidence HCC episodes should define the primary line-of-therapy analysis.
+
+PROBABLE may be used in sensitivity analyses.
 
 # ============================================================
-# PART 4 — BUILD A FIRST-PASS RADIOLOGY PHENOTYPE
+# QA LAYER 3 — PATIENT-TIMELINE VALIDATION
 # ============================================================
 
-Using transparent SQL/regex/rule-based methods, create preliminary variables:
+For every proposed major treatment sequence, independently reconstruct treatment chronology from:
 
-### Treatment response
-- `lrtr_viable_flag`
-- `lrtr_nonviable_flag`
-- `lrtr_equivocal_flag`
-- `residual_viable_disease_flag`
+A. medication order dates/statuses,
 
-### Progression
-- `new_intrahepatic_lesion_flag`
-- `radiographic_progression_flag`
+B. Beacon plan/cycle chronology,
 
-### Distribution
-- `multifocal_flag`
-- `bilobar_flag`
-- `infiltrative_flag`
+C. administration/refill chronology when available.
 
-### Advanced disease
-- `portal_vein_tumor_thrombus_flag`
-- `macrovascular_invasion_flag`
-- `extrahepatic_spread_radiology_flag`
+For every common sequence, manually print at least:
 
-### Tumor burden
-Attempt to extract:
-- largest viable lesion size
-- largest lesion size
+- 20 randomly selected patients
+- ALL discordant patients if fewer than 50
+- all patients with implausible line transitions
 
-ONLY if the text patterns are sufficiently reliable.
+For each audit patient show a chronological timeline:
 
-Do not force numeric extraction if reports are too heterogeneous.
+DATE / RELATIVE DAY
+REGIMEN
+DRUG
+SOURCE
+ORDER STATUS
+BEACON PLAN
+BEACON HCC DIAGNOSIS
+ADMINISTRATION IF AVAILABLE
+DOSE
+NEXT REGIMEN
 
-# ============================================================
-# PART 5 — MANUALLY VALIDATE THE RADIOLOGY PHENOTYPE
-# ============================================================
+Do not show patient-identifying information beyond the deidentified REACH identifier.
 
-Create a manual-validation sample of approximately 100 reports, enriched for:
-
-- apparent viable disease
-- apparent nonviable disease
-- progression
-- vascular invasion
-- extrahepatic spread
-- ambiguous cases
-
-For each display:
-
-- limited relevant report text
-- rule-based classification
-
-Assess whether the rule-based labels appear clinically sensible.
-
-Report approximate:
-- agreement
-- obvious false positives
-- obvious false negatives
-- ambiguous fraction
-
-Do not claim formal sensitivity/specificity unless true manual gold-standard adjudication is performed.
-
-If rule-based extraction is inadequate, state that radiology NLP/manual abstraction will be REQUIRED before causal analysis.
+The line-of-therapy algorithm must not be accepted until these manual timelines are clinically coherent.
 
 # ============================================================
-# PART 6 — DEFINE THE POST-TACE DECISION TIME
+# HARD INVARIANT CHECKS
 # ============================================================
 
-Primary candidate time zero:
+Before accepting any derived cohort, automatically test these invariants.
 
-**date of first qualifying post-TACE reassessment CT/MRI occurring 21–90 days after TACE**
+### Drug/regimen invariants
 
-This represents the clinical reassessment point.
+- AB combination N cannot exceed atezolizumab union N or bevacizumab union N.
+- STRIDE N cannot exceed durvalumab or tremelimumab union N.
+- NI N cannot exceed nivolumab or ipilimumab union N.
+- 2L patient N cannot exceed patients with a valid 1L.
+- 3L N cannot exceed 2L N.
+- dates for 2L must occur after 1L start.
+- dates for 3L must occur after 2L start.
 
-For each reassessment ensure the patient:
+### Cohort invariants
 
-- is alive
-- has not already started a new systemic HCC regimen before reassessment
-- has not undergone another TACE before reassessment
-- remains observable in REACH
+Sequential attrition must never increase N.
 
-Create:
+No patient may occupy two mutually exclusive treatment arms at the same decision time.
 
-`eligible_reassessment_flag`
+A treatment episode classified NON_HCC cannot enter an HCC line of therapy.
 
-Do NOT require adequate hepatic reserve yet.
+### Temporal invariants
 
-# ============================================================
-# PART 7 — DEFINE MANAGEMENT AFTER REASSESSMENT
-# ============================================================
+Baseline variables must precede the treatment-decision index.
 
-Look forward from reassessment imaging.
+Outcome events cannot precede index.
 
-Within:
-- 30 days
-- 60 days
-- 90 days
-- 120 days
+Same-regimen maintenance must not become a new line.
 
-identify the FIRST major HCC treatment strategy.
+Restarting the same treatment after a temporary hold must not automatically become a new line.
 
-Classify into mutually exclusive groups:
+### Clinical cadence invariants
 
-1. `REPEAT_TACE`
-2. `START_SYSTEMIC`
-3. `Y90`
-4. `ABLATION`
-5. `RESECTION`
-6. `RADIATION`
-7. `OTHER_HCC_TREATMENT`
-8. `NO_OBSERVED_TREATMENT`
+Check median treatment intervals against plausible clinical schedules.
 
-For the primary future comparison, the candidate branches are:
+Flag:
+- median interval <5 days for q3–4 week therapy
+- implausibly high duplicate daily orders
+- combination components occurring months apart but classified as one regimen
 
-- REPEAT_TACE
-versus
-- START_SYSTEMIC
+Every failed invariant must be printed.
 
-Do not automatically discard the other branches.
-
-Report counts at each follow-up window.
+STOP and debug before using that result.
 
 # ============================================================
-# PART 8 — VALIDATE SYSTEMIC SWITCHES FROM RAW SOURCES
+# PART 1 — REBUILD SYSTEMIC THERAPY EPISODES FROM RAW DATA
 # ============================================================
 
-Do NOT rely blindly on the v8 lines-of-therapy table because some systemic line classification remained questionable.
+Start from:
 
-For every post-TACE systemic switch, verify directly using:
+`reach_users.xzhao81.hcc_universe_v8`
 
-- med_orders
-- Beacon treatment plans
-- treatment_plan_orders
+Use the HIGH-CONFIDENCE HCC population as the primary universe.
 
-Identify the exact first systemic regimen.
+Rebuild treatment exposure from RAW REACH tables rather than assuming `hcc_lines_of_therapy_v8` is correct.
 
-Include:
+Explicitly enumerate:
+
+### Immunotherapy / antibody regimens
 
 - Atezo/Bev
 - STRIDE
 - Nivo/Ipi
+- nivolumab monotherapy
+- pembrolizumab
+- durvalumab monotherapy
+- atezolizumab monotherapy if genuinely HCC-directed
+- ramucirumab
+
+### TKIs
+
 - lenvatinib
 - sorafenib
 - cabozantinib
-- pembrolizumab
-- nivolumab
-- other HCC-linked systemic therapy
+- regorafenib
 
-Report:
+### Any additional HCC systemic regimen discovered in Beacon
 
-- total systemic-switch patients
-- exact regimen distribution
-- confidence of systemic-treatment identification
+Create one row per:
 
-Do not count TACE-associated cytotoxic drugs as systemic treatment.
+PATIENT × SYSTEMIC REGIMEN EPISODE
 
-# ============================================================
-# PART 9 — MAP MULTIPLE CLINICAL DECISION NODES
-# ============================================================
+Fields should include:
 
-Do NOT assume the first post-TACE reassessment is necessarily the best study point.
-
-Construct separate decision-node populations after:
-
-### Node A
-TACE #1 → reassessment
-
-### Node B
-TACE #2 → reassessment
-
-### Node C
-TACE #3 → reassessment
-
-For each node report:
-
-- total reassessed N
-- repeat-TACE N
-- systemic-switch N
-- other-treatment N
-- untreated/observation N
-- paired ALBI N
-- radiology-text N
-
-The goal is to determine which clinical decision node has the strongest combination of:
-
-- sample size
-- both management branches represented
-- tumor-response information
-- hepatic-reserve information
+- patient ID
+- regimen
+- component drugs
+- episode start
+- episode end
+- evidence sources
+- HCC indication confidence
+- Beacon plan
+- order-status evidence
+- administration evidence
+- exposure confidence
 
 # ============================================================
-# PART 10 — DEFINE PRE-TACE AND POST-TACE ALBI
+# PART 2 — DEFINE EXPOSURE CONFIDENCE
 # ============================================================
-
-For every decision node calculate:
-
-### Pre-TACE ALBI
-Closest valid ALBI within:
-- 30 days before TACE through TACE day
-
-### Post-TACE ALBI
-Closest valid ALBI occurring:
-- 14–60 days after TACE
-
-BUT:
-
-the post-TACE ALBI must occur BEFORE:
-- repeat TACE
-- systemic-treatment initiation
-- another major liver-directed treatment
-
-Prefer ALBI closest to reassessment imaging.
 
 Create:
 
-- `pre_tace_albi`
-- `post_tace_albi`
-- `delta_albi`
+### HIGH exposure confidence
 
-Define:
+Examples:
 
-`delta_albi = post_tace_albi - pre_tace_albi`
+IV therapy:
+- HCC Beacon plan AND compatible medication orders/administrations
 
-Therefore:
-- positive delta = worsening hepatic reserve
-- negative delta = improving ALBI
+Oral TKI:
+- active/dispensed-appearing medication order AND HCC Beacon/oncology context
+- preferably repeated order/refill evidence
 
-Also create:
-- pre/post mALBI
-- change in mALBI category
+### MODERATE
 
-Do NOT choose an ALBI-change threshold yet.
+Strong medication-order evidence with clear HCC indication but incomplete Beacon information.
 
-# ============================================================
-# PART 11 — CHARACTERIZE THE ALBI CHANGE DISTRIBUTION
-# ============================================================
+### LOW
 
-For each decision node report:
+Single isolated order with uncertain fulfillment/use.
 
-- N with paired ALBI
-- mean/SD
-- median/IQR
-- 5th/25th/50th/75th/95th percentiles
+Primary line-of-therapy analyses should use HIGH + possibly MODERATE.
 
-Report counts with approximately:
-
-- ΔALBI ≤ −0.5
-- −0.5 to −0.25
-- −0.25 to +0.25
-- +0.25 to +0.5
-- > +0.5
-
-These categories are descriptive only.
-
-Do not use them for outcome modeling.
+Run HIGH-only sensitivity counts.
 
 # ============================================================
-# PART 12 — DEFINE TUMOR-RESPONSE PHENOTYPES
+# PART 3 — REBUILD LINES OF THERAPY
 # ============================================================
 
-At reassessment classify patients, when possible, into:
+Do NOT reuse the previous line assignment without validation.
 
-1. `NO_VIABLE_DISEASE`
-2. `RESIDUAL_LIVER_CONFINED_DISEASE`
-3. `INTRAHEPATIC_PROGRESSION`
-4. `MACROVASCULAR_INVASION`
-5. `EXTRAHEPATIC_PROGRESSION`
-6. `UNCLASSIFIABLE`
+Construct systemic lines based on REGIMEN EPISODES.
 
-The most important potential clinical-equipoise group is:
+Rules:
 
-`RESIDUAL_LIVER_CONFINED_DISEASE`
+1. First HCC-directed systemic regimen = candidate 1L.
 
-because these patients may plausibly be candidates for either:
+2. Repeated cycles of the same regimen remain the same line.
 
-- another TACE
-or
-- systemic therapy
+3. Maintenance treatment remains the same line.
 
-Do not assume that every patient with progression is TACE eligible.
+Examples:
+- nivo maintenance after nivo/ipi induction = same NI line
+- durvalumab maintenance after STRIDE = same STRIDE line
 
-# ============================================================
-# PART 13 — IDENTIFY STRONG NON-EQUIPOISE PATIENTS
-# ============================================================
+4. Temporary treatment holds do NOT create new lines.
 
-Create flags for characteristics that may strongly dictate treatment.
+5. Restarting the same regimen does NOT automatically create a new line.
 
-### Strong reasons AGAINST repeat TACE
-Potentially:
+6. A new line requires a clinically meaningful change to a different HCC systemic regimen.
 
-- major ALBI deterioration
-- severe hepatic decompensation
-- new/refractory ascites
-- encephalopathy
-- macrovascular invasion
-- extrahepatic spread
-- infiltrative tumor phenotype
-- major deterioration in bilirubin
-- poor renal function where relevant
+7. TACE-associated chemotherapy is NOT a systemic line.
 
-### Strong reasons FOR locoregional management / against systemic transition
-Examples may include:
+8. Locoregional therapy between systemic regimens does not automatically define a new systemic line.
 
-- completely liver-limited residual disease
-- very limited residual tumor burden
+9. If line assignment cannot be determined confidently:
+`LINE_UNCERTAIN`
 
-Do NOT create exclusions yet.
+Do not force a classification.
 
-First measure their prevalence.
+Create:
+- systemic_1L
+- systemic_2L
+- systemic_3L
+- start/end dates
+- confidence
 
 # ============================================================
-# PART 14 — BUILD THE CANDIDATE CLINICAL-EQUIPOISE COHORT
+# PART 4 — INDEPENDENT SECOND LINE ALGORITHM
 # ============================================================
 
-Construct several nested populations.
+As a safety check, derive 2L status TWO DIFFERENT WAYS.
 
-### E0 — All post-TACE reassessments
+### Algorithm A — Regimen-episode algorithm
+Use the episode logic above.
 
-### E1 — Active residual/recurrent HCC
-Exclude clear complete/nonviable response.
+### Algorithm B — Beacon-first algorithm
+Use treatment-plan changes as the primary determinant, then validate with medications.
 
-### E2 — Liver-confined active disease
-Exclude:
-- definite extrahepatic progression
-- definite major vascular invasion
+Compare A vs B.
 
-### E3 — Clinically plausible repeat-TACE/systemic candidates
-E2 plus no clearly catastrophic hepatic decompensation.
+Print:
 
-Do NOT require Child-Pugh because it is not reliably available.
+- concordant 1L
+- discordant 1L
+- concordant 2L
+- discordant 2L
 
-Use objective structured hepatic reserve instead:
+Calculate concordance percentage.
+
+Target:
+>90% agreement for common regimens.
+
+Every discordant 2L case should undergo patient-level timeline review if feasible.
+
+Do not use treatment sequencing for project selection if agreement remains poor.
+
+# ============================================================
+# PART 5 — EXPLAIN THE CURRENT V8 LINE-OF-THERAPY ANOMALY
+# ============================================================
+
+The previous v8 report found approximately:
+
+- lenvatinib: 165 patients
+- sorafenib: 90
+- cabozantinib: 76
+
+but assigned only:
+
+- lenvatinib 1L: 5
+- sorafenib 1L: 1
+
+Investigate this explicitly.
+
+Determine whether the discrepancy is caused by:
+
+- incorrect first-line logic
+- older historical ICI orders
+- non-HCC indications
+- order dates versus actual therapy dates
+- oral TKI order artifacts
+- prior systemic therapy misclassification
+- date handling
+- Beacon mapping
+- another bug
+
+Print a reconciliation table for EVERY TKI:
+
+TOTAL HCC-LINKED
+→ valid exposure
+→ 1L
+→ 2L
+→ 3L+
+→ uncertain
+
+The counts must sum correctly.
+
+# ============================================================
+# PART 6 — BUILD THE SYSTEMIC TREATMENT TRANSITION MATRIX
+# ============================================================
+
+For all validated high-confidence treatment trajectories create a matrix:
+
+ROWS = 1L regimen
+COLUMNS = 2L regimen
+
+Print patient counts.
+
+Do the same for:
+
+2L → 3L
+
+Do not calculate outcomes.
+
+Also print the top 25 sequence patterns.
+
+# ============================================================
+# PART 7 — MEDICAL-ONCOLOGY DECISION NODE #1:
+# AFTER FIRST-LINE ATEZO/BEV
+# ============================================================
+
+This is the highest-priority node.
+
+Identify all patients with:
+
+- HIGH-confidence HCC
+- HIGH/MODERATE-confidence first-line Atezo/Bev
+- subsequent clinically identifiable treatment decision
+
+Characterize mutually exclusive subsequent strategies:
+
+A. TKI class
+B. Nivo/Ipi
+C. STRIDE
+D. ramucirumab
+E. other systemic strategy
+F. no observed subsequent systemic therapy
+
+Within TKI classify:
+- lenvatinib
+- cabozantinib
+- sorafenib
+- regorafenib
+
+Print exact N for each branch.
+
+Do NOT compare outcomes.
+
+# ============================================================
+# PART 8 — DEFINE A TRUE 2L DECISION INDEX
+# ============================================================
+
+For patients receiving a subsequent systemic therapy:
+
+Time zero should be the START of 2L therapy.
+
+For feasibility analyses, measure all treatment-selection covariates immediately BEFORE 2L.
+
+Preferred lab window:
+- −14 to 0 days
+
+Sensitivity:
+- −30 to 0 days
+
+Extract:
+
 - ALBI
-- bilirubin
-- INR
-- creatinine
-- sodium
-- ascites
-- encephalopathy
-
-### E4 — Treatment-decision cohort
-E3 restricted to patients who actually receive within 90 days:
-
-- repeat TACE
-OR
-- systemic therapy
-
-For each population report branch counts.
-
-# ============================================================
-# PART 15 — BASELINE VARIABLES AT THE DECISION NODE
-# ============================================================
-
-Measure variables strictly BEFORE the management decision.
-
-Include:
-
-### Patient
-- age
-- sex
-- race/ethnicity
-
-### Hepatic reserve
-- pre-TACE ALBI
-- post-TACE ALBI
-- ΔALBI
 - albumin
 - bilirubin
 - INR
-- creatinine
 - sodium
+- creatinine
 - platelets
+- hemoglobin
+- AFP
 - ascites
 - encephalopathy
-- prior decompensation
+- portal hypertension
+- varices
+- bleeding
+- CKD
+- hypertension
+- VTE
+- anticoagulation
+- autoimmune disease
+- immunosuppression
+- prior liver-directed therapy
+- hospitalization burden
+- duration of 1L
+- number of 1L administrations
+- reason-for-stop if structured
 
-### Tumor characteristics
-from radiology where reliable:
-- residual viable disease
-- lesion size
-- multifocal disease
-- bilobar disease
-- new lesions
-- macrovascular invasion
-- extrahepatic disease
-
-### Tumor marker
-- AFP nearest reassessment
-
-### Treatment history
-- TACE number
-- prior Y90
-- prior ablation
-- prior resection
-- prior radiation
-- prior systemic therapy
-
-### Utilization
-- inpatient admissions before reassessment
-- ED visits
-
-### Site
-- facility/department where appropriate
-
-Do not include anything measured after repeat TACE/systemic initiation.
+Do not use any information occurring after 2L initiation.
 
 # ============================================================
-# PART 16 — DATA COMPLETENESS AT THE DECISION NODE
+# PART 9 — RECOVER PERFORMANCE STATUS / STAGE FROM TEXT
 # ============================================================
 
-For E4 report missingness separately in:
+This is exploratory QA only.
 
-- repeat-TACE
-- systemic-switch
+Because `ptnotes_text` and `radiology_text` exist, determine whether we can recover key confounders currently missing from structured data.
 
-for every major candidate confounder.
+Do NOT build a sophisticated NLP model yet.
 
-Classify:
+Use simple text pattern searches followed by manual validation.
 
-- <10% missing = EXCELLENT
-- 10–20% = GOOD
-- 20–40% = MODERATE
-- >40% = POOR
+Within −45 to 0 days before systemic treatment decision search oncology notes for:
 
-Particularly report:
+### ECOG
+patterns such as:
+- ECOG 0
+- ECOG: 1
+- ECOG PS 2
+- performance status
 
-- post-TACE ALBI
-- AFP
-- radiographic response
-- lesion burden
-- macrovascular invasion
-- extrahepatic spread
+### Child-Pugh
+- Child-Pugh A
+- Child Pugh A
+- CP-A
+- Child-Pugh B
+- numerical score if present
 
-# ============================================================
-# PART 17 — RAW CLINICAL EQUIPOISE / BALANCE ASSESSMENT
-# ============================================================
-
-Compare repeat-TACE versus systemic-switch patients in E4.
-
-Calculate raw standardized mean differences for all measured pretreatment variables.
-
-Do NOT fit outcome models.
+### BCLC
+- BCLC A/B/C/D
+- Barcelona stage
 
 Report:
 
-- maximum |SMD|
-- number >0.10
-- number >0.20
-- variables most strongly determining treatment choice
+- patients with candidate ECOG text
+- successfully parsed value N
+- patients with candidate Child-Pugh text
+- parsed value N
+- BCLC N
 
-This tells us whether treatment selection is overwhelmingly deterministic.
+MANUALLY AUDIT at least 30 parsed examples for each phenotype before accepting it.
+
+Report precision from manual review.
+
+Do not use text-extracted variables in a causal model unless manual precision is acceptably high.
 
 # ============================================================
-# PART 18 — PROPENSITY / COMMON-SUPPORT FEASIBILITY
+# PART 10 — RADIOLOGY-BASED DISEASE BURDEN FEASIBILITY
 # ============================================================
 
-Fit an exploratory TREATMENT-ASSIGNMENT model only.
+For patients at major systemic decision nodes, locate the closest liver CT/MRI report BEFORE the decision.
 
-Outcome:
+Assess whether simple text extraction can identify:
 
-`SYSTEMIC_SWITCH = 1`
-`REPEAT_TACE = 0`
-
-Use a parsimonious clinically motivated set such as:
-
-- post-TACE ALBI
-- ΔALBI
-- age
-- AFP if usable
-- residual viable disease burden
+- extrahepatic metastatic disease
+- portal vein tumor thrombus / macrovascular invasion
+- new lesions
+- progression
+- viable HCC
+- largest lesion size
 - multifocal/bilobar disease
-- vascular invasion
-- extrahepatic disease
-- ascites/decompensation
-- TACE episode number
-- prior locoregional treatment
 
-Do NOT use downstream outcomes.
+For this phase:
+
+- measure REPORT AVAILABILITY
+- perform simple keyword/pattern extraction
+- manually audit at least 30 reports
+
+Do not construct final tumor-response phenotypes yet.
+
+Report how often a relevant pretreatment CT/MRI report exists within:
+
+- 30 days
+- 60 days
+- 90 days
+
+This is important because disease progression/burden may drive 2L selection.
+
+# ============================================================
+# PART 11 — DECISION NODE #1A:
+# NIVO/IPI VS ANY TKI AFTER ATEZO/BEV
+# ============================================================
+
+If branch Ns permit, construct a candidate comparison:
+
+1L Atezo/Bev
+→
+2L Nivo/Ipi
+
+versus
+
+1L Atezo/Bev
+→
+2L TKI
+
+Do not inspect treatment effects.
+
+Report:
+
+- N in each arm
+- deaths after 2L initiation in each arm
+- follow-up availability
+- baseline covariate completeness at 2L
+- ECOG text availability
+- Child-Pugh text availability
+- radiology availability
+
+Then estimate a PROPENSITY SCORE using only pre-2L variables for DIAGNOSTIC PURPOSES.
+
+Do not model outcomes.
 
 Assess:
-
-- propensity distribution
+- PS distributions
 - empirical common support
-- overlap-weight ESS
-- weighted SMDs
+- proportion of each arm within support
+- raw SMDs
+- overlap-weighted SMDs
+- effective sample size
 
-Do NOT optimize AUC.
+If one arm N <20:
+label `TOO SMALL`.
 
-The critical question is:
+If one arm N 20–29:
+label `EXPLORATORY`.
 
-> Are there genuinely similar patients who received each strategy?
-
-# ============================================================
-# PART 19 — ASSESS EQUIPOISE WITHIN ΔALBI
-# ============================================================
-
-Because ΔALBI may become the eventual treatment-effect modifier, examine whether both treatments are represented across the continuous ΔALBI distribution.
-
-Report treatment counts using descriptive bins such as:
-
-- ≤−0.5
-- −0.5 to −0.25
-- −0.25 to +0.25
-- +0.25 to +0.5
-- >+0.5
-
-Also use finer quantile-based bins if necessary.
-
-Within each reasonable ΔALBI region report:
-
-- repeat TACE N
-- systemic switch N
-- key covariate balance
-
-Do not fit a treatment × ΔALBI outcome model.
-
-The purpose is to determine whether such a model would eventually be identifiable.
+If both arms >=30:
+continue feasibility assessment.
 
 # ============================================================
-# PART 20 — COMPARE THE DIFFERENT DECISION NODES
+# PART 12 — DECISION NODE #1B:
+# TKI CHOICE AFTER ATEZO/BEV
 # ============================================================
 
-Create a decision-node feasibility table comparing:
+Among validated 2L TKIs after Atezo/Bev, report counts for:
 
-- after TACE #1
-- after TACE #2
-- after TACE #3
+- lenvatinib
+- cabozantinib
+- sorafenib
+- regorafenib
+
+Do not automatically run four-way causal modeling.
+
+Identify whether any TWO TKIs each have:
+
+- N ≥25 minimum
+- preferably N ≥40
+
+For plausible pairs, assess:
+
+- baseline ALBI
+- renal function
+- AFP
+- decompensation
+- prior toxicity
+- disease burden proxies
+- PS overlap
+- common support
+
+Possible candidate comparisons include:
+
+- lenvatinib vs cabozantinib
+- lenvatinib vs sorafenib
+- cabozantinib vs sorafenib
+
+Only evaluate pairs actually supported by N.
+
+No outcomes comparison yet.
+
+# ============================================================
+# PART 13 — DECISION NODE #1C:
+# OTHER POST-ATEZO/BEV OPTIONS
+# ============================================================
+
+Assess feasibility separately for:
+
+### STRIDE after Atezo/Bev
+Print N.
+
+### Ramucirumab after Atezo/Bev
+Restrict eligibility analysis to patients with AFP ≥400 near 2L if AFP available.
+
+Print:
+- ramucirumab N
+- potentially eligible AFP≥400 comparator patients
+- comparator TKI N
+
+### Pembrolizumab/nivolumab monotherapy
+Print usage but do not assume current clinical equipoise.
+
+Do not compare outcomes unless a future project is selected.
+
+# ============================================================
+# PART 14 — DECISION NODE #2:
+# AFTER FIRST-LINE STRIDE
+# ============================================================
+
+Identify validated 2L treatment patterns after STRIDE.
+
+Print:
+
+- any TKI
+- lenvatinib
+- cabozantinib
+- sorafenib
+- regorafenib
+- Atezo/Bev
+- Nivo/Ipi
+- other
+
+Then determine whether there is any decision node with ≥25 patients per branch.
+
+Do not force a comparison if the data are sparse.
+
+# ============================================================
+# PART 15 — DECISION NODE #3:
+# AFTER ANY FIRST-LINE ICI COMBINATION
+# ============================================================
+
+Pool first-line:
+
+- Atezo/Bev
+- STRIDE
+- Nivo/Ipi ONLY where truly first-line
+- other validated first-line ICI combinations if present
+
+Then classify 2L strategy as:
+
+A. TKI
+B. dual-ICI / ICI-based strategy
+C. VEGF/antibody-based strategy
+D. other
+
+This is a broader medical-oncology decision question:
+
+> After first-line immunotherapy, is there enough clinical equipoise and data to compare a TKI-based strategy with another immunotherapy-based strategy?
+
+Assess only feasibility/overlap.
+
+Do not compare outcomes.
+
+# ============================================================
+# PART 16 — DECISION NODE #4:
+# SECOND-LINE TKI AFTER ANY FIRST-LINE ICI
+# ============================================================
+
+Pool patients whose 1L was an ICI-containing regimen and whose 2L was a TKI.
+
+Compare TKI branch sizes:
+
+- lenvatinib
+- cabozantinib
+- sorafenib
+- regorafenib
+
+This may produce a larger and cleaner TKI comparison than restricting only to Atezo/Bev.
+
+Assess potential pairwise equipoise.
+
+Again:
+no outcome effects.
+
+# ============================================================
+# PART 17 — DECISION NODE #5:
+# MANAGEMENT AFTER ICI-ASSOCIATED LIVER INJURY
+# ============================================================
+
+Use the validated post-ICI liver injury screen only as a starting phenotype.
+
+Identify patients with:
+- new ALT/AST ≥3× ULN after ICI
+- supporting steroid initiation and/or treatment hold where available
+
+Determine whether sufficient patients subsequently:
+
+A. resume/rechallenge ICI
+B. permanently discontinue ICI / switch therapy
+
+Report N only.
+
+Also report:
+- peak AST/ALT
+- bilirubin
+- steroid use
+- mycophenolate
+- time to biochemical improvement
+- treatment-resumption data availability
+
+This is a clinically relevant medical-oncology decision, but classify as feasible only if the phenotype can be validated and branch Ns are adequate.
+
+# ============================================================
+# PART 18 — DECISION NODE #6:
+# BEVACIZUMAB COMPONENT MANAGEMENT
+# ============================================================
+
+Among Atezo/Bev-treated HCC patients, identify cases where:
+
+- bevacizumab is held/stopped
+- atezolizumab continues
+
+versus:
+- both components continue
+
+Determine whether the data can reliably identify a component hold.
+
+Potential triggers:
+- proteinuria
+- hypertension
+- bleeding
+- VTE
+- wound/procedure issues if structured
+
+Report:
+
+- number with bevacizumab hold
+- number continuing atezolizumab alone
+- number restarting bevacizumab
+- number permanently stopping bevacizumab
+
+No outcome comparison.
+
+This could support a future:
+“Does maintaining atezolizumab during bevacizumab interruption preserve treatment benefit?”
+question if N is adequate.
+
+# ============================================================
+# PART 19 — DYNAMIC LIVER FUNCTION AT SYSTEMIC DECISION POINTS
+# ============================================================
+
+Explore whether a MEDICAL ONCOLOGY project can use dynamic ALBI without forcing a specific drug comparison.
+
+For patients receiving systemic therapy, quantify:
+
+- baseline ALBI
+- best/worst ALBI during 1L
+- ALBI near 1L discontinuation
+- ALBI at 2L decision
+- change baseline → 2L
+
+Report N with complete trajectories.
+
+Potential question:
+
+> Does deterioration in hepatic reserve during first-line therapy predict loss of access to subsequent systemic therapy?
+
+But do NOT model this yet.
+
+Also determine whether:
+- patients dying before 2L
+- patients with no observed 2L
+can be reliably distinguished from patients simply censored/lost to follow-up.
+
+# ============================================================
+# PART 20 — OTHER MEDICAL-ONCOLOGY OPPORTUNITY DISCOVERY
+# ============================================================
+
+Search the validated systemic-treatment trajectories for other common decision nodes.
+
+Automatically print every transition node satisfying:
+
+- parent treatment/state N ≥40
+AND
+- at least two subsequent systemic branches with N ≥20 each
+
+Examples:
+
+REGIMEN X
+→ option A: N
+→ option B: N
+→ option C: N
+
+Do NOT use outcomes to find these nodes.
+
+For each node provide:
+- decision time
+- branch counts
+- relevant treatment-selection covariates
+- missing confounders
+- endpoint availability
+
+This is an important discovery step.
+
+Do not restrict yourself only to the candidate questions listed above.
+
+# ============================================================
+# PART 21 — CLINICAL EQUIPOISE GATE
+# ============================================================
+
+Every candidate causal project must pass ALL of these tests.
+
+### Gate 1 — same clinical decision time
+Both strategies must start from the same treatment state.
+
+Example:
+after failure/discontinuation of first-line Atezo/Bev.
+
+### Gate 2 — both options represented
+Preferred:
+≥40 patients/arm.
+
+Potentially feasible:
+≥30/arm.
+
+Exploratory:
+20–29/arm.
+
+Reject:
+<20 in either arm.
+
+### Gate 3 — indication/eligibility overlap
+Patients receiving the two strategies must plausibly have been eligible for either strategy.
+
+Identify obvious treatment-deterministic factors.
+
+### Gate 4 — measurable treatment-selection factors
+Assess completeness of:
+
+- liver reserve
+- renal function
+- bleeding/portal hypertension
+- autoimmune/immunosuppression
+- AFP
+- disease burden
+- ECOG if text extraction succeeds
+- Child-Pugh if text extraction succeeds
+
+### Gate 5 — empirical positivity
+Before looking at outcome effects:
+
+- PS overlap
+- common support
+- overlap-weighted balance
+- ESS
+
+### Gate 6 — endpoint density
+Report:
+- deaths
+- follow-up
+- other relevant events
+
+Counts only.
+
+### Gate 7 — date-shift independence
+Prefer designs based on:
+- within-patient sequencing
+- within-patient intervals
+
+Penalize questions requiring true cross-patient calendar era.
+
+A candidate failing a gate should NOT be recommended as a primary causal project.
+
+# ============================================================
+# PART 22 — TARGET-TRIAL SPECIFICATION FOR EVERY SURVIVING NODE
+# ============================================================
+
+For every candidate passing the equipoise gate, specify:
+
+### Eligibility
+Exact inclusion/exclusion criteria.
+
+### Treatment strategies
+Exact alternatives being compared.
+
+### Time zero
+Single clinically meaningful decision point.
+
+### Grace period
+If required.
+
+### Follow-up
+When follow-up begins and ends.
+
+### Primary outcome
+Prefer clinically meaningful endpoints such as:
+- overall survival
+- hepatic-decompensation-free survival
+- treatment failure
+
+### Secondary outcomes
+
+### Estimand
+For example:
+- overlap-population average treatment effect
+
+### Confounders
+Measured pre-treatment variables.
+
+### Important missing confounders
+
+### Positivity assessment
+
+### Anticipated analysis
+Do not run it yet.
+
+The purpose is to ensure the observational analysis emulates a coherent trial rather than merely comparing medication groups.
+
+# ============================================================
+# PART 23 — HIGH-ASSURANCE MANUAL AUDIT
+# ============================================================
+
+Before final project ranking:
+
+For EACH candidate project that appears feasible, manually inspect:
+
+- 20 random patients from arm A
+- 20 random patients from arm B
+- 20 patients near propensity/common-support boundaries
+- ALL major algorithm-discordant cases up to 30
+
+For each, print a compact clinical timeline containing:
+
+- HCC evidence
+- 1L
+- reason-for-line-change if available
+- 2L
+- baseline labs
+- relevant imaging/report
+- relevant oncology-note phenotype
+- competing malignancy evidence
+
+Then report:
+
+`MANUAL AUDIT PASS RATE`
+
+for:
+- correct HCC indication
+- correct 1L
+- correct 2L
+- correct index date
+
+Require ≥90% accuracy before calling the candidate HIGH-CONFIDENCE.
+
+If <90%:
+fix the algorithm and rerun.
+
+# ============================================================
+# PART 24 — DATA-QUALITY RED TEAM
+# ============================================================
+
+Before producing recommendations, actively try to falsify your own results.
+
+For every leading project answer:
+
+1. Could these patients actually have different cancer indications?
+2. Could oral medication orders represent prescriptions never taken?
+3. Could treatment lines be misordered?
+4. Could a maintenance drug be mislabeled as a new line?
+5. Could TACE chemotherapy contaminate systemic therapy?
+6. Could one arm have systematically poorer data capture?
+7. Could follow-up be calculated incorrectly?
+8. Could baseline variables actually occur after index?
+9. Could duplicate orders inflate treatment counts?
+10. Could text-extracted ECOG/Child-Pugh be incorrect?
+11. Could the apparent treatment choice be nearly deterministic based on an unmeasured factor?
+12. Does date shifting invalidate any part of the design?
+
+Print a red-team result for each leading candidate.
+
+# ============================================================
+# PART 25 — FINAL MEDICAL ONCOLOGY OPPORTUNITY TABLE
+# ============================================================
+
+Only after ALL QA steps, print one row per candidate project.
 
 Columns:
 
-- total reassessments
-- liver-confined active disease N
-- repeat-TACE N
-- systemic-switch N
-- paired ALBI %
-- radiology phenotype %
-- AFP %
-- common-support %
+- Research question
+- Clinical decision node
+- Arm A N
+- Arm B N
+- Total N
+- Deaths/events available
+- Median follow-up
+- Key confounder completeness
+- ECOG availability
+- Child-Pugh availability
+- AFP availability
+- Radiology availability
+- PS common-support %
 - overlap-weight ESS
 - max weighted SMD
-- ΔALBI support
-- coding/NLP complexity
+- Manual audit accuracy
+- Exposure confidence
+- Line-of-therapy confidence
+- Date-shift dependence
+- Clinical-equipoise status
+- Coding complexity
+- Main limitation
 
-Determine which node offers the strongest **clinical equipoise and data completeness**.
-
-Do not choose based on outcomes.
-
-# ============================================================
-# PART 21 — TEST ALTERNATIVE DEFINITIONS OF THE DECISION WINDOW
-# ============================================================
-
-Sensitivity only.
-
-Compare treatment classification within:
-
-- 60 days after reassessment
-- 90 days
-- 120 days
-
-Determine whether branch assignments are stable.
-
-Also quantify patients who receive:
-
-- repeat TACE first, then systemic therapy shortly thereafter
-- systemic first, then locoregional treatment
-
-Create an explicit rule for the FIRST post-reassessment strategy.
+Do NOT show treatment-effect estimates.
 
 # ============================================================
-# PART 22 — FINAL GO / NO-GO REPORT
+# PART 26 — PROJECT SCORING
 # ============================================================
 
-At the end answer these questions directly.
+Score each project 0–10 using:
 
-1. How many patients have a first-TACE reassessment CT/MRI?
-2. How many have interpretable radiology text?
-3. How many have residual liver-confined active HCC?
-4. Among those, how many receive:
-   - repeat TACE
-   - systemic therapy?
-5. How many have paired pre/post-TACE ALBI before that decision?
-6. What is the distribution of ΔALBI?
-7. Are both strategies represented across the ΔALBI continuum?
-8. What are the strongest determinants of repeat TACE versus systemic switch?
-9. Is there adequate propensity/common support?
-10. Does overlap weighting achieve acceptable balance?
-11. Which decision node—after TACE #1, #2, or #3—has the strongest clinical equipoise?
-12. Is radiology-rule extraction adequate, or will formal NLP/manual adjudication be necessary?
-13. Is the eventual causal question:
+### Clinical equipoise: 0–3
+3 = genuine choice between routinely plausible strategies
+2 = reasonable but some channeling
+1 = substantial channeling
+0 = no meaningful equipoise
 
-> “Repeat TACE versus systemic therapy after post-TACE reassessment”
+### Sample size / positivity: 0–2
+2 = strong N and common support
+1 = marginal
+0 = inadequate
 
-classified as:
+### Confounder measurement: 0–2
+2 = major treatment-selection variables well measured
+1 = meaningful gaps
+0 = critical determinants absent
 
-- STRONG
-- FEASIBLE BUT CONSTRAINED
-- EXPLORATORY ONLY
-- NOT DEFENSIBLE
+### Endpoint/follow-up quality: 0–1
+1 = strong
+0 = inadequate
 
-14. Is `ΔALBI × treatment` effect-modification analysis:
+### Phenotype/exposure reliability: 0–1
+1 = passes triple validation/manual audit
+0 = does not
 
-- STRONG
-- FEASIBLE BUT CONSTRAINED
-- EXPLORATORY ONLY
-- NOT IDENTIFIABLE
+### Date-shift independence: 0–1
+1 = essentially independent
+0 = materially dependent on true calendar era
 
-Do NOT look at mortality or comparative treatment outcomes to answer these questions.
-
-# ============================================================
-# SECONDARY OPPORTUNITY SCAN
-# ============================================================
-
-If repeat TACE versus systemic switch has poor equipoise, do not stop.
-
-Using the SAME post-TACE reassessment population, print counts for alternative genuine decision branches:
-
-- repeat TACE vs Y90
-- repeat TACE vs ablation
-- repeat TACE vs observation
-- systemic therapy vs observation
-
-For each report:
-
-- branch N
-- radiology completeness
-- ALBI completeness
-- rough common-support assessment
-
-This is feasibility only.
-
-Do not estimate outcomes.
+Do NOT include:
+- observed effect size
+- P-values
+- direction of outcomes
+- novelty claims
 
 # ============================================================
-# OUTPUT TABLES
+# PART 27 — FINAL REPORT
 # ============================================================
 
-Persist:
+Return FOUR sections.
 
-- `hcc_tace_reassessment_v9`
-- `hcc_tace_radiology_phenotype_v9`
-- `hcc_tace_decision_nodes_v9`
-- `hcc_tace_equipoise_cohort_v9`
-- `hcc_tace_propensity_feasibility_v9`
-- `hcc_tace_albi_support_v9`
+## A. SYSTEMIC DATA AUDIT
 
-Do not overwrite v8 or earlier tables.
+State:
+
+- whether systemic episodes are now trustworthy
+- whether line-of-therapy assignment is trustworthy
+- exact explanation for the prior TKI discrepancy
+- source concordance
+- manual audit accuracy
+
+## B. MEDICAL ONCOLOGY DECISION-NODE MAP
+
+Print every validated systemic decision node with branch Ns.
+
+## C. TOP 5 MEDICAL ONCOLOGY PROJECTS BY EQUIPOISE + DATA QUALITY
+
+For each provide:
+
+- exact research question
+- target trial emulation
+- branch Ns
+- outcome/event counts
+- PS overlap
+- confounder completeness
+- manual validation result
+- decisive strength
+- decisive limitation
+
+## D. QUESTIONS THAT SHOULD NOT BE PURSUED
+
+Explicitly list attractive but methodologically weak questions and why.
+
+Include the original:
+
+`Atezo/Bev vs STRIDE × baseline ALBI`
+
+unless new evidence genuinely solves its prior within-ALBI positivity problem.
 
 # ============================================================
-# COMPLETION REQUIREMENT
+# PERSIST OUTPUTS
 # ============================================================
 
-Do not finish with a plan or ask whether I want you to continue.
+Create:
 
-Execute and debug every part.
+- `hcc_systemic_episodes_validated_v9`
+- `hcc_lines_of_therapy_validated_v9`
+- `hcc_lot_discordance_audit_v9`
+- `hcc_medonc_decision_nodes_v9`
+- `hcc_medonc_overlap_diagnostics_v9`
+- `hcc_text_confounder_coverage_v9`
+- `hcc_medonc_project_readiness_v9`
+
+Do not overwrite earlier tables.
+
+# ============================================================
+# COMPLETION CHECKLIST
+# ============================================================
 
 At the end print:
 
-Part 1: COMPLETE
-...
-Part 22: COMPLETE
+Source triangulation: PASS / FAIL
+HCC indication triangulation: PASS / FAIL
+Treatment episode validation: PASS / FAIL
+Line-of-therapy A/B algorithm concordance: ___%
+Manual timeline audit: ___%
+Invariant checks: PASS / FAIL
+Text phenotype validation: PASS / FAIL / NOT FEASIBLE
+Decision-node discovery: COMPLETE / INCOMPLETE
+Equipoise diagnostics: COMPLETE / INCOMPLETE
+Target-trial specifications: COMPLETE / INCOMPLETE
 
-For any failed part:
-`INCOMPLETE — [exact reason]`
+Do not describe this phase as complete if any required component failed.
 
-STOP before comparative outcomes.
+If something fails, state exactly what failed and whether the associated project is therefore unusable.
+
+STOP before estimating any comparative treatment effects.
