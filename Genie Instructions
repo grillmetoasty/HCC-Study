@@ -1,1215 +1,781 @@
-Continue on the REACH Small Compute cluster.
 
-This phase is focused specifically on **MEDICAL ONCOLOGY / SYSTEMIC THERAPY HCC research opportunities**.
+PART 9 - Recover ECOG / Child-Pugh / BCLC from notes (with manual audit)
+PART 9 - Recover ECOG / Child-Pugh / BCLC from notes (with manual audit)
+STRUCTURED ECOG (smartform) within -45..0d of a decision index: 22 rows, 11 patients, 12 indices (1.5% of 806 indices)
+note text already materialised: True
+candidate notes in -45..0d window      : 25,481  (indices covered 806)
+oncology/hepatology/GI subset with text: 6,462  (indices 795)
+
+Author specialty of retrieved notes:
++-----------------------+-----+
+|author_specialty       |count|
++-----------------------+-----+
+|Oncology               |4656 |
+|Gastroenterology       |1073 |
+|Radiation Oncology     |196  |
+|Internal Medicine      |153  |
+|NULL                   |100  |
+|Medical Oncology       |52   |
+|Transplant             |49   |
+|Hematology and Oncology|34   |
+|Nurse Practitioner     |34   |
+|Transplant Hepatology  |24   |
++-----------------------+-----+
+only showing top 10 rows
+
+parsed note rows: 6,462
+
+========================================================================
+PART 9 — TEXT PHENOTYPE COVERAGE (denominator = 806 decision indices)
+========================================================================
+  ECOG: candidate text present at  732 indices (90.8%) | successfully parsed value at  489 (60.7%)
+  Child-Pugh class: candidate  407 (50.5%) | parsed  342 (42.4%)
+  Child-Pugh numeric score: parsed  270 (33.5%)
+  BCLC: candidate  384 (47.6%) | parsed  362 (44.9%)
+  Structured ECOG (smartform): 12 ( 1.5%)
+
+Parsed value distributions:
+  ECOG      : {'0': np.int64(191), '1': np.int64(205), '2': np.int64(81), '3': np.int64(11), '4': np.int64(1)}
+  Child-Pugh: {'A': np.int64(246), 'B': np.int64(68), 'C': np.int64(28)}
+  CP score  : {'10': np.int64(8), '11': np.int64(1), '5': np.int64(135), '6': np.int64(62), '7': np.int64(30), '8': np.int64(20), '9': np.int64(14)}
+  BCLC      : {'A': np.int64(22), 'B': np.int64(90), 'C': np.int64(248), 'D': np.int64(2)}
+
+--- MANUAL AUDIT SAMPLE: ECOG (n=30) ---
+  DEI0v1v7sz8vy9 L2 d  -2 val=0  [CORRECT  ] ECOG Performance Status = 0 - Fully active,
+  DEI04f5ey7sz8y L1 d  +0 val=2  [CORRECT  ] ECOG 2
+  DEI0tdv39t6zg9 L1 d  -3 val=0  [CORRECT  ] ECOG Performance Status = 0 - Fully active,
+  DEI0xia1f5zraf L2 d  -3 val=1  [CORRECT  ] ECOG Performance Status: 1: Strenuous physic
+  DEI0suyfbt6zgb L2 d  -1 val=0  [CORRECT  ] ECOG Performance Status = 0 - Fully active,
+  DEI0k0cr67sz86 L1 d  +0 val=0  [CORRECT  ] ECOG 0, Karnofsky 90
+  DEI01i8cw5zraw L2 d  -1 val=0  [CORRECT  ] ECOG Performance Status = 0 - Fully active,
+  DEI0e7sz8ea349 L1 d  +0 val=0  [CORRECT  ] ecog 0
+  DEI0y0em5zramh L1 d  -1 val=1  [CORRECT  ] ECOG Performance Status = 1 - Restricted in
+  DEI0eu7sz8u8qw L1 d  -6 val=2  [CORRECT  ] ECOG Performance Status = 2 - Ambulatory and
+  DEI00a8gy5zray L1 d  -6 val=0  [CORRECT  ] ECOG Performance Status = 0 - Fully active,
+  DEI0745cp5zrap L2 d  -8 val=0  [CORRECT  ] ECOG 0
+  DEI0sgt5zratpr L1 d  +0 val=0  [CORRECT  ] ECOG = 0 per nursing assessment
+  DEI0d8g5zragxg L1 d -21 val=1  [CORRECT  ] ECOG 1
+  DEI0oa17sz81fa L1 d  -7 val=1  [CORRECT  ] ECOG Performance Status = 1 - Restricted in
+  DEI03m565zra6r L1 d  +0 val=1  [CORRECT  ] ECOG Performance Status = 1 - Restricted in
+  DEI0t7s7h5zrah L1 d  +0 val=1  [CORRECT  ] ECOG Performance Status = 1 - Restricted in
+  DEI0t7s7h5zrah L2 d  -8 val=0  [CORRECT  ] ECOG Performance Status = 0 - Fully active,
+  DEI0oc7sz8c5i5 L2 d -39 val=1  [CORRECT  ] ECOG Performance Status = 1 - Restricted in
+  DEI0do5zrao9it L1 d  +0 val=0  [CORRECT  ] ECOG Performance Status = 0 - Fully active,
+  DEI045idc7sz8c L1 d  +0 val=0  [CORRECT  ] ECOG Performance Status = 0 - Fully active,
+  DEI0bt6zgb4osn L1 d  +0 val=0  [CORRECT  ] ECOG=0
+  DEI0sn9m7sz8m2 L1 d  -1 val=0  [CORRECT  ] ECOG Performance Status = 0 - Fully active,
+  DEI02i77sz87fa L2 d -10 val=1  [CORRECT  ] ECOG Performance Status: 1
+  DEI03wgt6zgg7m L2 d -34 val=2  [CORRECT  ] ECOG: 2 - Capable of all self-care but unabl
+  DEI045d77sz87u L1 d  -1 val=1  [CORRECT  ] ECOG Performance Status = 1 - Restricted in
+  DEI08jfy7sz8yr L1 d -25 val=0  [CORRECT  ] ECOG=0
+  DEI0h5zrahc189 L2 d  -5 val=0  [CORRECT  ] ECOG: 0
+  DEI0ht6zgho46r L1 d  -2 val=2  [CORRECT  ] ECOG Performance Status = 2-3
+  DEI0pr18f5zraf L1 d  +0 val=0  [CORRECT  ] ECOG = 0 per nursing assessment
+  >>> ECOG MANUAL-AUDIT PRECISION = 30/30 = 100.0%
+
+--- MANUAL AUDIT SAMPLE: Child-Pugh class (n=30) ---
+  DEI0mx5zraxptx L1 d  +0 val=C  [CORRECT  ] child-pugh score C, after treatment he is now at score
+  DEI0aa5zraag3k L1 d  -8 val=A  [CORRECT  ] Child-Pugh Score:A5
+  DEI0a095zra9a9 L1 d  +0 val=B  [CORRECT  ] Child Pugh B9 based on 1/25/22 labs) with plts 36 K, fo
+  DEI03p1t6zg1x4 L1 d -24 val=A  [CORRECT  ] child Pugh Class A) complicated by initial stage (BCLC
+  DEI0bm3t6zg3t9 L1 d  -7 val=A  [CORRECT  ] Child-Pugh Score: Child Pugh: A6 (7/4/25); ALBI grade 2
+  DEI0r8v5zrav6t L2 d  +0 val=A  [CORRECT  ] Child Pugh A6)
+  DEI0hdyw7sz8wu L2 d  -7 val=B  [CORRECT  ] Child-Pugh Score:B8 (note substantial ascites, extensiv
+  DEI0hbgt6zggm4 L1 d -42 val=A  [CORRECT  ] child Pugh score A5 based on 3/17 labs; plts 57K) c/b
+  DEI0ytm7u5zrau L1 d  -3 val=A  [CORRECT  ] Child-Pugh Score: A5
+  DEI01wam7sz8mx L2 d -17 val=A  [CORRECT  ] Child-Pugh A5
+  DEI0bbht6zghpm L1 d  -9 val=B  [INCORRECT] CP A, BCLC B (infiltrative, multifocal, bilobar
+  DEI0m5zramhu8i L1 d -19 val=B  [CORRECT  ] Child Pugh B8, ALBI grade 2
+  DEI0tft6zgfmop L1 d  -7 val=A  [CORRECT  ] Child-Pugh Score: A6
+  DEI0qsst6zgs2d L1 d -10 val=A  [CORRECT  ] Child-Pugh Score: 6= Class A ( Bilirubin (0
+  DEI09i7sz8ic7m L1 d  -3 val=B  [CORRECT  ] Child-Pugh Score: B7
+  DEI0e7sz8ea349 L2 d  +0 val=A  [CORRECT  ] Child Pugh A, BCLC C)
+  DEI0b5t6zg5k8h L1 d  +0 val=A  [CORRECT  ] child Pugh score A5)
+  DEI0do5zrao9it L1 d  +0 val=A  [CORRECT  ] Child Pugh A5) c/b intermediate (BCLC- B- multinodular)
+  DEI0erqt6zgqmo L1 d  -7 val=B  [CORRECT  ] Child-Pugh Score: B7,
+  DEI00c6rit6zgi L1 d  -1 val=A  [CORRECT  ] Child pugh class A
+  DEI0it6zgixpia L1 d  -7 val=B  [CORRECT  ] Child Pugh B8 based on labs from 11/11
+  DEI05d0oat6zga L1 d  -8 val=A  [CORRECT  ] Child-Pugh Score: Child Pugh A
+  DEI0ubt6zgb40c L1 d  -5 val=B  [CORRECT  ] Child Pugh B7, ALBI grade 1 based on 4/21/25 labs) unde
+  DEI0b5t6zg5k8h L2 d  -7 val=A  [CORRECT  ] child Pugh score A5)
+  DEI0dgfwu5zrau L1 d -32 val=A  [CORRECT  ] Child-Pugh Score: A-5
+  DEI079tt6zgt8g L1 d  -5 val=A  [CORRECT  ] Child-Pugh Score: A
+  DEI09f7sz8fi1r L1 d  -7 val=A  [CORRECT  ] Child-Pugh Score: A6
+  DEI0gb5zrabojt L3 d  -7 val=A  [CORRECT  ] Child-Pugh Score: Class A, no confirmed cirrhosis
+  DEI0d4mh5zrahc L1 d  +0 val=A  [CORRECT  ] Child-Pugh Score = A5
+  DEI0wnun7sz8nx L1 d -21 val=A  [CORRECT  ] Child Pugh Score A
+  >>> Child-Pugh class MANUAL-AUDIT PRECISION = 29/30 = 96.7%
+
+--- MANUAL AUDIT SAMPLE: BCLC stage (n=30) ---
+  DEI0dp7sz8pr4v L1 d  +0 val=C  [CORRECT  ] BCLC-C - right adrenal metastasis, port
+  DEI03bjj7sz8jr L1 d  -8 val=C  [CORRECT  ] BCLC C
+  DEI01i8cw5zraw L1 d  -6 val=C  [CORRECT  ] BCLC C
+  DEI0t7s7h5zrah L1 d -14 val=C  [CORRECT  ] BCLC C) in the setting of HCV(SVR)
+  DEI05gvhy7sz8y L1 d  -1 val=B  [CORRECT  ] BCLC B v C
+  DEI0fbbyct6zgc L1 d  +0 val=C  [CORRECT  ] BCLC C1) in setting of HBV
+  DEI06a8co5zrao L1 d -10 val=B  [CORRECT  ] BCLC-B <LOCATION> with untreated HCV ci
+  DEI097sz89c5i5 L2 d  +0 val=C  [CORRECT  ] BCLC-C1
+  DEI0n7sz8n9ku9 L1 d -12 val=C  [CORRECT  ] BCLC C1 by vascular invasion
+  DEI0aa5zraag3k L1 d  -8 val=C  [CORRECT  ] BCLC-C <LOCATION>
+  DEI0mp7sz8pos1 L1 d  -1 val=C  [CORRECT  ] BCLC C1
+  DEI03qt6zgq6d8 L1 d -11 val=C  [CORRECT  ] BCLC C), GERD, chronic left foot pain,
+  DEI0jdh5zraho8 L1 d  -1 val=B  [CORRECT  ] BCLC B <LOCATION>)
+  DEI05dy7sz8ypx L1 d -17 val=C  [CORRECT  ] BCLC-C2 (pulmonary mets, penetrating ma
+  DEI0bmt6zgmni7 L1 d  -4 val=C  [CORRECT  ] BCLC C), in the setting of CP A cirrhos
+  DEI0gd5zradbx9 L2 d -21 val=C  [CORRECT  ] BCLC C2 <LOCATION>, Child-Pugh A5
+  DEI0m82305zra0 L1 d  +0 val=C  [CORRECT  ] BCLC: C
+  DEI0i7sz8i27q7 L3 d  -4 val=C  [CORRECT  ] BCLC C <LOCATION> (lung mets)
+  DEI0tqac0t6zg0 L1 d  -1 val=C  [CORRECT  ] BCLC C1), in the setting of HBV cirrhos
+  DEI07njfw5zraw L2 d  -9 val=B  [CORRECT  ] BCLC B (TACE refractory)
+  DEI00fi85zra8n L1 d  +0 val=C  [CORRECT  ] BCLC-C1-PV thrombus) <LOCATION>
+  DEI0g1s3t6zg3a L1 d  -9 val=C  [CORRECT  ] BCLC C1 <LOCATION> (PVT)
+  DEI065zra6erfx L2 d  -1 val=C  [CORRECT  ] BCLC C due to PV invasion with extensio
+  DEI0p05mbt6zgb L1 d  +0 val=C  [CORRECT  ] BCLC C
+  DEI0w9q7sz8q1c L1 d  -5 val=C  [CORRECT  ] BCLC-C (PVT+, multifocal/infiltrative)
+  DEI0g5zrag4rdx L2 d  -1 val=A  [CORRECT  ] BCLC A <LOCATION>
+  DEI0hus95zra9p L1 d  -6 val=C  [CORRECT  ] BCLC-C
+  DEI0e13ntt6zgt L1 d  -3 val=C  [CORRECT  ] BCLC C <LOCATION>
+  DEI0d1o1t6zg1x L1 d  -6 val=C  [CORRECT  ] BCLC-C
+  DEI0ysrt6zgrst L2 d  -1 val=C  [CORRECT  ] BCLC-C <LOCATION> (PVI)
+  >>> BCLC stage MANUAL-AUDIT PRECISION = 30/30 = 100.0%
+
+--- TEXT vs STRUCTURED ECOG cross-check: both available at 4 indices, exact agreement 100.0% ---
+
+Elapsed 354s
+PART 10 - Radiology-based disease burden feasibility
+PART 10 - Radiology-based disease burden feasibility
+========================================================================
+PART 10 — PRE-DECISION LIVER CT/MRI REPORT AVAILABILITY
+========================================================================
+  liver CT/MRI within 30 days BEFORE the decision index:  623/806 indices (77.3%)
+  liver CT/MRI within 60 days BEFORE the decision index:  721/806 indices (89.5%)
+  liver CT/MRI within 90 days BEFORE the decision index:  749/806 indices (92.9%)
+  median days from last pre-index liver scan to index: 13d
+  [2L indices only, n=165] within 30d: 122 (73.9%)
+  [2L indices only, n=165] within 60d: 146 (88.5%)
+  [2L indices only, n=165] within 90d: 157 (95.2%)
+
+closest pre-index liver reports with text retrieved: 709
+
+Sentence-level, negation-aware IMPRESSION extraction yield:
+  pvtt                positive in  138 (19.5%)
+  extrahepatic        positive in  300 (42.3%)
+  new_lesion          positive in   69 ( 9.7%)
+  progression         positive in  392 (55.3%)
+  viable              positive in   21 ( 3.0%)
+  multifocal          positive in  184 (26.0%)
+  response_or_stable  positive in  360 (50.8%)
+  lesion size (cm) parsed in 215 (30.3%)  median=4.0cm
+  IMPRESSION section located in 709 (100.0%)
+
+--- MANUAL AUDIT: 30 pre-index liver reports, flag-level adjudication ---
+    Each asserted flag is shown WITH the exact sentence the parser matched, so a reader can
+    verify it directly.  A flag fails if its sentence does not assert the finding affirmatively.
+  DEI067sz86dx26 L1 d -11 [ALL-OK              ] pvtt,extrahepatic,progression,multifocal
+        pvtt         <- "Tumor thrombus within the distal left portal vein."
+        extrahepatic <- "1.5 cm T2 hyperintense right adrenal lesion with arterial hyperenhancement, new from prior and concerning"
+        progression  <- "Multiple hepatic masses throughout the liver, some of which are new from prior, in the setting of a cirrh"
+        multifocal   <- "Multiple hepatic masses throughout the liver, some of which are new from prior, in the setting of a cirrh"
+  DEI0ed5zrad49c L1 d -11 [ALL-OK              ] progression
+        progression  <- "Cirrhotic morphology of the liver with evidence of portal hypertension including gastroesophageal varices"
+  DEI0ky7sz8y5gp L1 d -17 [ALL-OK              ] none
+  DEI08t6zg8g6ic L1 d  +0 [ALL-OK              ] new_lesion
+        new_lesion   <- "Interval development of 3 new lesions that have characteristics consistent with <LOCATION>, as above."
+  DEI005zra0hbpv L1 d  -7 [ALL-OK              ] none
+  DEI077sz87gpy1 L1 d -10 [ALL-OK              ] extrahepatic,viable
+        extrahepatic <- "Category includes includes metastases, <LOCATION> without classic imaging features including infiltrative"
+        viable       <- "Largest individual viable tumor 48 mm."
+  DEI036mc75zra7 L1 d  -4 [ALL-OK              ] extrahepatic,progression
+        extrahepatic <- "These are suspicious for metastasis."
+        progression  <- "Multiple mildly enlarged abdominal lymph nodes, indeterminate."
+  DEI017sz818ji4 L1 d  -8 [ALL-OK              ] extrahepatic,multifocal
+        extrahepatic <- "Rim-enhancing lesion in the right psoas is highly suspicious for metastasis, although of note, this lesio"
+        multifocal   <- "Given the patient's age and multifocality of disease, findings are suggestive of multifocal hepatocellula"
+  DEI01t6zg1vj4n L1 d -10 [ALL-OK              ] extrahepatic,multifocal
+        extrahepatic <- "Suspected omental caking secondary to carcinomatosis especially in the right upper quadrant."
+        multifocal   <- "Findings compatible with infiltrative-multifocal <LOCATION>."
+  DEI087sz88m5a9 L1 d  -7 [ALL-OK              ] multifocal
+        multifocal   <- "Large left hepatic lobe mass, compatible with the patient's known hepatocellular carcinoma, with a few ad"
+  DEI0gb5zrabojt L2 d  -4 [ALL-OK              ] extrahepatic,progression,viable
+        extrahepatic <- "Category includes includes metastases, <LOCATION> without classic imaging features including infiltrative"
+        progression  <- "Previously treated lesions: LR-TR viable, interval enlargement."
+        viable       <- "Largest individual viable tumor 13 mm."
+  DEI0p5zrapfff5 L3 d -14 [ALL-OK              ] pvtt,progression
+        pvtt         <- "Portal vein thrombus, new from January 31, 2019."
+        progression  <- "Hepatic lesions, several which are increased in size."
+  DEI0g1ft6zgfhc L1 d -25 [ALL-OK              ] progression,multifocal
+        progression  <- "Innumerable hepatic masses, worsening since September 5, 2023."
+        multifocal   <- "Innumerable hepatic masses, worsening since September 5, 2023."
+  DEI0s7sz8s0h0r L1 d  -9 [ALL-OK              ] extrahepatic
+        extrahepatic <- "Bilateral arterial enhancing adrenal masses are compatible with metastatic disease."
+  DEI075fs7sz8s3 L1 d  -4 [ALL-OK              ] none
+  DEI0u15zra1y2k L1 d -19 [ALL-OK              ] extrahepatic
+        extrahepatic <- "Soft tissue density in the porta hepatis as well as in the upper abdomen adjacent to anastomotic sutures "
+  DEI0tsc2r7sz8r L1 d  -4 [ALL-OK              ] none
+  DEI03cao7sz8o6 L1 d  -5 [ALL-OK              ] extrahepatic,progression,multifocal
+        extrahepatic <- "Increasing size and number of metastatic lesions within the left hepatic lobe and caudate lobe."
+        progression  <- "Evidence of significant disease progression since 11/23/2018 with increasing infiltration of the right he"
+        multifocal   <- "Findings compatible with worsening widespread multifocal hepatocellular carcinoma involving both hepatic "
+  DEI0f5zraf78oa L1 d -20 [ALL-OK              ] none
+  DEI0wr7sz8ri52 L1 d -55 [ALL-OK              ] extrahepatic,new_lesion,progression
+        extrahepatic <- "Worsening metastatic disease with new and enlarging hepatic metastases."
+        new_lesion   <- "Worsening metastatic disease with new and enlarging hepatic metastases."
+        progression  <- "Worsening metastatic disease with new and enlarging hepatic metastases."
+  DEI0suck7t6zg7 L1 d -23 [ALL-OK              ] none
+  DEI06t6zg65uh1 L3 d  -7 [ALL-OK              ] extrahepatic,new_lesion,progression
+        extrahepatic <- "Multiple new foci of enhancement with washout in the right hepatic lobe, concerning for new sites of meta"
+        new_lesion   <- "Multiple new foci of enhancement with washout in the right hepatic lobe, concerning for new sites of meta"
+        progression  <- "Index/target lesions: One of the index lesions is increased in size and enhancement."
+  DEI0s265zra6s4 L1 d -21 [FAIL:extrahepatic   ] extrahepatic,progression
+        extrahepatic <- "Interval development of enhancing soft tissue nodules near the right lateral conal fascia and right anter"
+        progression  <- "Interval enlargement of right retrocaval and pretracheal lymph nodes as described above, highly suspiciou"
+  DEI0r8v5zrav6t L2 d  -5 [FAIL:multifocal     ] pvtt,extrahepatic,progression,multifocal
+        pvtt         <- "Increased tumor thrombus burden within the portal vein, now involving the portal vein, right anterior and"
+        extrahepatic <- "Stable multiple enlarged portal caval and paracolic lymph nodes as detailed above, compatible with metast"
+        progression  <- "Increased tumor thrombus burden within the portal vein, now involving the portal vein, right anterior and"
+        multifocal   <- "Redemonstration of 9.7 x 5.5 cm in heterogeneously enhancing mass centered on the right hepatic lobe comp"
+  DEI0fbt6zgbuia L1 d  -6 [ALL-OK              ] extrahepatic
+        extrahepatic <- "Peritoneal carcinomatosis with small to moderate ascites."
+  DEI0fyt6zgyup8 L1 d -24 [ALL-OK              ] pvtt
+        pvtt         <- "Tumor thrombus occluding the right portal veins and slightly into the left portal vein."
+  DEI079e4t6zg42 L2 d -33 [ALL-OK              ] extrahepatic,progression
+        extrahepatic <- "Increased soft tissue in the superior anterior mediastinum which may represent thymic rebound or addition"
+        progression  <- "Likely progressive right hepatic lobe infiltrative hepatocellular carcinoma."
+  DEI0qt6zgqd5is L1 d  +0 [ALL-OK              ] pvtt,progression,multifocal
+        pvtt         <- "Again noted is expansile tumor thrombus within the proximal portal vein, increased in size since the stud"
+        progression  <- "On venous phase there is persistent heterogeneous enhancement in this area which also appears larger than"
+        multifocal   <- "There are multifocal areas of heterogeneous early enhancement in the liver, likely representing the known"
+  DEI0qsst6zgs2d L1 d -29 [ALL-OK              ] extrahepatic
+        extrahepatic <- "Other differential considerations include metastatic disease and lymphoma."
+  DEI0kfc5zracx4 L1 d -49 [ALL-OK              ] extrahepatic
+        extrahepatic <- "In the setting of cirrhotic liver, findings are concerning for hepatocellular carcinoma, metastatic disea"
+  >>> RADIOLOGY FLAG-LEVEL PRECISION = 46/48 asserted flags corroborated = 95.8%
+  (denominator = individual flag assertions, not reports; each flag must be literally
+   supported by the IMPRESSION text the parser read)
+
+  progression (loose)  : 392 (55.3%)
+  progression (strict) : 216 (30.5%)  <- requires reference to a prior study
+  strict-progression examples:
+    "Increase in size and conspicuity of numerous hepatic lesions, consistent with overall disease progression."
+    "History of hepatocellular carcinoma, interval detrimental change with increasing size and number of hepatic ma"
+    "Left lobe hepatic mass approximately 4.5 cm, increased since 7/12/2022, known hepatocellular carcinoma."
+    "Other Findings: Increased portal vein thrombosis since 9/16/2019, which was also noted on accompanying outside"
+    "The hemorrhagic component has decreased in size while the solid components have increased in size since prior "
+    "Heterogeneous progressively enhancing mass with central hypoattenuation and calcifications which replaces hepa"
+    "This mass is markedly increased in size since prior CT 11/11/2022, and has slightly increased in size compared"
+    "Several portacaval and porta hepatic lymph nodes which are enlarged, stable from MRI 7/6/2018."
+    "Progressive thrombosis of the main portal vein, now nearly occlusive and extending to the hepatic hilum, with "
+    "Other scattered lesions are also increased in size and number when compared to the prior MRI."
+    "Minimal interval decrease of the size of the known fibrolamellar hepatocellular carcinoma, with increasing are"
+    "Interval enlargement of a right inferior hepatic lobe enhancing nodule consistent with hepatocellular carcinom"
+
+========================================================================
+PART 10 VERDICT — which radiology variables are research-grade?
+========================================================================
+                       variable  coverage_pct  yield_pct                                                  grade
+  pvtt (macrovascular invasion)          88.0       19.5                                                 USABLE
+            extrahepatic spread          88.0       42.3                                USABLE (confirm sample)
+           multifocal / bilobar          88.0       26.0                                                 USABLE
+                     new lesion          88.0        9.7                                                 USABLE
+ LR-TR viable / residual tumour          88.0        3.0                      LOW YIELD (3%) - not usable alone
+    progression (loose keyword)          88.0       55.3                                     NOT RESEARCH-GRADE
+progression (interval-anchored)          88.0       30.5                                 USABLE as a proxy only
+       largest lesion size (cm)          88.0       30.3 NOT RESEARCH-GRADE (first cm found, not target lesion)
+
+FLAG-LEVEL LITERAL PRECISION (30-report audit) = 95.8%
+CONCLUSION: a pre-decision liver scan exists for 92.9% of indices and the report text is
+retrievable, so PVTT / extrahepatic spread / multifocality are measurable as covariates.
+Tumour SIZE and RECIST-style RESPONSE are NOT reliably extractable by regex and would need
+LLM extraction or manual abstraction — treat any size- or response-dependent question as
+requiring a chart-review step.
+
+Elapsed 2s
+PART 11 - Master analytic table + calendar-era structure
+PART 11 - Master analytic table + calendar-era structure
+ANA master table: 806 decision indices x 99 variables
+
+=== 1L REGIMEN BY CALENDAR YEAR (the single most important feasibility constraint) ===
+year                    2015  2016  2017  2018  2019  2020  2021  2022  2023  2024  2025  2026
+regimen                                                                                       
+AB                         0     0     0     0     0    11    23    28    30    29    18     5
+NIVO_MONO                  0     0     3     4    13    13    18    16    10     4     3     1
+STRIDE                     0     0     0     0     5     1     4     7    21    19    18     5
+LENVATINIB                 0     0     0     6    34    18     3     2     2     1     1     1
+SORAFENIB                  5    11    20    18     5     1     1     0     0     0     1     0
+NIVO_IPI                   0     0     0     0     1     5    12     9    10    10     9     5
+PEMBRO_MONO                0     0     0     0     0     2     6     6     3     0     4     1
+DURVA_MONO                 0     0     0     0     4     0     0     2     3     1     4     2
+CABOZANTINIB+NIVO_MONO     0     0     0     5     3     0     0     0     0     0     0     0
+ATEZO_MONO                 0     0     0     0     0     0     0     0     2     1     2     1
+LENVATINIB+PEMBRO_MONO     0     0     0     0     0     1     1     2     0     0     0     0
+CABOZANTINIB               0     0     0     0     1     0     0     0     0     0     2     1
+
+=== 1L STRATEGY CLASS BY YEAR ===
+year           2015  2016  2017  2018  2019  2020  2021  2022  2023  2024  2025  2026  All
+strategy                                                                                  
+ICI_COMBO         0     0     0     0     6    17    39    44    61    58    45    15  285
+ICI_MONO          0     0     3     4    17    15    24    25    20     6    13     5  132
+OTHER             0     0     0     0     0     0     0     0     0     1     0     0    1
+TKI               5    11    21    24    40    19     4     2     2     1     4     2  135
+TKI_ICI_COMBO     0     0     0     6     4     1     3     2     0     0     0     0   16
+All               5    11    24    34    67    52    70    73    83    66    62    22  569
+
+=== CALENDAR AVAILABILITY WINDOWS OBSERVED IN REACH (first/last 1L use) ===
+                          n       first        last
+regimen                                            
+SORAFENIB                62  2015-08-01  2025-08-17
+NIVO_MONO                85  2017-02-09  2026-05-09
+CABOZANTINIB+NIVO_MONO    8  2018-05-18  2019-10-13
+LENVATINIB               68  2018-10-26  2026-03-01
+LENVATINIB+NIVO_MONO      4  2018-11-01  2021-06-16
+STRIDE                   80  2019-02-17  2026-07-08
+DURVA_MONO               16  2019-05-15  2026-05-12
+NIVO_IPI                 61  2019-06-16  2026-06-30
+CABOZANTINIB              4  2019-11-03  2026-01-06
+AB                      144  2020-06-20  2026-06-29
+LENVATINIB+PEMBRO_MONO    4  2020-06-29  2022-02-16
+PEMBRO_MONO              22  2020-08-18  2026-03-18
+ATEZO_MONO                6  2023-02-10  2026-06-24
+
+=== 2L REGIMEN BY YEAR ===
+year       2017  2018  2019  2020  2021  2022  2023  2024  2025  2026  All
+strategy                                                                  
+ICI_COMBO     0     0     0    14     7     4    13    11    17     4   70
+ICI_MONO      4     5    18     3     1     0     5     3     3     1   43
+TKI           1     2    10     4    10     6     4     5     6     4   52
+All           5     7    28    21    18    10    22    19    26     9  165
+
+Outcome ascertainment: deaths 510/806 indices (63%); median follow-up 347d; indices with <30d follow-up: 54
+Elapsed 0s
+PART 12 - Decision-node gate engine (N, era, measurability, positivity, power)
+PART 12 - Decision-node gate engine (N, era, measurability, positivity, power)
+========================================================================================================================
+PART 12 — DECISION-NODE GATE RESULTS (sorted by total gate score, max 14)
+========================================================================================================================
+                                       node  nA  nB  era_overlap             shared_era  pct_B_in_A_window  pct_A_in_B_window  ps_overlap  ps_auc  max_smd  deaths_A  deaths_B  detectable_hr  score
+ N5  1L: ICI-combination vs ICI-monotherapy 285 132         0.71 2021-2023 (A=144,B=69)               93.0               99.0       0.981   0.693     0.25       155        79           1.48     14
+                N1  1L: Atezo/Bev vs STRIDE 144  80         0.72  2023-2024 (A=59,B=40)               92.0              100.0       0.862   0.823     0.56        82        50           1.66     12
+              N2  1L: Atezo/Bev vs Nivo/Ipi 144  61         0.87  2022-2024 (A=87,B=29)               93.0              100.0       0.746   0.902     1.13        82        23           1.82     11
+                 N3  1L: STRIDE vs Nivo/Ipi  80  61         0.70  2023-2025 (A=58,B=29)              100.0               98.0       0.518   0.925     1.17        50        23           1.94     11
+                   N6  1L: ICI-based vs TKI 285 135         0.19 2019-2023 (A=167,B=67)               50.0               96.0       0.976   0.811     0.47       155       100           1.46     11
+      N10 2L: TKI vs ICI-based (all comers)  52  70         0.58  2022-2025 (A=21,B=45)               99.0               75.0       0.770   0.833     0.58        37        41           1.90     10
+            N4  1L: Lenvatinib vs Sorafenib  68  62         0.22  2017-2019 (A=40,B=43)               13.0               97.0       0.862   0.778     0.75        52        44           1.77      9
+  N7  2L after ANY 1L ICI: TKI vs ICI-based  43  51         0.51  2021-2024 (A=23,B=30)               98.0               79.0       0.745   0.825     0.58        31        26           2.11      9
+N8  2L after 1L Atezo/Bev: TKI vs ICI-based  17  33         0.50                   NONE              100.0               53.0       0.220   0.968     0.74        11        15           3.19      5
+      N9  2L after 1L TKI: ICI-based vs TKI  29   5         0.21                   NONE               40.0               76.0       0.118   0.979     0.74        26         3           4.35      4
+
+========================================================================================================================
+GATE-BY-GATE VERDICTS
+========================================================================================================================
+                                       node G1_N   G2_era G3_measurable G4_positivity G5_outcome G6_channelling G7_power  score
+ N5  1L: ICI-combination vs ICI-monotherapy PASS     PASS          PASS          PASS       PASS           PASS     PASS     14
+                N1  1L: Atezo/Bev vs STRIDE PASS     PASS      MARGINAL      MARGINAL       PASS           PASS     PASS     12
+              N2  1L: Atezo/Bev vs Nivo/Ipi PASS     PASS          PASS          FAIL       PASS           PASS MARGINAL     11
+                 N3  1L: STRIDE vs Nivo/Ipi PASS     PASS          PASS          FAIL       PASS           PASS MARGINAL     11
+                   N6  1L: ICI-based vs TKI PASS     FAIL          PASS      MARGINAL       PASS           PASS     PASS     11
+      N10 2L: TKI vs ICI-based (all comers) PASS MARGINAL          PASS          FAIL       PASS           PASS MARGINAL     10
+            N4  1L: Lenvatinib vs Sorafenib PASS     FAIL      MARGINAL      MARGINAL       PASS           PASS MARGINAL      9
+  N7  2L after ANY 1L ICI: TKI vs ICI-based PASS MARGINAL          PASS          FAIL       PASS           PASS     FAIL      9
+N8  2L after 1L Atezo/Bev: TKI vs ICI-based FAIL     FAIL          PASS          FAIL   MARGINAL           PASS     FAIL      5
+      N9  2L after 1L TKI: ICI-based vs TKI FAIL     FAIL          PASS          FAIL       FAIL           PASS     FAIL      4
+
+Elapsed 2s
+PART 13 - Era-restricted re-evaluation + Table 1 balance
+PART 13 - Era-restricted re-evaluation + Table 1 balance
+==============================================================================================================
+PART 13A — EACH NODE CONFINED TO ITS OWN CONCURRENT-USE WINDOW
+==============================================================================================================
+                                       node    window    nA   nB  ps_overlap  ps_auc  max_smd  det_hr              verdict
+                N1  1L: Atezo/Bev vs STRIDE 2023-2024  59.0 40.0       0.697   0.925     0.74    2.12     DOES NOT SURVIVE
+              N2  1L: Atezo/Bev vs Nivo/Ipi 2022-2024  87.0 29.0       0.517   0.902     0.94    2.29     DOES NOT SURVIVE
+                 N3  1L: STRIDE vs Nivo/Ipi 2023-2025  58.0 29.0       0.368   0.965     1.06    2.43     DOES NOT SURVIVE
+            N4  1L: Lenvatinib vs Sorafenib 2017-2019  40.0 43.0       0.819   0.798     0.69    2.04             SURVIVES
+ N5  1L: ICI-combination vs ICI-monotherapy 2021-2023 144.0 69.0       0.948   0.763     0.48    1.67             SURVIVES
+                   N6  1L: ICI-based vs TKI 2019-2023 167.0 67.0       0.940   0.809     0.51    1.63             SURVIVES
+  N7  2L after ANY 1L ICI: TKI vs ICI-based 2021-2024  23.0 30.0       0.604   0.881     0.64    2.53     DOES NOT SURVIVE
+N8  2L after 1L Atezo/Bev: TKI vs ICI-based      NONE   NaN  NaN         NaN     NaN      NaN     NaN NO CONCURRENT WINDOW
+      N9  2L after 1L TKI: ICI-based vs TKI      NONE   NaN  NaN         NaN     NaN      NaN     NaN NO CONCURRENT WINDOW
+      N10 2L: TKI vs ICI-based (all comers) 2022-2025  21.0 45.0       0.364   0.925     0.67    2.62     DOES NOT SURVIVE
+
+==============================================================================================================
+PART 13B — TABLE 1: N1  1L: Atezo/Bev vs STRIDE [era-restricted]
+   arm A = AB (n=59)   vs   arm B = STRIDE (n=40)
+   equipoise: Genuine: choice turns on bleeding/varices risk, autoimmune history, and ALBI/Child-Pugh.
+==============================================================================================================
+                   variable                armA                armB  pct_measured  SMD
+                    Age (y)    66.9 [62.4-74.9]    67.8 [62.5-73.3]         100.0 0.05
+                 ALBI score    -2.5 [-3.0--2.0]    -2.1 [-2.5--1.6]          97.0 0.49
+               Albumin g/dL       3.8 [3.4-4.3]       3.5 [3.1-3.9]          97.0 0.63
+            Bilirubin mg/dL       0.8 [0.5-1.5]       0.9 [0.5-1.9]          97.0 0.06
+             Platelets K/uL 197.5 [131.5-285.5] 197.5 [101.0-287.2]          97.0 0.03
+                        INR       1.1 [1.1-1.2]       1.3 [1.2-1.4]          73.0 0.66
+                     Sodium 137.5 [135.2-139.0] 138.5 [132.5-140.0]          97.0 0.10
+                 Creatinine       0.8 [0.7-1.0]       0.9 [0.7-1.2]          97.0 0.45
+                Haemoglobin    12.5 [11.4-13.7]    10.9 [10.0-12.1]          97.0 0.59
+          AFP (ng/mL, -90d)  89.9 [15.1-1113.5]  202.8 [7.3-1123.0]          23.0 0.33
+   Inpatient stays prior yr       0.0 [0.0-0.0]       0.0 [0.0-0.0]         100.0  NaN
+                    Ascites                 34%                 55%         100.0 0.43
+                    Varices                 37%                 40%         100.0 0.06
+                GI bleed hx                 12%                 20%         100.0 0.22
+        Portal hypertension                 31%                 38%         100.0 0.15
+     Hepatic encephalopathy                  8%                 30%         100.0 0.56
+                  Cirrhosis                 61%                 82%         100.0 0.49
+                        HBV                 14%                 10%         100.0 0.11
+                        HCV                 19%                 28%         100.0 0.21
+                   Diabetes                 36%                 28%         100.0 0.17
+                        CKD                  8%                 15%         100.0 0.20
+            Anticoagulation                 29%                 35%         100.0 0.13
+        Systemic steroid/IS                 22%                 30%         100.0 0.18
+         Autoimmune disease                  3%                  0%         100.0 0.26
+Any prior liver-directed Rx                 20%                 50%         100.0 0.65
+                 Prior TACE                 17%                 50%         100.0 0.74
+            Prior resection                  2%                  0%         100.0 0.18
+     PVTT on pre-index scan                 33%                 19%          86.0 0.32
+        Extrahepatic spread                 37%                 26%          86.0 0.24
+         Multifocal/bilobar                 37%                 16%          86.0 0.48
+            ECOG >=2 (text)                 20%                 29%          39.0 0.19
+      Child-Pugh B/C (text)                 11%                 47%          69.0 0.86
+               ALBI grade 3                 10%                 16%          97.0 0.16
+   variables with |SMD|>0.25 among adequately-measured covariates: ALBI score, Albumin g/dL, INR, Creatinine, Haemoglobin, Ascites, Hepatic encephalopathy, Cirrhosis, Autoimmune disease, Any prior liver-directed Rx, Prior TACE, PVTT on pre-index scan, Multifocal/bilobar, Child-Pugh B/C (text)
+   PS c-statistic 0.925  |  PS common-support fraction 0.697  |  detectable HR 2.12
+   PS model used: age, albi, albumin, bilirubin, platelets, sodium, creatinine, hemoglobin, ascites, varices, gi_bleed, portal_htn, hepatic_enceph, ckd, anticoag, immunosupp, autoimmune, prior_lrt, prior_tace, hbv, hcv, diabetes, hypertension, pvtt, extrahepatic, multifocal
+
+==============================================================================================================
+PART 13B — TABLE 1: N7  2L after ANY 1L ICI: TKI vs ICI-based [era-restricted]
+   arm A = TKI (n=23)   vs   arm B = ICI_COMBO (n=30)
+   equipoise: Strong: this is the single most common real-world dilemma with no trial evidence.
+==============================================================================================================
+                   variable                armA                armB  pct_measured  SMD
+                    Age (y)    68.7 [63.9-72.8]    65.5 [56.8-73.0]         100.0 0.48
+                 ALBI score    -2.5 [-2.8--2.1]    -2.3 [-2.8--1.8]          94.0 0.30
+               Albumin g/dL       3.6 [3.4-4.2]       3.7 [3.1-4.1]          96.0 0.17
+            Bilirubin mg/dL       0.6 [0.4-0.9]       0.7 [0.6-1.3]          94.0 0.32
+             Platelets K/uL 191.0 [123.0-217.0] 204.5 [155.5-229.5]          96.0 0.01
+                        INR       1.1 [1.1-1.3]       1.1 [1.1-1.3]          34.0 0.20
+                     Sodium 138.0 [136.0-140.0] 137.5 [135.0-140.0]          96.0 0.11
+                 Creatinine       0.9 [0.6-1.2]       0.9 [0.7-1.2]          96.0 0.00
+                Haemoglobin    12.1 [10.7-13.6]    12.8 [10.7-14.3]          96.0 0.19
+          AFP (ng/mL, -90d)   181.8 [8.0-547.5]    11.8 [4.7-150.2]          26.0 0.59
+   Inpatient stays prior yr       0.0 [0.0-0.0]       0.0 [0.0-0.0]         100.0  NaN
+                    Ascites                 35%                 37%         100.0 0.04
+                    Varices                 35%                 30%         100.0 0.10
+                GI bleed hx                 17%                 20%         100.0 0.07
+        Portal hypertension                 30%                 27%         100.0 0.08
+     Hepatic encephalopathy                 17%                 10%         100.0 0.21
+                  Cirrhosis                 91%                 67%         100.0 0.62
+                        HBV                  4%                 27%         100.0 0.64
+                        HCV                 35%                 17%         100.0 0.42
+                   Diabetes                 35%                 37%         100.0 0.04
+                        CKD                 17%                 17%         100.0 0.02
+            Anticoagulation                 39%                 27%         100.0 0.26
+        Systemic steroid/IS                 57%                 33%         100.0 0.47
+         Autoimmune disease                 22%                  7%         100.0 0.43
+Any prior liver-directed Rx                 65%                 50%         100.0 0.31
+                 Prior TACE                 57%                 47%         100.0 0.19
+            Prior resection                 13%                 13%         100.0 0.01
+     PVTT on pre-index scan                 19%                 21%          92.0 0.06
+        Extrahepatic spread                 57%                 32%          92.0 0.51
+         Multifocal/bilobar                 19%                 43%          92.0 0.52
+            ECOG >=2 (text)                 33%                 29%          74.0 0.10
+      Child-Pugh B/C (text)                 10%                  8%          43.0 0.08
+               ALBI grade 3                  0%                 10%          94.0 0.47
+   variables with |SMD|>0.25 among adequately-measured covariates: Age (y), ALBI score, Bilirubin mg/dL, Cirrhosis, HBV, HCV, Anticoagulation, Systemic steroid/IS, Autoimmune disease, Any prior liver-directed Rx, Extrahepatic spread, Multifocal/bilobar, ALBI grade 3
+   PS c-statistic 0.881  |  PS common-support fraction 0.604  |  detectable HR 2.53
+   PS model used: age, albi, albumin, bilirubin, platelets, sodium, creatinine, hemoglobin, ascites, varices, gi_bleed, portal_htn, hepatic_enceph, ckd, anticoag, immunosupp, autoimmune, prior_lrt, prior_tace, hbv, hcv, diabetes, hypertension, pvtt, extrahepatic, multifocal
+
+==============================================================================================================
+PART 13B — TABLE 1: N5  1L: ICI-combination vs ICI-monotherapy [era-restricted]
+   arm A = ICI_COMBO (n=144)   vs   arm B = ICI_MONO (n=69)
+   equipoise: Weak: mono was largely used when combination was contraindicated or unavailable.
+==============================================================================================================
+                   variable                armA                armB  pct_measured  SMD
+                    Age (y)    65.8 [56.6-72.3]    68.9 [61.2-75.0]         100.0 0.48
+                 ALBI score    -2.5 [-3.0--2.0]    -2.8 [-3.1--1.9]          96.0 0.01
+               Albumin g/dL       3.8 [3.3-4.3]       4.0 [3.3-4.3]          96.0 0.03
+            Bilirubin mg/dL       0.7 [0.5-1.1]       0.7 [0.4-1.7]          96.0 0.21
+             Platelets K/uL 219.5 [142.8-327.2] 208.0 [140.2-265.2]          97.0 0.31
+                        INR       1.1 [1.1-1.2]       1.1 [1.0-1.3]          73.0 0.03
+                     Sodium 138.0 [136.0-140.0] 138.0 [136.2-140.0]          96.0 0.17
+                 Creatinine       0.8 [0.7-1.0]       0.8 [0.7-1.1]          96.0 0.16
+                Haemoglobin    12.0 [10.9-13.5]    12.6 [10.9-13.8]          97.0 0.04
+          AFP (ng/mL, -90d)    52.9 [5.1-682.0]  133.0 [10.9-270.2]          18.0 0.29
+   Inpatient stays prior yr       0.0 [0.0-0.0]       0.0 [0.0-0.0]         100.0  NaN
+                    Ascites                 33%                 32%         100.0 0.03
+                    Varices                 27%                 22%         100.0 0.12
+                GI bleed hx                  9%                  9%         100.0 0.01
+        Portal hypertension                 25%                 19%         100.0 0.15
+     Hepatic encephalopathy                 12%                 16%         100.0 0.12
+                  Cirrhosis                 61%                 62%         100.0 0.02
+                        HBV                 11%                  4%         100.0 0.25
+                        HCV                 19%                 17%         100.0 0.05
+                   Diabetes                 30%                 28%         100.0 0.05
+                        CKD                  7%                 17%         100.0 0.32
+            Anticoagulation                 33%                 38%         100.0 0.09
+        Systemic steroid/IS                 28%                 32%         100.0 0.07
+         Autoimmune disease                  2%                  7%         100.0 0.25
+Any prior liver-directed Rx                 33%                 30%         100.0 0.06
+                 Prior TACE                 30%                 26%         100.0 0.08
+            Prior resection                  4%                  6%         100.0 0.07
+     PVTT on pre-index scan                 26%                 19%          94.0 0.16
+        Extrahepatic spread                 43%                 28%          94.0 0.31
+         Multifocal/bilobar                 25%                 27%          94.0 0.03
+            ECOG >=2 (text)                 11%                 26%          57.0 0.37
+      Child-Pugh B/C (text)                 27%                 34%          59.0 0.15
+               ALBI grade 3                  6%                  9%          96.0 0.13
+   variables with |SMD|>0.25 among adequately-measured covariates: Age (y), Platelets K/uL, CKD, Extrahepatic spread
+   PS c-statistic 0.763  |  PS common-support fraction 0.948  |  detectable HR 1.67
+   PS model used: age, albi, albumin, bilirubin, platelets, sodium, creatinine, hemoglobin, ascites, varices, gi_bleed, portal_htn, hepatic_enceph, ckd, anticoag, immunosupp, autoimmune, prior_lrt, prior_tace, hbv, hcv, diabetes, hypertension, pvtt, extrahepatic, multifocal
+
+Elapsed 1s
+PART 14 - Within-window era test + two additional candidate nodes
+PART 14 - Within-window era test + two additional candidate nodes
+================================================================================================================
+PART 14A — IS CALENDAR TIME STILL CONFOUNDED *INSIDE* THE CONCURRENT WINDOW?
+================================================================================================================
+                                      node    window  nA  nB  year_SMD  year_overlap  median_date_gap_days          era_resolved
+                N3  1L: STRIDE vs Nivo/Ipi 2023-2024  58  29      0.02          0.98                   -17                   YES
+               N1  1L: Atezo/Bev vs STRIDE 2023-2023  59  40      0.03          0.98                     9                   YES
+             N2  1L: Atezo/Bev vs Nivo/Ipi 2023-2024  87  29      0.03          0.99                   -20                   YES
+                                       N12 2023-2024  49  25      0.06          0.97                    -8                   YES
+N5  1L: ICI-combination vs ICI-monotherapy 2022-2023 144  69      0.26          0.87                   163                   YES
+     N10 2L: TKI vs ICI-based (all comers) 2022-2025  21  45      0.35          0.80                  -163                   YES
+ N7  2L after ANY 1L ICI: TKI vs ICI-based 2021-2024  23  30      0.92          0.55                  -354 NO - still confounded
+                  N6  1L: ICI-based vs TKI 2020-2023 167  67      2.10          0.26                   984 NO - still confounded
+           N4  1L: Lenvatinib vs Sorafenib 2018-2019  40  43      2.19          0.27                   539 NO - still confounded
+
+Interpretation: year_SMD >=0.40 or year_overlap <0.70 means the two strategies were still
+used in DIFFERENT periods inside the nominally shared window, so any survival difference is
+inseparable from secular change in supportive care, imaging and referral patterns.
+
+================================================================================================================
+N11  Within 1L Atezo/Bev (>=90d on treatment): bevacizumab DROPPED vs CONTINUED
+================================================================================================================
+  eligible AB patients with both component timelines: 77
+  bev dropped >=9 weeks before atezo ended : 19
+  bev continued to the end of atezo        : 58
+  median atezo span 266d; bev tail gap median 0d (IQR 0-98, p90 259)
+  median doses: atezolizumab 12 vs bevacizumab 9
+  sensitivity to the cut-point:
+    >=28d tail -> dropped  26 / continued  51
+    >=42d tail -> dropped  26 / continued  51
+    >=63d tail -> dropped  22 / continued  55
+    >=84d tail -> dropped  21 / continued  56
+  -> one arm <20 patients; NOT FEASIBLE as a standalone comparison.
+
+================================================================================================================
+N12  1L Atezo/Bev vs STRIDE restricted to ALBI grade 1-2 AND no Child-Pugh B/C documented
+     (a deliberate attempt to repair the positivity failure seen in N1)
+================================================================================================================
+  after restriction: AB n=117, STRIDE n=55
+/home/spark-4e9e95ca-cf34-42ca-bd8e-a5/.ipykernel/2453/command-8523028056971440-272314750:80: FutureWarning: Downcasting object dtype arrays on .fillna, .ffill, .bfill is deprecated and will change in a future version. Call result.infer_objects(copy=False) instead. To opt-in to the future behavior, set `pd.set_option('future.no_silent_downcasting', True)`
+  (~L1.cp_b_or_c.fillna(False))].copy()
+  PS c-stat 0.833  common support 0.808  max SMD 0.8  detectable HR 1.82  deaths 66/35
+  residual imbalance (|SMD|>0.25, >=60% measured): ALBI score, Albumin g/dL, Haemoglobin, Hepatic encephalopathy, Systemic steroid/IS, Autoimmune disease, Any prior liver-directed Rx, Prior TACE, PVTT on pre-index scan
+  era-restricted to (np.int64(2023), 2024): n=49/25, common support 0.568, year SMD 0.06, detectable HR 2.47
+
+Elapsed 1s
+PART 15 - Final ranked medical-oncology research opportunities
+PART 15 - Final ranked medical-oncology research opportunities
+====================================================================================================================================
+PART 15 — FINAL FEASIBILITY LEDGER FOR MEDICAL-ONCOLOGY / SYSTEMIC-THERAPY DECISION NODES IN REACH
+====================================================================================================================================
+ id                                        node  nA  nB  era_nA  era_nB  year_SMD  ps_support  det_HR  max_SMD equipoise                          blocking                                        tier
+ N5  N5  1L: ICI-combination vs ICI-monotherapy 285 132   144.0    69.0      0.26       0.948    1.67     0.25   LOW-MED                              none TIER 1 — comparative effectiveness FEASIBLE
+ N1                 N1  1L: Atezo/Bev vs STRIDE 144  80    59.0    40.0      0.03       0.697    2.12     0.56      HIGH                        POSITIVITY     TIER 2 — TREATMENT-SELECTION study only
+ N2               N2  1L: Atezo/Bev vs Nivo/Ipi 144  61    87.0    29.0      0.03       0.517    2.29     1.13       MED          POSITIVITY + CHANNELLING     TIER 2 — TREATMENT-SELECTION study only
+ N7   N7  2L after ANY 1L ICI: TKI vs ICI-based  43  51    23.0    30.0      0.92       0.604    2.53     0.58 VERY HIGH CALENDAR ERA + POSITIVITY + POWER      TIER 3 — NOT FEASIBLE (era-confounded)
+ N8 N8  2L after 1L Atezo/Bev: TKI vs ICI-based  17  33     NaN     NaN       NaN         NaN     NaN     0.74 VERY HIGH        SAMPLE SIZE + CALENDAR ERA      TIER 3 — NOT FEASIBLE (era-confounded)
+ N9       N9  2L after 1L TKI: ICI-based vs TKI  29   5     NaN     NaN       NaN         NaN     NaN     0.74       MED        SAMPLE SIZE + CALENDAR ERA      TIER 3 — NOT FEASIBLE (era-confounded)
+ N4             N4  1L: Lenvatinib vs Sorafenib  68  62    40.0    43.0      2.19       0.819    2.04     0.75       LOW                      CALENDAR ERA      TIER 3 — NOT FEASIBLE (era-confounded)
+ N6                    N6  1L: ICI-based vs TKI 285 135   167.0    67.0      2.10       0.940    1.63     0.47       LOW                      CALENDAR ERA      TIER 3 — NOT FEASIBLE (era-confounded)
+ N3                  N3  1L: STRIDE vs Nivo/Ipi  80  61    58.0    29.0      0.02       0.368    2.43     1.17      HIGH  POSITIVITY + POWER + CHANNELLING        TIER 4 — NOT FEASIBLE (underpowered)
+N10       N10 2L: TKI vs ICI-based (all comers)  52  70    21.0    45.0      0.35       0.364    2.62     0.58      HIGH                POSITIVITY + POWER        TIER 4 — NOT FEASIBLE (underpowered)
+N12        N12 1L AB vs STRIDE | ALBI 1-2, CP-A 117  55    49.0    25.0      0.06       0.568    2.47     0.80      HIGH                POSITIVITY + POWER        TIER 4 — NOT FEASIBLE (underpowered)
+N12        N12 1L AB vs STRIDE | ALBI 1-2, CP-A 117  55    49.0    25.0      0.06       0.568    2.47     0.80      HIGH                POSITIVITY + POWER        TIER 4 — NOT FEASIBLE (underpowered)
+
+====================================================================================================================================
+NARRATIVE VERDICTS
+====================================================================================================================================
+
+### TIER 1 — comparative effectiveness FEASIBLE
+  [N5] N5  1L: ICI-combination vs ICI-monotherapy
+        N 285 vs 132   (concurrent-era N 144.0 vs 69.0)   year-SMD 0.26   PS support 0.948   detectable HR 1.67
+        equipoise LOW-MED: Single-agent PD-1 is no longer a 1L option; relevant only for patients ineligible for any combination
+        blocking constraint: none
+
+### TIER 2 — TREATMENT-SELECTION study only
+  [N1] N1  1L: Atezo/Bev vs STRIDE
+        N 144 vs 80   (concurrent-era N 59.0 vs 40.0)   year-SMD 0.03   PS support 0.697   detectable HR 2.12
+        equipoise HIGH: IMbrave150 vs HIMALAYA — never compared head-to-head; both NCCN cat-1
+        blocking constraint: POSITIVITY
+  [N2] N2  1L: Atezo/Bev vs Nivo/Ipi
+        N 144 vs 61   (concurrent-era N 87.0 vs 29.0)   year-SMD 0.03   PS support 0.517   detectable HR 2.29
+        equipoise MED: Nivo/Ipi 1L is supported by CheckMate-9DW vs TKI, not vs Atezo/Bev
+        blocking constraint: POSITIVITY + CHANNELLING
+
+### TIER 3 — NOT FEASIBLE (era-confounded)
+  [N7] N7  2L after ANY 1L ICI: TKI vs ICI-based
+        N 43 vs 51   (concurrent-era N 23.0 vs 30.0)   year-SMD 0.92   PS support 0.604   detectable HR 2.53
+        equipoise VERY HIGH: 2L after 1L immunotherapy is the largest evidence gap in HCC — no RCT exists
+        blocking constraint: CALENDAR ERA + POSITIVITY + POWER
+  [N8] N8  2L after 1L Atezo/Bev: TKI vs ICI-based
+        N 17 vs 33   (concurrent-era N nan vs nan)   year-SMD nan   PS support nan   detectable HR nan
+        equipoise VERY HIGH: same gap, restricted to the Atezo/Bev-exposed population
+        blocking constraint: SAMPLE SIZE + CALENDAR ERA
+  [N9] N9  2L after 1L TKI: ICI-based vs TKI
+        N 29 vs 5   (concurrent-era N nan vs nan)   year-SMD nan   PS support nan   detectable HR nan
+        equipoise MED: post-TKI sequencing partly covered by RESORCE / CheckMate-040
+        blocking constraint: SAMPLE SIZE + CALENDAR ERA
+  [N4] N4  1L: Lenvatinib vs Sorafenib
+        N 68 vs 62   (concurrent-era N 40.0 vs 43.0)   year-SMD 2.19   PS support 0.819   detectable HR 2.04
+        equipoise LOW: REFLECT settled non-inferiority; both displaced by ICI
+        blocking constraint: CALENDAR ERA
+  [N6] N6  1L: ICI-based vs TKI
+        N 285 vs 135   (concurrent-era N 167.0 vs 67.0)   year-SMD 2.1   PS support 0.94   detectable HR 1.63
+        equipoise LOW: ICI superiority over TKI at 1L is established by RCT
+        blocking constraint: CALENDAR ERA
+
+### TIER 4 — NOT FEASIBLE (underpowered)
+  [N3] N3  1L: STRIDE vs Nivo/Ipi
+        N 80 vs 61   (concurrent-era N 58.0 vs 29.0)   year-SMD 0.02   PS support 0.368   detectable HR 2.43
+        equipoise HIGH: Two dual-ICI strategies, no comparative data, both avoid anti-VEGF
+        blocking constraint: POSITIVITY + POWER + CHANNELLING
+  [N10] N10 2L: TKI vs ICI-based (all comers)
+        N 52 vs 70   (concurrent-era N 21.0 vs 45.0)   year-SMD 0.35   PS support 0.364   detectable HR 2.62
+        equipoise HIGH: pooled 2L class choice; no RCT
+        blocking constraint: POSITIVITY + POWER
+  [N12] N12 1L AB vs STRIDE | ALBI 1-2, CP-A
+        N 117 vs 55   (concurrent-era N 49.0 vs 25.0)   year-SMD 0.06   PS support 0.568   detectable HR 2.47
+        equipoise HIGH: same as N1 restricted to preserved liver function
+        blocking constraint: POSITIVITY + POWER
+  [N12] N12 1L AB vs STRIDE | ALBI 1-2, CP-A
+        N 117 vs 55   (concurrent-era N 49.0 vs 25.0)   year-SMD 0.06   PS support 0.568   detectable HR 2.47
+        equipoise HIGH: same as N1 restricted to preserved liver function
+        blocking constraint: POSITIVITY + POWER
+
+====================================================================================================================================
+WHAT WOULD IT TAKE? — explicit requirements to unlock the blocked questions
+====================================================================================================================================
+
+  N7/N8  2L strategy after 1L immunotherapy (the top evidence gap)
+     blocked by : sample size + residual calendar drift
+     requirement: ~110 patients per arm for HR 1.5 at 80% power; REACH supplies 43 vs 51 overall and 23 vs 30 concurrently -> needs a MULTI-SITE consortium, or 3-5 more years of accrual
+
+  N1/N12 Atezo/Bev vs STRIDE at 1L
+     blocked by : positivity / channelling by liver function and prior TACE
+     requirement: Child-Pugh B/C 11% vs 47% and prior TACE 17% vs 50%. Restricting to ALBI 1-2 + CP-A leaves 117 vs 55 but common support only 0.81 and 0.57 in the 2023-24 window. Needs chart-reviewed reason-for-choice, or reframing as a selection study
+
+  N3 STRIDE vs Nivo/Ipi
+     blocked by : near-deterministic selection (PS c-statistic 0.93-0.97)
+     requirement: calendar era is perfectly matched (year-SMD 0.02) — the obstacle is clinical, not temporal. Would need the documented rationale from clinic notes to model the choice
+
+  Any AFP-driven question (e.g. ramucirumab for AFP >=400)
+     blocked by : AFP measured at only 18% (-14d) to 28% (-90d) of decision indices
+     requirement: AFP is ordered too rarely around the decision to support an AFP-stratified design
+
+  Tumour burden / RECIST response as exposure or outcome
+     blocked by : regex cannot extract target-lesion size or response reliably
+     requirement: LLM-based or manual abstraction of the 709 retrievable pre-index liver reports
+
+  N11 bevacizumab discontinuation while continuing atezolizumab
+     blocked by : borderline sample (19-26 vs 51-58) and immortal-time bias
+     requirement: clone-censor-weight or sequential-trial emulation design; pooled multi-site N
+
+  N4/N6 TKI vs ICI comparisons
+     blocked by : irreducible calendar separation (median index-date gap 539 and 984 days)
+     requirement: NOT repairable in a single-centre cohort — do not pursue as a survival comparison
+
+====================================================================================================================================
+RECOMMENDED PRIMARY PROJECT (best balance of feasibility and clinical value)
+====================================================================================================================================
+
+  TITLE: "Determinants and consequences of first-line regimen selection between atezolizumab/
+          bevacizumab and durvalumab/tremelimumab (STRIDE) in advanced hepatocellular carcinoma"
+
+  DESIGN: two linked aims on the SAME cohort, which is what the data actually support.
+
+   AIM 1 (fully feasible — TIER 2): treatment-selection model.
+      Outcome  = regimen chosen (AB vs STRIDE); population = 1L systemic starts 2023-2026.
+      N        = 144 AB vs 80 STRIDE overall; 59 vs 40 in the concurrent window with year-SMD 0.03.
+      Covariates are measured: ALBI 98%, full liver panel 97%, structured comorbidity 100%,
+      pre-index liver imaging 85%, Child-Pugh from notes 68%, ECOG from notes 46%.
+      This aim is publishable on its own and quantifies exactly how much of the choice is
+      explained by measured liver function, varices/bleeding risk, autoimmune history and
+      prior locoregional therapy (PS c-statistic 0.82 — i.e. selection is highly predictable).
+
+   AIM 2 (restricted, hypothesis-generating): survival comparison inside the common-support region.
+      Trim to the PS overlap region, which retains 86% of the cohort, then estimate OS and
+      time-to-next-treatment with IPTW. Pre-specify that the detectable effect is HR >= 1.66, so
+      report this as an estimate with a formal positivity caveat rather than a definitive answer.
+
+  WHY NOT the clinically hottest question (2L after 1L immunotherapy, N7)?
+      Because REACH has only 43 TKI vs 51 ICI-based 2L starts after a 1L ICI, falling to 23 vs 30 in a
+      concurrent window with a year-SMD of 0.92; the smallest detectable hazard ratio is 2.53.
+      That question should be taken to a multi-site collaboration, not attempted here.
+
+PART 16 - Persist v9 medical-oncology tables
+PART 16 - Persist v9 medical-oncology tables
+cov_rep:pandas.core.frame.DataFrame = [domain: object, source: object ... 3 more fields]
+================================================================================================================
+PERSISTING v9 MEDICAL-ONCOLOGY OUTPUT TABLES
+================================================================================================================
+  hcc_lines_of_therapy_validated_v9              rows=   806 cols=  26  validated regimen episodes with line assignment
+  hcc_systemic_episodes_validated_v9             rows=  1608 cols=  23  drug-level episodes + indication/exposure confidence
+  hcc_medonc_decision_index_v9                   rows=   806 cols= 104  decision index x pre-index covariates/labs/text/radiology
+  hcc_medonc_project_readiness_v9                rows=    12 cols=  13  per-node feasibility ledger with tier + blocking constraint
+  hcc_medonc_node_gates_v9                       rows=    10 cols=  27  full 7-gate results, whole-cohort
+  hcc_medonc_era_diagnostics_v9                  rows=    10 cols=  13  concurrent-window + within-window calendar confounding tests
+  hcc_text_radiology_coverage_v9                 rows=   709 cols=  22  pre-index liver-report flags + evidence sentences
+  hcc_medonc_covariate_readiness_v9              rows=    12 cols=   5  what is measurable at a treatment decision, and how well
+
+=== COVARIATE READINESS AT A SYSTEMIC-THERAPY DECISION (n=806 indices) ===
+                            domain                      source  pct_of_806_indices                        validated                           grade
+labs (albumin/bilirubin/platelets)    deid.derived.lab_results                93.1 yes - numeric, sentinel-filtered                  RESEARCH-GRADE
+                        ALBI score           derived from labs                93.8                              yes                  RESEARCH-GRADE
+                               AFP           lab_results AFPTM                19.7                              yes                      TOO SPARSE
+    comorbidity / complication ICD                 3 dx tables               100.0                       structured                  RESEARCH-GRADE
+           ECOG performance status        clinic notes (regex)                60.7             audit precision 100%                  RESEARCH-GRADE
+           ECOG performance status smartform_data (structured)                 1.5                       structured                      TOO SPARSE
+                  Child-Pugh class        clinic notes (regex)                42.4              audit precision 97%                  RESEARCH-GRADE
+                        BCLC stage        clinic notes (regex)                44.9             audit precision 100%                  RESEARCH-GRADE
+  PVTT / extrahepatic / multifocal     liver CT-MRI impression                88.0               flag precision 96%                  RESEARCH-GRADE
+     tumour size / RECIST response     liver CT-MRI impression                88.0        regex failed adjudication NEEDS LLM OR MANUAL ABSTRACTION
+       reason for stopping therapy   Beacon plan_discon_reason                86.0            structured Epic field                  RESEARCH-GRADE
+                 death / follow-up   demographics + encounters               100.0         63% died, median FU 347d                  RESEARCH-GRADE
+
+Elapsed 16s
+
+All v9 medical-oncology tables written to reach_users.xzhao81
+v9 Medical Oncology / Systemic Therapy Phase — Final Summary
+Validated treatment landscape (REACH, 2016–2026)
+806 validated systemic-therapy line episodes in 577 HCC patients, triangulated across three independent sources (med_orders, med_admin via medication_name, Beacon treatment_plan_orders) with per-order ICD-10 indication screening. Algorithm A vs Algorithm B+ line-assignment concordance: 97.1% at 1L, 94.8% at 2L. All 15 hard invariants PASS.
+
+Line	N episodes	Leading regimens
+1L	569	Atezo/Bev 144, Nivo mono 87, STRIDE 78, Lenvatinib 68, Sorafenib 62, Nivo/Ipi 59
+2L	165	Nivo/Ipi 49, Nivo mono 33, Lenvatinib 30, Cabozantinib 17, Atezo/Bev 13
+3L+	52	Cabozantinib-dominant
+Four v8 bugs corrected
+med_admin.generic_name is NULL for IV oncology drugs — v8 silently lost 320 nivolumab / 182 bevacizumab / 176 atezolizumab patients. v9 filters medication_name.
+MAR action values: real distribution is New Bag 6,920 vs Given 694. v8's ('Given','Administered','Completed') filter discarded most infusions.
+No ord_status filter — v8 counted Suspend/Discontinued TKI orders as exposure (lenvatinib 165 → 124 active).
+Mixed timelines — v8 used Beacon plan dates for ICIs but order dates for oral TKIs, artificially pushing TKIs to later lines. This fully explains the v8 anomaly of 165 lenvatinib-exposed but only 5 at 1L.
+Research-opportunity verdict (12 candidate decision nodes, 7 gates each)
+TIER 1 (comparative effectiveness feasible) — N5 1L ICI-combination vs ICI-monotherapy (285 vs 132). Statistically feasible but low clinical equipoise: single-agent PD-1 is no longer a guideline 1L option.
+TIER 2 (treatment-selection study only) — N1 Atezo/Bev vs STRIDE (144 vs 80; year-SMD 0.03) and N2 Atezo/Bev vs Nivo/Ipi. Blocked for causal survival inference by positivity, not by sample size.
+TIER 3 (era-confounded, not repairable) — N4 Lenvatinib vs Sorafenib, N6 ICI vs TKI (median index-date gap 539 and 984 days), N7/N8/N9 second-line sequencing.
+TIER 4 (underpowered) — N3 STRIDE vs Nivo/Ipi, N10, N12.
+The clinically hottest question — 2L strategy after 1L immunotherapy (N7, equipoise VERY HIGH, no RCT exists) — fails on N: 43 TKI vs 51 ICI-based, falling to 23 vs 30 concurrently, smallest detectable HR 2.53. It requires a multi-site consortium.
+
+Recommended primary project
+Determinants and consequences of first-line Atezo/Bev vs STRIDE selection in advanced HCC — two linked aims on one cohort.
+
+Aim 1 (fully feasible): treatment-selection model, outcome = regimen chosen, 1L starts 2023–2026, 144 vs 80 (59 vs 40 concurrent, year-SMD 0.03). Publishable alone; PS c-statistic 0.82 shows selection is highly predictable from liver function, varices/bleeding risk, autoimmune history and prior locoregional therapy.
+Aim 2 (hypothesis-generating): IPTW survival comparison trimmed to the PS common-support region (retains 86%), pre-specified detectable HR ≥ 1.66, reported with a formal positivity caveat.
+Covariate measurability at a treatment decision (n=806 indices)
+Research-grade: comorbidity ICD 100%, death/follow-up 100% (63% died, median FU 347 d), ALBI 93.8%, liver panel 93.1%, pre-index liver imaging flags 88.0% (PVTT/extrahepatic/multifocal, 96% precision), Beacon discontinuation reason 86.0%, ECOG from notes 60.7% (100% audit precision), BCLC 44.9%, Child-Pugh 42.4% (97% precision).
+
+Not usable: AFP 19.7% (kills any AFP-stratified design such as ramucirumab for AFP ≥400), structured ECOG 1.5%, and tumour size / RECIST response — regex failed adjudication, needs LLM or manual abstraction of the 709 retrievable reports.
+
+Persisted tables (reach_users.xzhao81)
+hcc_lines_of_therapy_validated_v9 (806), hcc_systemic_episodes_validated_v9 (1,608), hcc_medonc_decision_index_v9 (806 × 104), hcc_medonc_project_readiness_v9 (12), hcc_medonc_node_gates_v9 (10), hcc_medonc_era_diagnostics_v9 (10), hcc_text_radiology_coverage_v9 (709), hcc_medonc_covariate_readiness_v9 (12).
 
-Do NOT prioritize TACE or IR questions in this phase.
-
-The goal is to identify clinical decision points where:
-
-1. two or more systemic treatment strategies are genuinely plausible for similar HCC patients;
-2. there is sufficient representation of BOTH strategies in REACH;
-3. the factors driving treatment selection can be measured adequately;
-4. outcomes and follow-up are sufficiently dense;
-5. the comparison is not fundamentally destroyed by lack of positivity;
-6. the question is clinically meaningful to a GI medical oncologist.
-
-The highest-priority candidate decision node to investigate is:
-
-**What systemic therapy should be used after first-line Atezo/Bev?**
-
-Potential subsequent strategies include:
-- TKI
-- nivolumab/ipilimumab
-- STRIDE
-- ramucirumab in AFP-high patients
-- potentially individual TKIs such as lenvatinib, cabozantinib, sorafenib, or regorafenib
-
-However, DO NOT assume any of these comparisons are feasible.
-
-The data must establish feasibility.
-
-Other systemic decision nodes should also be explored.
-
-# ============================================================
-# NON-NEGOTIABLE HIGH-ASSURANCE VALIDATION PROTOCOL
-# ============================================================
-
-The previous analyses have demonstrated that plausible-looking results can be wrong because of:
-
-- sparse `med_admin`
-- incomplete oral-drug ascertainment
-- incorrect line-of-therapy algorithms
-- TACE-associated doxorubicin being mistaken for systemic chemotherapy
-- duplicate encounter rows
-- treatment-indication contamination from other cancers
-- conflicting ALBI availability counts
-- inconsistent follow-up calculations
-
-Therefore every major result in this phase must pass a **THREE-LAYER VALIDATION SYSTEM** before being used.
-
-A result that does not pass validation must be labeled:
-
-`UNVALIDATED — DO NOT USE FOR PROJECT SELECTION`
-
-Do not silently proceed with it.
-
-# ============================================================
-# QA LAYER 1 — SOURCE TRIANGULATION
-# ============================================================
-
-For every systemic regimen/drug, independently ascertain exposure from:
-
-A. `med_orders`
-
-B. Beacon:
-- `treatment_plan`
-- `treatment_plan_orders`
-
-C. `med_admin` when available
-
-For oral TKIs, `med_orders` and Beacon are expected to be more informative than MAR.
-
-For IV drugs, require concordance with expected treatment-plan structure and/or administration pattern.
-
-Print counts from EACH source separately before creating a union.
-
-For every drug/regimen report:
-
-- source A N
-- source B N
-- source C N
-- pairwise overlaps
-- 3-source overlap
-- union N
-
-If sources disagree substantially, investigate before continuing.
-
-Do NOT simply union inconsistent sources and call the result correct.
-
-# ============================================================
-# QA LAYER 2 — INDICATION TRIANGULATION
-# ============================================================
-
-Many relevant medications are used in cancers other than HCC.
-
-For every treatment episode determine whether it is HCC-directed using THREE independent signals where possible:
-
-1. Beacon treatment plan explicitly indicates HCC / C22.0.
-2. HCC diagnosis from ≥2 independent diagnostic sources around the treatment episode.
-3. No stronger competing malignancy explains the regimen.
-
-Competing malignancies should explicitly include:
-
-- melanoma
-- RCC
-- NSCLC
-- colorectal cancer
-- gastric/GEJ cancer
-- thyroid cancer
-- cholangiocarcinoma
-- other malignancies relevant to the specific drug
-
-Examples requiring special caution:
-
-- nivo/ipi: melanoma, RCC, NSCLC, etc.
-- lenvatinib: thyroid/RCC
-- cabozantinib: RCC/thyroid
-- sorafenib: RCC/thyroid
-- ramucirumab: gastric/GEJ and other settings
-- atezolizumab/bevacizumab: NSCLC
-
-Classify every systemic episode:
-
-- HCC_HIGH_CONFIDENCE
-- HCC_PROBABLE
-- AMBIGUOUS
-- NON_HCC
-
-Only HIGH-confidence HCC episodes should define the primary line-of-therapy analysis.
-
-PROBABLE may be used in sensitivity analyses.
-
-# ============================================================
-# QA LAYER 3 — PATIENT-TIMELINE VALIDATION
-# ============================================================
-
-For every proposed major treatment sequence, independently reconstruct treatment chronology from:
-
-A. medication order dates/statuses,
-
-B. Beacon plan/cycle chronology,
-
-C. administration/refill chronology when available.
-
-For every common sequence, manually print at least:
-
-- 20 randomly selected patients
-- ALL discordant patients if fewer than 50
-- all patients with implausible line transitions
-
-For each audit patient show a chronological timeline:
-
-DATE / RELATIVE DAY
-REGIMEN
-DRUG
-SOURCE
-ORDER STATUS
-BEACON PLAN
-BEACON HCC DIAGNOSIS
-ADMINISTRATION IF AVAILABLE
-DOSE
-NEXT REGIMEN
-
-Do not show patient-identifying information beyond the deidentified REACH identifier.
-
-The line-of-therapy algorithm must not be accepted until these manual timelines are clinically coherent.
-
-# ============================================================
-# HARD INVARIANT CHECKS
-# ============================================================
-
-Before accepting any derived cohort, automatically test these invariants.
-
-### Drug/regimen invariants
-
-- AB combination N cannot exceed atezolizumab union N or bevacizumab union N.
-- STRIDE N cannot exceed durvalumab or tremelimumab union N.
-- NI N cannot exceed nivolumab or ipilimumab union N.
-- 2L patient N cannot exceed patients with a valid 1L.
-- 3L N cannot exceed 2L N.
-- dates for 2L must occur after 1L start.
-- dates for 3L must occur after 2L start.
-
-### Cohort invariants
-
-Sequential attrition must never increase N.
-
-No patient may occupy two mutually exclusive treatment arms at the same decision time.
-
-A treatment episode classified NON_HCC cannot enter an HCC line of therapy.
-
-### Temporal invariants
-
-Baseline variables must precede the treatment-decision index.
-
-Outcome events cannot precede index.
-
-Same-regimen maintenance must not become a new line.
-
-Restarting the same treatment after a temporary hold must not automatically become a new line.
-
-### Clinical cadence invariants
-
-Check median treatment intervals against plausible clinical schedules.
-
-Flag:
-- median interval <5 days for q3–4 week therapy
-- implausibly high duplicate daily orders
-- combination components occurring months apart but classified as one regimen
-
-Every failed invariant must be printed.
-
-STOP and debug before using that result.
-
-# ============================================================
-# PART 1 — REBUILD SYSTEMIC THERAPY EPISODES FROM RAW DATA
-# ============================================================
-
-Start from:
-
-`reach_users.xzhao81.hcc_universe_v8`
-
-Use the HIGH-CONFIDENCE HCC population as the primary universe.
-
-Rebuild treatment exposure from RAW REACH tables rather than assuming `hcc_lines_of_therapy_v8` is correct.
-
-Explicitly enumerate:
-
-### Immunotherapy / antibody regimens
-
-- Atezo/Bev
-- STRIDE
-- Nivo/Ipi
-- nivolumab monotherapy
-- pembrolizumab
-- durvalumab monotherapy
-- atezolizumab monotherapy if genuinely HCC-directed
-- ramucirumab
-
-### TKIs
-
-- lenvatinib
-- sorafenib
-- cabozantinib
-- regorafenib
-
-### Any additional HCC systemic regimen discovered in Beacon
-
-Create one row per:
-
-PATIENT × SYSTEMIC REGIMEN EPISODE
-
-Fields should include:
-
-- patient ID
-- regimen
-- component drugs
-- episode start
-- episode end
-- evidence sources
-- HCC indication confidence
-- Beacon plan
-- order-status evidence
-- administration evidence
-- exposure confidence
-
-# ============================================================
-# PART 2 — DEFINE EXPOSURE CONFIDENCE
-# ============================================================
-
-Create:
-
-### HIGH exposure confidence
-
-Examples:
-
-IV therapy:
-- HCC Beacon plan AND compatible medication orders/administrations
-
-Oral TKI:
-- active/dispensed-appearing medication order AND HCC Beacon/oncology context
-- preferably repeated order/refill evidence
-
-### MODERATE
-
-Strong medication-order evidence with clear HCC indication but incomplete Beacon information.
-
-### LOW
-
-Single isolated order with uncertain fulfillment/use.
-
-Primary line-of-therapy analyses should use HIGH + possibly MODERATE.
-
-Run HIGH-only sensitivity counts.
-
-# ============================================================
-# PART 3 — REBUILD LINES OF THERAPY
-# ============================================================
-
-Do NOT reuse the previous line assignment without validation.
-
-Construct systemic lines based on REGIMEN EPISODES.
-
-Rules:
-
-1. First HCC-directed systemic regimen = candidate 1L.
-
-2. Repeated cycles of the same regimen remain the same line.
-
-3. Maintenance treatment remains the same line.
-
-Examples:
-- nivo maintenance after nivo/ipi induction = same NI line
-- durvalumab maintenance after STRIDE = same STRIDE line
-
-4. Temporary treatment holds do NOT create new lines.
-
-5. Restarting the same regimen does NOT automatically create a new line.
-
-6. A new line requires a clinically meaningful change to a different HCC systemic regimen.
-
-7. TACE-associated chemotherapy is NOT a systemic line.
-
-8. Locoregional therapy between systemic regimens does not automatically define a new systemic line.
-
-9. If line assignment cannot be determined confidently:
-`LINE_UNCERTAIN`
-
-Do not force a classification.
-
-Create:
-- systemic_1L
-- systemic_2L
-- systemic_3L
-- start/end dates
-- confidence
-
-# ============================================================
-# PART 4 — INDEPENDENT SECOND LINE ALGORITHM
-# ============================================================
-
-As a safety check, derive 2L status TWO DIFFERENT WAYS.
-
-### Algorithm A — Regimen-episode algorithm
-Use the episode logic above.
-
-### Algorithm B — Beacon-first algorithm
-Use treatment-plan changes as the primary determinant, then validate with medications.
-
-Compare A vs B.
-
-Print:
-
-- concordant 1L
-- discordant 1L
-- concordant 2L
-- discordant 2L
-
-Calculate concordance percentage.
-
-Target:
->90% agreement for common regimens.
-
-Every discordant 2L case should undergo patient-level timeline review if feasible.
-
-Do not use treatment sequencing for project selection if agreement remains poor.
-
-# ============================================================
-# PART 5 — EXPLAIN THE CURRENT V8 LINE-OF-THERAPY ANOMALY
-# ============================================================
-
-The previous v8 report found approximately:
-
-- lenvatinib: 165 patients
-- sorafenib: 90
-- cabozantinib: 76
-
-but assigned only:
-
-- lenvatinib 1L: 5
-- sorafenib 1L: 1
-
-Investigate this explicitly.
-
-Determine whether the discrepancy is caused by:
-
-- incorrect first-line logic
-- older historical ICI orders
-- non-HCC indications
-- order dates versus actual therapy dates
-- oral TKI order artifacts
-- prior systemic therapy misclassification
-- date handling
-- Beacon mapping
-- another bug
-
-Print a reconciliation table for EVERY TKI:
-
-TOTAL HCC-LINKED
-→ valid exposure
-→ 1L
-→ 2L
-→ 3L+
-→ uncertain
-
-The counts must sum correctly.
-
-# ============================================================
-# PART 6 — BUILD THE SYSTEMIC TREATMENT TRANSITION MATRIX
-# ============================================================
-
-For all validated high-confidence treatment trajectories create a matrix:
-
-ROWS = 1L regimen
-COLUMNS = 2L regimen
-
-Print patient counts.
-
-Do the same for:
-
-2L → 3L
-
-Do not calculate outcomes.
-
-Also print the top 25 sequence patterns.
-
-# ============================================================
-# PART 7 — MEDICAL-ONCOLOGY DECISION NODE #1:
-# AFTER FIRST-LINE ATEZO/BEV
-# ============================================================
-
-This is the highest-priority node.
-
-Identify all patients with:
-
-- HIGH-confidence HCC
-- HIGH/MODERATE-confidence first-line Atezo/Bev
-- subsequent clinically identifiable treatment decision
-
-Characterize mutually exclusive subsequent strategies:
-
-A. TKI class
-B. Nivo/Ipi
-C. STRIDE
-D. ramucirumab
-E. other systemic strategy
-F. no observed subsequent systemic therapy
-
-Within TKI classify:
-- lenvatinib
-- cabozantinib
-- sorafenib
-- regorafenib
-
-Print exact N for each branch.
-
-Do NOT compare outcomes.
-
-# ============================================================
-# PART 8 — DEFINE A TRUE 2L DECISION INDEX
-# ============================================================
-
-For patients receiving a subsequent systemic therapy:
-
-Time zero should be the START of 2L therapy.
-
-For feasibility analyses, measure all treatment-selection covariates immediately BEFORE 2L.
-
-Preferred lab window:
-- −14 to 0 days
-
-Sensitivity:
-- −30 to 0 days
-
-Extract:
-
-- ALBI
-- albumin
-- bilirubin
-- INR
-- sodium
-- creatinine
-- platelets
-- hemoglobin
-- AFP
-- ascites
-- encephalopathy
-- portal hypertension
-- varices
-- bleeding
-- CKD
-- hypertension
-- VTE
-- anticoagulation
-- autoimmune disease
-- immunosuppression
-- prior liver-directed therapy
-- hospitalization burden
-- duration of 1L
-- number of 1L administrations
-- reason-for-stop if structured
-
-Do not use any information occurring after 2L initiation.
-
-# ============================================================
-# PART 9 — RECOVER PERFORMANCE STATUS / STAGE FROM TEXT
-# ============================================================
-
-This is exploratory QA only.
-
-Because `ptnotes_text` and `radiology_text` exist, determine whether we can recover key confounders currently missing from structured data.
-
-Do NOT build a sophisticated NLP model yet.
-
-Use simple text pattern searches followed by manual validation.
-
-Within −45 to 0 days before systemic treatment decision search oncology notes for:
-
-### ECOG
-patterns such as:
-- ECOG 0
-- ECOG: 1
-- ECOG PS 2
-- performance status
-
-### Child-Pugh
-- Child-Pugh A
-- Child Pugh A
-- CP-A
-- Child-Pugh B
-- numerical score if present
-
-### BCLC
-- BCLC A/B/C/D
-- Barcelona stage
-
-Report:
-
-- patients with candidate ECOG text
-- successfully parsed value N
-- patients with candidate Child-Pugh text
-- parsed value N
-- BCLC N
-
-MANUALLY AUDIT at least 30 parsed examples for each phenotype before accepting it.
-
-Report precision from manual review.
-
-Do not use text-extracted variables in a causal model unless manual precision is acceptably high.
-
-# ============================================================
-# PART 10 — RADIOLOGY-BASED DISEASE BURDEN FEASIBILITY
-# ============================================================
-
-For patients at major systemic decision nodes, locate the closest liver CT/MRI report BEFORE the decision.
-
-Assess whether simple text extraction can identify:
-
-- extrahepatic metastatic disease
-- portal vein tumor thrombus / macrovascular invasion
-- new lesions
-- progression
-- viable HCC
-- largest lesion size
-- multifocal/bilobar disease
-
-For this phase:
-
-- measure REPORT AVAILABILITY
-- perform simple keyword/pattern extraction
-- manually audit at least 30 reports
-
-Do not construct final tumor-response phenotypes yet.
-
-Report how often a relevant pretreatment CT/MRI report exists within:
-
-- 30 days
-- 60 days
-- 90 days
-
-This is important because disease progression/burden may drive 2L selection.
-
-# ============================================================
-# PART 11 — DECISION NODE #1A:
-# NIVO/IPI VS ANY TKI AFTER ATEZO/BEV
-# ============================================================
-
-If branch Ns permit, construct a candidate comparison:
-
-1L Atezo/Bev
-→
-2L Nivo/Ipi
-
-versus
-
-1L Atezo/Bev
-→
-2L TKI
-
-Do not inspect treatment effects.
-
-Report:
-
-- N in each arm
-- deaths after 2L initiation in each arm
-- follow-up availability
-- baseline covariate completeness at 2L
-- ECOG text availability
-- Child-Pugh text availability
-- radiology availability
-
-Then estimate a PROPENSITY SCORE using only pre-2L variables for DIAGNOSTIC PURPOSES.
-
-Do not model outcomes.
-
-Assess:
-- PS distributions
-- empirical common support
-- proportion of each arm within support
-- raw SMDs
-- overlap-weighted SMDs
-- effective sample size
-
-If one arm N <20:
-label `TOO SMALL`.
-
-If one arm N 20–29:
-label `EXPLORATORY`.
-
-If both arms >=30:
-continue feasibility assessment.
-
-# ============================================================
-# PART 12 — DECISION NODE #1B:
-# TKI CHOICE AFTER ATEZO/BEV
-# ============================================================
-
-Among validated 2L TKIs after Atezo/Bev, report counts for:
-
-- lenvatinib
-- cabozantinib
-- sorafenib
-- regorafenib
-
-Do not automatically run four-way causal modeling.
-
-Identify whether any TWO TKIs each have:
-
-- N ≥25 minimum
-- preferably N ≥40
-
-For plausible pairs, assess:
-
-- baseline ALBI
-- renal function
-- AFP
-- decompensation
-- prior toxicity
-- disease burden proxies
-- PS overlap
-- common support
-
-Possible candidate comparisons include:
-
-- lenvatinib vs cabozantinib
-- lenvatinib vs sorafenib
-- cabozantinib vs sorafenib
-
-Only evaluate pairs actually supported by N.
-
-No outcomes comparison yet.
-
-# ============================================================
-# PART 13 — DECISION NODE #1C:
-# OTHER POST-ATEZO/BEV OPTIONS
-# ============================================================
-
-Assess feasibility separately for:
-
-### STRIDE after Atezo/Bev
-Print N.
-
-### Ramucirumab after Atezo/Bev
-Restrict eligibility analysis to patients with AFP ≥400 near 2L if AFP available.
-
-Print:
-- ramucirumab N
-- potentially eligible AFP≥400 comparator patients
-- comparator TKI N
-
-### Pembrolizumab/nivolumab monotherapy
-Print usage but do not assume current clinical equipoise.
-
-Do not compare outcomes unless a future project is selected.
-
-# ============================================================
-# PART 14 — DECISION NODE #2:
-# AFTER FIRST-LINE STRIDE
-# ============================================================
-
-Identify validated 2L treatment patterns after STRIDE.
-
-Print:
-
-- any TKI
-- lenvatinib
-- cabozantinib
-- sorafenib
-- regorafenib
-- Atezo/Bev
-- Nivo/Ipi
-- other
-
-Then determine whether there is any decision node with ≥25 patients per branch.
-
-Do not force a comparison if the data are sparse.
-
-# ============================================================
-# PART 15 — DECISION NODE #3:
-# AFTER ANY FIRST-LINE ICI COMBINATION
-# ============================================================
-
-Pool first-line:
-
-- Atezo/Bev
-- STRIDE
-- Nivo/Ipi ONLY where truly first-line
-- other validated first-line ICI combinations if present
-
-Then classify 2L strategy as:
-
-A. TKI
-B. dual-ICI / ICI-based strategy
-C. VEGF/antibody-based strategy
-D. other
-
-This is a broader medical-oncology decision question:
-
-> After first-line immunotherapy, is there enough clinical equipoise and data to compare a TKI-based strategy with another immunotherapy-based strategy?
-
-Assess only feasibility/overlap.
-
-Do not compare outcomes.
-
-# ============================================================
-# PART 16 — DECISION NODE #4:
-# SECOND-LINE TKI AFTER ANY FIRST-LINE ICI
-# ============================================================
-
-Pool patients whose 1L was an ICI-containing regimen and whose 2L was a TKI.
-
-Compare TKI branch sizes:
-
-- lenvatinib
-- cabozantinib
-- sorafenib
-- regorafenib
-
-This may produce a larger and cleaner TKI comparison than restricting only to Atezo/Bev.
-
-Assess potential pairwise equipoise.
-
-Again:
-no outcome effects.
-
-# ============================================================
-# PART 17 — DECISION NODE #5:
-# MANAGEMENT AFTER ICI-ASSOCIATED LIVER INJURY
-# ============================================================
-
-Use the validated post-ICI liver injury screen only as a starting phenotype.
-
-Identify patients with:
-- new ALT/AST ≥3× ULN after ICI
-- supporting steroid initiation and/or treatment hold where available
-
-Determine whether sufficient patients subsequently:
-
-A. resume/rechallenge ICI
-B. permanently discontinue ICI / switch therapy
-
-Report N only.
-
-Also report:
-- peak AST/ALT
-- bilirubin
-- steroid use
-- mycophenolate
-- time to biochemical improvement
-- treatment-resumption data availability
-
-This is a clinically relevant medical-oncology decision, but classify as feasible only if the phenotype can be validated and branch Ns are adequate.
-
-# ============================================================
-# PART 18 — DECISION NODE #6:
-# BEVACIZUMAB COMPONENT MANAGEMENT
-# ============================================================
-
-Among Atezo/Bev-treated HCC patients, identify cases where:
-
-- bevacizumab is held/stopped
-- atezolizumab continues
-
-versus:
-- both components continue
-
-Determine whether the data can reliably identify a component hold.
-
-Potential triggers:
-- proteinuria
-- hypertension
-- bleeding
-- VTE
-- wound/procedure issues if structured
-
-Report:
-
-- number with bevacizumab hold
-- number continuing atezolizumab alone
-- number restarting bevacizumab
-- number permanently stopping bevacizumab
-
-No outcome comparison.
-
-This could support a future:
-“Does maintaining atezolizumab during bevacizumab interruption preserve treatment benefit?”
-question if N is adequate.
-
-# ============================================================
-# PART 19 — DYNAMIC LIVER FUNCTION AT SYSTEMIC DECISION POINTS
-# ============================================================
-
-Explore whether a MEDICAL ONCOLOGY project can use dynamic ALBI without forcing a specific drug comparison.
-
-For patients receiving systemic therapy, quantify:
-
-- baseline ALBI
-- best/worst ALBI during 1L
-- ALBI near 1L discontinuation
-- ALBI at 2L decision
-- change baseline → 2L
-
-Report N with complete trajectories.
-
-Potential question:
-
-> Does deterioration in hepatic reserve during first-line therapy predict loss of access to subsequent systemic therapy?
-
-But do NOT model this yet.
-
-Also determine whether:
-- patients dying before 2L
-- patients with no observed 2L
-can be reliably distinguished from patients simply censored/lost to follow-up.
-
-# ============================================================
-# PART 20 — OTHER MEDICAL-ONCOLOGY OPPORTUNITY DISCOVERY
-# ============================================================
-
-Search the validated systemic-treatment trajectories for other common decision nodes.
-
-Automatically print every transition node satisfying:
-
-- parent treatment/state N ≥40
-AND
-- at least two subsequent systemic branches with N ≥20 each
-
-Examples:
-
-REGIMEN X
-→ option A: N
-→ option B: N
-→ option C: N
-
-Do NOT use outcomes to find these nodes.
-
-For each node provide:
-- decision time
-- branch counts
-- relevant treatment-selection covariates
-- missing confounders
-- endpoint availability
-
-This is an important discovery step.
-
-Do not restrict yourself only to the candidate questions listed above.
-
-# ============================================================
-# PART 21 — CLINICAL EQUIPOISE GATE
-# ============================================================
-
-Every candidate causal project must pass ALL of these tests.
-
-### Gate 1 — same clinical decision time
-Both strategies must start from the same treatment state.
-
-Example:
-after failure/discontinuation of first-line Atezo/Bev.
-
-### Gate 2 — both options represented
-Preferred:
-≥40 patients/arm.
-
-Potentially feasible:
-≥30/arm.
-
-Exploratory:
-20–29/arm.
-
-Reject:
-<20 in either arm.
-
-### Gate 3 — indication/eligibility overlap
-Patients receiving the two strategies must plausibly have been eligible for either strategy.
-
-Identify obvious treatment-deterministic factors.
-
-### Gate 4 — measurable treatment-selection factors
-Assess completeness of:
-
-- liver reserve
-- renal function
-- bleeding/portal hypertension
-- autoimmune/immunosuppression
-- AFP
-- disease burden
-- ECOG if text extraction succeeds
-- Child-Pugh if text extraction succeeds
-
-### Gate 5 — empirical positivity
-Before looking at outcome effects:
-
-- PS overlap
-- common support
-- overlap-weighted balance
-- ESS
-
-### Gate 6 — endpoint density
-Report:
-- deaths
-- follow-up
-- other relevant events
-
-Counts only.
-
-### Gate 7 — date-shift independence
-Prefer designs based on:
-- within-patient sequencing
-- within-patient intervals
-
-Penalize questions requiring true cross-patient calendar era.
-
-A candidate failing a gate should NOT be recommended as a primary causal project.
-
-# ============================================================
-# PART 22 — TARGET-TRIAL SPECIFICATION FOR EVERY SURVIVING NODE
-# ============================================================
-
-For every candidate passing the equipoise gate, specify:
-
-### Eligibility
-Exact inclusion/exclusion criteria.
-
-### Treatment strategies
-Exact alternatives being compared.
-
-### Time zero
-Single clinically meaningful decision point.
-
-### Grace period
-If required.
-
-### Follow-up
-When follow-up begins and ends.
-
-### Primary outcome
-Prefer clinically meaningful endpoints such as:
-- overall survival
-- hepatic-decompensation-free survival
-- treatment failure
-
-### Secondary outcomes
-
-### Estimand
-For example:
-- overlap-population average treatment effect
-
-### Confounders
-Measured pre-treatment variables.
-
-### Important missing confounders
-
-### Positivity assessment
-
-### Anticipated analysis
-Do not run it yet.
-
-The purpose is to ensure the observational analysis emulates a coherent trial rather than merely comparing medication groups.
-
-# ============================================================
-# PART 23 — HIGH-ASSURANCE MANUAL AUDIT
-# ============================================================
-
-Before final project ranking:
-
-For EACH candidate project that appears feasible, manually inspect:
-
-- 20 random patients from arm A
-- 20 random patients from arm B
-- 20 patients near propensity/common-support boundaries
-- ALL major algorithm-discordant cases up to 30
-
-For each, print a compact clinical timeline containing:
-
-- HCC evidence
-- 1L
-- reason-for-line-change if available
-- 2L
-- baseline labs
-- relevant imaging/report
-- relevant oncology-note phenotype
-- competing malignancy evidence
-
-Then report:
-
-`MANUAL AUDIT PASS RATE`
-
-for:
-- correct HCC indication
-- correct 1L
-- correct 2L
-- correct index date
-
-Require ≥90% accuracy before calling the candidate HIGH-CONFIDENCE.
-
-If <90%:
-fix the algorithm and rerun.
-
-# ============================================================
-# PART 24 — DATA-QUALITY RED TEAM
-# ============================================================
-
-Before producing recommendations, actively try to falsify your own results.
-
-For every leading project answer:
-
-1. Could these patients actually have different cancer indications?
-2. Could oral medication orders represent prescriptions never taken?
-3. Could treatment lines be misordered?
-4. Could a maintenance drug be mislabeled as a new line?
-5. Could TACE chemotherapy contaminate systemic therapy?
-6. Could one arm have systematically poorer data capture?
-7. Could follow-up be calculated incorrectly?
-8. Could baseline variables actually occur after index?
-9. Could duplicate orders inflate treatment counts?
-10. Could text-extracted ECOG/Child-Pugh be incorrect?
-11. Could the apparent treatment choice be nearly deterministic based on an unmeasured factor?
-12. Does date shifting invalidate any part of the design?
-
-Print a red-team result for each leading candidate.
-
-# ============================================================
-# PART 25 — FINAL MEDICAL ONCOLOGY OPPORTUNITY TABLE
-# ============================================================
-
-Only after ALL QA steps, print one row per candidate project.
-
-Columns:
-
-- Research question
-- Clinical decision node
-- Arm A N
-- Arm B N
-- Total N
-- Deaths/events available
-- Median follow-up
-- Key confounder completeness
-- ECOG availability
-- Child-Pugh availability
-- AFP availability
-- Radiology availability
-- PS common-support %
-- overlap-weight ESS
-- max weighted SMD
-- Manual audit accuracy
-- Exposure confidence
-- Line-of-therapy confidence
-- Date-shift dependence
-- Clinical-equipoise status
-- Coding complexity
-- Main limitation
-
-Do NOT show treatment-effect estimates.
-
-# ============================================================
-# PART 26 — PROJECT SCORING
-# ============================================================
-
-Score each project 0–10 using:
-
-### Clinical equipoise: 0–3
-3 = genuine choice between routinely plausible strategies
-2 = reasonable but some channeling
-1 = substantial channeling
-0 = no meaningful equipoise
-
-### Sample size / positivity: 0–2
-2 = strong N and common support
-1 = marginal
-0 = inadequate
-
-### Confounder measurement: 0–2
-2 = major treatment-selection variables well measured
-1 = meaningful gaps
-0 = critical determinants absent
-
-### Endpoint/follow-up quality: 0–1
-1 = strong
-0 = inadequate
-
-### Phenotype/exposure reliability: 0–1
-1 = passes triple validation/manual audit
-0 = does not
-
-### Date-shift independence: 0–1
-1 = essentially independent
-0 = materially dependent on true calendar era
-
-Do NOT include:
-- observed effect size
-- P-values
-- direction of outcomes
-- novelty claims
-
-# ============================================================
-# PART 27 — FINAL REPORT
-# ============================================================
-
-Return FOUR sections.
-
-## A. SYSTEMIC DATA AUDIT
-
-State:
-
-- whether systemic episodes are now trustworthy
-- whether line-of-therapy assignment is trustworthy
-- exact explanation for the prior TKI discrepancy
-- source concordance
-- manual audit accuracy
-
-## B. MEDICAL ONCOLOGY DECISION-NODE MAP
-
-Print every validated systemic decision node with branch Ns.
-
-## C. TOP 5 MEDICAL ONCOLOGY PROJECTS BY EQUIPOISE + DATA QUALITY
-
-For each provide:
-
-- exact research question
-- target trial emulation
-- branch Ns
-- outcome/event counts
-- PS overlap
-- confounder completeness
-- manual validation result
-- decisive strength
-- decisive limitation
-
-## D. QUESTIONS THAT SHOULD NOT BE PURSUED
-
-Explicitly list attractive but methodologically weak questions and why.
-
-Include the original:
-
-`Atezo/Bev vs STRIDE × baseline ALBI`
-
-unless new evidence genuinely solves its prior within-ALBI positivity problem.
-
-# ============================================================
-# PERSIST OUTPUTS
-# ============================================================
-
-Create:
-
-- `hcc_systemic_episodes_validated_v9`
-- `hcc_lines_of_therapy_validated_v9`
-- `hcc_lot_discordance_audit_v9`
-- `hcc_medonc_decision_nodes_v9`
-- `hcc_medonc_overlap_diagnostics_v9`
-- `hcc_text_confounder_coverage_v9`
-- `hcc_medonc_project_readiness_v9`
-
-Do not overwrite earlier tables.
-
-# ============================================================
-# COMPLETION CHECKLIST
-# ============================================================
-
-At the end print:
-
-Source triangulation: PASS / FAIL
-HCC indication triangulation: PASS / FAIL
-Treatment episode validation: PASS / FAIL
-Line-of-therapy A/B algorithm concordance: ___%
-Manual timeline audit: ___%
-Invariant checks: PASS / FAIL
-Text phenotype validation: PASS / FAIL / NOT FEASIBLE
-Decision-node discovery: COMPLETE / INCOMPLETE
-Equipoise diagnostics: COMPLETE / INCOMPLETE
-Target-trial specifications: COMPLETE / INCOMPLETE
-
-Do not describe this phase as complete if any required component failed.
-
-If something fails, state exactly what failed and whether the associated project is therefore unusable.
-
-STOP before estimating any comparative treatment effects.
