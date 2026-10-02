@@ -1,104 +1,804 @@
-You're right — I printed a summary report but not the full detail you specified for every section. Let me compile the complete report now from all the execution results.
+Follow `skills.md` strictly.
 
-*Used Read Asset By Id*
+This is the FINAL DATA-INTEGRITY REPAIR before project selection.
 
-Let me get the actual execution output from the final report cell and each section cell to compile the full report.
+Do NOT rank projects.
+Do NOT estimate treatment effects.
+Do NOT start broad new exploration.
 
-*Used Get Asset Execution Results*
+The only goal is to resolve the remaining hard contradictions from v12.1.
 
-The report cell has empty results — likely lost to a kernel restart. Let me rebuild it with the full detail you specified for every section, re-run, and present the output.
+IMPORTANT:
+For every section below, print BOTH:
 
-*Used Edit Asset, Read Asset By Id, Fetch Omitted Content*
+1. the result; and
+2. enough SQL/PySpark/logic for ChatGPT to verify how the result was produced.
 
-The cell is complete and comprehensive (all 18 sections A-R). It just needs to be re-run after the kernel restart. Let me execute it now.
+The human investigator will copy the complete output to ChatGPT.
 
-*Used Run Asset*
+Do not leave important logic only inside notebook cells.
 
-Cell ran successfully. Now let me fetch the complete printed output.
+# ============================================================
+# GENERAL EXECUTION RULE FOR EVERY SECTION
+# ============================================================
 
-*Used Fetch Omitted Content*
+Before every major transformation print:
 
-The complete report is now printed in Cell 24: v12.1 §18 — FINAL COPY-PASTE REVIEW REPORT. Here it is in full:
+SOURCE TABLE(S):
+UNIT OF ANALYSIS:
+JOIN KEY(S):
+DATE FIELD(S):
+N_ROWS BEFORE:
+N_PATIENTS BEFORE:
 
----
+Then print the actual SQL/PySpark used for:
+- joins,
+- filtering,
+- grouping,
+- window functions,
+- phenotype classification.
 
-**A. SYSTEMIC 793 → VALIDATED → TRUE-1L FORENSIC WATERFALL**
+After every join print:
 
-Waterfall 1 (all 793 raw systemic):
-VALIDATED\_HCC\_SYSTEMIC=568, COMPETING\_CANCER\_INDICATION=95, BROAD\_ONLY\_HCC=82, ORDER\_ONLY\_NO\_USE\_EVIDENCE=31, HCC\_INDICATION\_UNCERTAIN=13, ORAL\_TKI\_LOW\_CONFIDENCE=4. SUM=793.
+LEFT ROWS
+LEFT PATIENTS
+RIGHT ROWS
+RIGHT PATIENTS
+MATCHED LEFT PATIENTS
+UNMATCHED LEFT PATIENTS
+ROWS AFTER JOIN
+PATIENTS AFTER JOIN
 
-By drug (not-validated): COMPETING dominated by nivolumab(32), pembrolizumab(25); BROAD\_ONLY by durvalumab(19), pembrolizumab(13); ORDER\_ONLY by lenvatinib(11), sorafenib(9).
+Also calculate join multiplicity:
 
-Waterfall 2 (571 validated → true-1L): DEFINITE\_TRUE\_1L=282 (AB=96, STRIDE=50, NIVO\_MONO=43, SORAFENIB=20, LENVATINIB=18, NIVO\_IPI=17, PEMBRO=14, DURVA=7, CABO+NIVO=6, ATEZO=6, others=5). PRIOR\_OUTSIDE=213, PROBABLE=74, LATER\_LINE=2. SUM=571.
+rows-after-join / rows-before-join
 
-**B. RESEARCH STATUS**
+If >1.10 where a 1:1 or many:1 join is intended:
+print:
 
-Five research fields in v10 disagree: `research` (Y=107), `note_trial` (1=244), `research_suspected_flag` (1=246), `research_protocol_flag` (1=110), `beacon_research_overlap` (1=110). Canonical `research_status_final`: ROUTINE\_CARE=177, UNCERTAIN=64, DEFINITE\_TRIAL=40, PROBABLE\_TRIAL=1.
+`*** JOIN MULTIPLICATION ALERT ***`
 
-Per regimen: AB(96): trial=1, routine=71, uncertain=24. STRIDE(50): trial=9, routine=37, uncertain=4. NIVO\_IPI(17): trial=4, routine=8, uncertain=5. NIVO\_MONO(43): trial=18, routine=14, uncertain=11. LENVATINIB(18): routine=11, uncertain=7. SORAFENIB(20): routine=12, uncertain=8.
+and debug before continuing.
 
-**C. HOSPITALIZATION**
+For every deduplication print:
+- rows before
+- rows after
+- duplicate keys identified
+- exact deduplication key
+- ordering/tie-breaking logic.
 
-Def A (v12 original, adt\_pat\_class): **0/0 — BROKEN**. Def B (Hospital Encounter+admit\_time): 71,606/3,774. Def C (any admit\_time): 102,113/3,819. Def D (adt=Inpatient): 0/0. Def E (billing): 81,868/3,576. Def F (admit\_dx): 16,659/3,098. **v12.1 broadened (B+E)**: 104,595/3,853. Sanity: transplant 256/256 (100%), hepatectomy 339/340 (100%), deceased 1,648/1,690 (98%), paracentesis 580/580 (100%), encephalopathy 589/592 (99%), SBP 69/70 (99%). Discordant transplant=0, hepatectomy=1.
+# ============================================================
+# PART 1 — RESOLVE 568 VS 571 SYSTEMIC PATIENTS
+# ============================================================
 
-**D. LRT RECONCILIATION**
+v12.1 reports:
 
-TACE(HC+Probable): 3,304 raw / 2,549 episodes / 1,052 patients. Y90\_TREATMENT: 189/189/149. ABLATION: 694/694/442 (liver=202pts, other=31, unknown=271). Y90\_MAPPING: 2,429/2,429/1,073. HEMORRHAGE\_EMBO: 59/59/52. BLAND\_EMBO: 292/292/206. Resection: 587 raw / 358 episodes / 340 patients. Transplant: 311/311/256, 50 retransplants. SBRT: 198 courses / 164 patients. All 5 master flags MATCH validated tables.
+- validated systemic patients = 568
+but
+- the second systemic waterfall starts with 571.
 
-**E. Y90 MAPPING**
+This is a HARD contradiction.
 
-2,429 rows / 1,073 patients. Codes: CPT 36247=1,538, 36248=407, 36245=325, 36246=135, 75894=15, 75898=9. Sources: hosp\_billing=1,852, profee=577. Reclassification: DEFINITE\_Y90\_MAPPING=0, PROBABLE=0, NON\_Y90\_ANGIOGRAPHY=1, **FALSE\_POSITIVE=2,428**. Conclusion: generic selective catheter codes billed alongside TACE/Y90. Remove Y90\_MAPPING category.
+Load the exact patient-ID sets used for both.
 
-**F. IMAGING**
+Print:
 
-37,405 unique liver CT/MRI studies (pat+date+modality), 3,687 patients. Post-TACE reassessment (28-120d): 4,453 studies, 944/1,052 TACE patients (89.7%), median 3.0 studies/patient. v12 reported 7,072 (duplicated).
+N(set_568)
+N(set_571)
 
-**G. SURGERY/TRANSPLANT**
+Then print:
 
-Resection: 340 pts / 358 episodes / 587 raw (PARTIAL=293pts, WEDGE=215, EXTENDED=45, LOBECTOMY=19). Transplant: 256 pts / 311 episodes / 50 retransplants.
+`571_MINUS_568`
+and
+`568_MINUS_571`
 
-**H. TREATMENT DURATION**
+with ALL patient IDs because the discrepancy is small.
 
-Day 42: alive=261, on 1L=166, off=95. Day 84: alive=247, on 1L=126. Discontinuation reasons: REGIMEN\_EPISODE\_INCORRECTLY\_ENDED=42, DECOMPENSATION=12, ORDER\_END\_ARTIFACT=11, PROGRESSION\_TO\_2L=9, TRUE\_EARLY\_DISC=9, 2L\_STARTED=7, MISSING\_DATA=5.
+For each discordant patient print:
+- HCC evidence
+- systemic regimen
+- indication evidence
+- treatment-line rows
+- exclusion reason
+- source table/version.
 
-Duration by regimen: AB(96) med=140d IQR[42-328] 6wk78%/12wk66%/6mo56%. STRIDE(50) med=58d [7-276] 69/51/43%. NIVO\_IPI(17) med=42d [0-252] 57/38/45%. LENVATINIB(18) med=0d [0-74] 29/29/12%. SORAFENIB(20) med=2d [0-58] 30/21/19%. NIVO\_MONO(43) med=84d [28-254] 60/54/39%. PEMBRO(14) med=88d [42-248] 67/64/67%. DURVA(7) med=98d [52-111] 86/67/0%.
+Identify which set is actually canonical.
 
-**I. POST-1L STATES (N=282)**
+Then verify whether all 282 high-confidence true-1L patients are contained in the final canonical validated-systemic set:
 
-DOCUMENTED\_PROGRESSION\_TO\_2L=91, HOSPICE\_OR\_DEATH=71, ADMINISTRATIVE\_CENSOR=52, PROGRESSION\_NO\_2L=29, LOCAL\_CONSOLIDATION=27, HEPATIC\_DYSFUNCTION\_STOP=12. SUM=282.
+`assert set(true1L_282).issubset(set(validated_systemic_final))`
 
-**J. POST-ICI TRUE-1L**
+Print TRUE/FALSE.
 
-A=433 (all observed ICI line-1), B=273 (probable true-1L), C=242 (HC true-1L), D=153 (routine-care HC). v12 ERROR: used A as "true 1L." 2L reached: A→112 (NIVO\_IPI=36, LEN=30, CABO=14, AB=11), B→73, C→65 (LEN=20, NIVO\_IPI=19, AB=7, CABO=6), D→40 (NIVO\_IPI=14, LEN=11, CABO=5).
+If FALSE:
+print all offending patient IDs and rebuild true 1L.
 
-**K. TRANSAMINITIS (482 ICI-exposed)**
+Persist:
+`hcc_systemic_patients_canonical_v12_2`
+`hcc_systemic_lines_canonical_v12_2`
 
-A\_ANY=112, B\_HIGH\_GRADE=44, C\_STEROID\_TREATED=33, D\_HIGH\_SPECIFICITY=7, E\_HUMAN\_REVIEW=16, NO\_SIGNIFICANT=270.
+# ============================================================
+# PART 2 — COMPLETE 793 → VALIDATED → TRUE-1L TREE
+# ============================================================
 
-**L. POST-SYSTEMIC LOCAL (193 pts / 529 episodes)**
+Recalculate this ONLY from the final canonical systemic patient table.
 
-TACE\_HC=125pts/255ep (med 217d), ABLATION=45/69 (539d), PARTIAL\_HEPX=44/44 (75d), OTHER\_SURGERY=33/53 (287d), TACE\_PROBABLE=28/53 (154d), WEDGE=26/27 (84d), Y90=11/12 (244d), EXTENDED\_HEPX=9/9 (90d), TRANSPLANT=5/6 (507d), LOBECTOMY=1/1 (242d). Systemic continued: YES=178, NO=351.
+Do not reuse counts from v12/v12.1.
 
-**M. OLIGOPROGRESSION ATTRITION**
+Print a mutually exclusive patient-level table:
 
-571 → local during systemic 103 → imaging nearby 103 → same systemic continued 97 → strict 97. Persisted strict set = 88 patients (requires manual imaging review for disease control).
+RAW SYSTEMIC SIGNAL
+→ validated HCC systemic
+→ not validated
 
-**N. POST-TACE DECISION (N=1,052)**
+For nonvalidated:
+- broad-only HCC
+- competing malignancy
+- order-only
+- low-confidence oral exposure
+- uncertain HCC indication
+- other
 
-REPEAT\_TACE=584, OBSERVATION=134, DEATH=130, TRANSPLANT=62, ABLATION=48, ICI\_SYSTEMIC=47, RESECTION=28, TKI\_SYSTEMIC=18, Y90=1. SUM=1,052.
+Then for every validated systemic patient:
+- definite true 1L
+- probable true 1L
+- definite later line
+- possible prior outside therapy
+- unresolved
 
-**O. AFP BASELINE**
+The sum at each branch must equal its parent exactly.
 
--30 to 0d: 229/282 (81.2%). -14 to 0d: 208/282 (73.8%). Post-treatment excluded (190 patients). Categories: <10=63, 10-199=64, 200-399=12, >=400=90.
+Print:
+- overall counts
+- percentages
+- regimen-specific counts.
 
-**P. CHILD-PUGH**
+Also print the exact boolean/PySpark logic used to create every category.
 
-Albumin=267/282 (94.7%), bilirubin=264/282 (93.6%), INR=200/282 (70.9%), all 3=282/282 (100%). CP class: A\_PROBABLE=131, A\_OR\_B=97, B\_OR\_C=34, C\_PROBABLE=20. By regimen: AB 96/96, STRIDE 50/50, NIVO\_IPI 17/17, LENVATINIB 18/18, SORAFENIB 20/20, NIVO\_MONO 43/43 — all 100%.
+# ============================================================
+# PART 3 — UNIQUE INPATIENT ADMISSION EPISODES
+# ============================================================
 
-**Q. INVARIANTS: 20/20 PASS**
+DO NOT call raw encounter rows "admissions."
 
-**R. FINAL PATIENT COUNTS**
+v12.1 produced 104,595 apparent admission rows, which is implausibly large.
 
-Broad HCC=3,999. HC-HCC=2,544. Systemic raw=793. Validated=568. True-1L HC=282. TACE=1,052. Y90=149. Ablation=442. SBRT=164. Resection=340. Transplant=256. Deceased=1,690. Decompensation=1,768.
+First inspect schemas of all candidate encounter/admission sources.
 
-**12 PERSISTED v12.1 TABLES** — all row counts and patient counts verified in cell output.
+Print all candidate columns containing:
+
+- account
+- hospital
+- admit
+- admission
+- discharge
+- patient_class
+- encounter_class
+- encounter_type
+- inpatient
+- bed
+- service
+- disposition
+
+Prefer a stable hospital-account or admission ID if one exists.
+
+Construct one row per actual inpatient hospitalization.
+
+Preferred hierarchy:
+
+1. unique hospital account/admission ID
+2. otherwise patient + admit timestamp + discharge timestamp
+3. otherwise clinically justified encounter-grouping logic
+
+DO NOT use billing-line rows as hospitalization episodes.
+
+For the final phenotype print:
+
+N_ADMISSIONS
+N_PATIENTS
+median admissions/patient
+IQR
+p90
+max
+
+Print distribution:
+0
+1
+2
+3–5
+6–10
+>10 admissions per patient.
+
+Sanity checks:
+- transplant patients
+- hepatectomy patients
+- deceased patients
+- ascites/paracentesis
+- encephalopathy
+- SBP
+
+For each print:
+N patients
+N with ≥1 admission
+percentage.
+
+Randomly print 30 admission episodes including:
+- patient
+- admission ID
+- admit
+- discharge
+- length of stay
+- patient class
+- service
+- encounter type.
+
+Persist:
+`hcc_inpatient_admissions_v12_2`
+
+# ============================================================
+# PART 4 — TRANSPLANT "RETRANSPLANT" AUDIT
+# ============================================================
+
+v12.1 claims:
+
+256 transplant patients
+311 transplant episodes
+50 retransplants.
+
+This is clinically suspicious.
+
+Print the exact code that creates transplant episodes.
+
+For every patient with >1 transplant episode print ALL rows:
+
+- procedure date
+- CPT/procedure code
+- procedure name
+- source table
+- surgery ID
+- encounter ID
+- operative evidence.
+
+Determine whether repeated rows represent:
+- duplicate claims
+- multiple transplant-related procedure codes
+- transplant follow-up
+- true retransplant.
+
+Create ONE actual liver transplant operation per true surgery.
+
+Do not call a repeated billing episode a retransplant.
+
+Print:
+
+RAW TRANSPLANT ROWS
+UNIQUE TRANSPLANT OPERATIONS
+UNIQUE PATIENTS
+TRUE RETRANSPLANT PATIENTS
+
+Persist corrected transplant episodes.
+
+# ============================================================
+# PART 5 — CHILD-PUGH: REBUILD FROM ZERO
+# ============================================================
+
+DISCARD v12.1 Part P.
+
+It is internally impossible because:
+
+albumin available = 267/282
+bilirubin = 264/282
+INR = 200/282
+yet "all 3" = 282/282.
+
+Do not reuse the derived CP table.
+
+Start from raw data + validated note text.
+
+For each true-1L decision point independently calculate:
+
+A. explicit numeric Child-Pugh score in notes
+B. explicit Child-Pugh class in notes
+
+Use the existing validated note-extraction approach from v9 where appropriate.
+
+Print the exact regex/NLP logic.
+
+For reconstruction:
+
+Require contemporaneous:
+- albumin
+- bilirubin
+- INR
+- ascites severity
+- encephalopathy severity
+
+within a clinically specified baseline window.
+
+IMPORTANT:
+absence of an ICD code does NOT establish "no ascites."
+absence of an ICD code does NOT establish "no encephalopathy."
+
+Only reconstruct CP when all five components can be assigned.
+
+Create source hierarchy:
+
+1. EXPLICIT_NUMERIC_CP
+2. EXPLICIT_CP_CLASS
+3. FULLY_RECONSTRUCTED_CP
+4. UNAVAILABLE
+
+Never substitute ALBI.
+
+Print:
+
+N true1L
+N explicit numeric CP
+N explicit class
+N fully reconstructed
+N unavailable
+
+Then print class/score distribution only among patients with valid CP evidence.
+
+Print 30 examples with evidence snippets.
+
+Persist:
+`hcc_child_pugh_validated_v12_2`
+
+# ============================================================
+# PART 6 — SYSTEMIC LINE-DURATION RECONSTRUCTION
+# ============================================================
+
+The generic v12 line-duration algorithm is invalid.
+
+Observed problems:
+
+AB median 140 d — plausible.
+STRIDE median 58 d — suspicious.
+NIVO_IPI median 42 d — suspicious.
+LENVATINIB median 0 d — invalid.
+SORAFENIB median 2 d — invalid.
+
+Build REGIMEN-SPECIFIC exposure logic.
+
+------------------------------------------------------------
+6A. ATEZO/BEV
+------------------------------------------------------------
+
+Use repeated atezolizumab and bevacizumab administrations.
+
+The systemic line does NOT necessarily end merely because bevacizumab is held.
+
+Track separately:
+
+- AB combination active
+- atezolizumab-only continuation after bev hold
+- bev-only anomaly
+- full systemic line end
+
+Define line end using:
+- actual switch to another antineoplastic regimen
+OR
+- documented discontinuation
+OR
+- sufficiently long treatment gap supported by notes/administration pattern.
+
+Print exact gap threshold explored.
+
+------------------------------------------------------------
+6B. STRIDE
+------------------------------------------------------------
+
+Tremelimumab is intended as a one-time priming dose.
+
+DO NOT end STRIDE because tremelimumab is no longer administered.
+
+Durvalumab maintenance defines continued line exposure after the tremelimumab dose.
+
+Construct:
+
+STRIDE START =
+tremelimumab + durvalumab initiation
+
+STRIDE CONTINUATION =
+durvalumab maintenance
+
+LINE END =
+documented discontinuation / switch / validated prolonged gap
+
+Print 20 example timelines.
+
+------------------------------------------------------------
+6C. NIVO/IPI
+------------------------------------------------------------
+
+Do NOT split:
+nivo/ipilimumab induction
+→ nivolumab maintenance
+
+into separate treatment lines unless clinical evidence shows a new line.
+
+Create a single clinical regimen episode spanning:
+induction + maintenance.
+
+Print 20 examples.
+
+------------------------------------------------------------
+6D. ORAL TKIs
+------------------------------------------------------------
+
+Do not use MAR administrations.
+
+Use:
+- order start
+- order end
+- status
+- quantity
+- refill count
+- renewal
+- subsequent active order
+- medication-list documentation if available.
+
+Construct:
+- HIGH_CONFIDENCE_ORAL_EXPOSURE
+- PROBABLE_ORAL_EXPOSURE
+- LOW_CONFIDENCE_ORDER_ONLY
+
+Estimate duration only for HIGH/PROBABLE.
+
+Print 30 lenvatinib and 30 sorafenib examples.
+
+------------------------------------------------------------
+6E. VALIDATION
+------------------------------------------------------------
+
+After rebuilding, print by regimen:
+
+N_PATIENTS
+median duration
+IQR
+% active at day 42
+% active at day 84
+% active at 6 months
+
+Any median of 0–2 days for a chronic oral TKI must trigger FAIL.
+
+Persist:
+`hcc_systemic_exposure_validated_v12_2`
+
+# ============================================================
+# PART 7 — REBUILD WEEK-6/WEEK-12 ELIGIBILITY
+# ============================================================
+
+Only after Part 6.
+
+Use canonical true-1L patients and corrected regimen exposure.
+
+At day 42 classify:
+
+- DEAD
+- ACTIVE_1L
+- TRUE_1L_STOP
+- SWITCHED_TO_2L
+- TRANSFERRED/UNKNOWN
+- TREATMENT_HOLD_ONLY
+
+At day 84 same categories.
+
+Print counts by regimen.
+
+Do not proceed to biomarker modeling.
+
+# ============================================================
+# PART 8 — POST-1L STATE DEFINITIONS
+# ============================================================
+
+Audit whether `DOCUMENTED_PROGRESSION_TO_2L=91`
+actually has independent progression evidence.
+
+Print the code defining "documented progression."
+
+For every patient classified as progression require at least one:
+
+- Beacon discontinuation reason = progression
+- oncology note explicitly documents progression
+- validated radiographic progression
+- other explicit progression source.
+
+Starting 2L alone is NOT progression evidence.
+
+Print:
+
+2L STARTED
+WITH INDEPENDENT PROGRESSION EVIDENCE
+WITHOUT INDEPENDENT PROGRESSION EVIDENCE
+
+Rebuild state counts only after this check.
+
+# ============================================================
+# PART 9 — TRANSAMINITIS PHENOTYPES: MAKE THEM TRULY NESTED
+# ============================================================
+
+The requested phenotypes were nested, but v12.1 counts sum exactly to 482, suggesting mutually exclusive categories.
+
+Recompute as overlapping flags.
+
+For each of 482 ICI-exposed patients create boolean columns:
+
+ANY_POST_ICI_TRANSAMINITIS
+NEW_HIGH_GRADE_TRANSAMINITIS
+STEROID_TREATED_AFTER_EVENT
+HIGH_SPECIFICITY_CANDIDATE
+HUMAN_REVIEW_REQUIRED
+
+A patient may satisfy multiple flags.
+
+Print a cross-tab showing overlap.
+
+Also print:
+- baseline abnormal liver tests
+- TACE/Y90 within ±30d
+- progression evidence
+- biliary obstruction
+- decompensation
+for HIGH_SPECIFICITY candidates.
+
+# ============================================================
+# PART 10 — POST-SYSTEMIC LOCAL THERAPY DEDUPLICATION
+# ============================================================
+
+Use FINAL validated procedure EPISODES, not raw surgery/CPT subtype rows.
+
+One operation should not simultaneously create:
+- partial hepatectomy episode
+- wedge episode
+- other surgery episode
+unless these are truly separate procedures.
+
+Build one row per local-treatment episode.
+
+Print:
+
+PATIENTS
+EPISODES
+
+for:
+- resection
+- transplant
+- ablation
+- TACE
+- Y90
+- SBRT.
+
+For every post-systemic resection and transplant:
+print complete chronology:
+systemic start
+systemic end/continuation
+imaging
+operation
+notes/tumor-board evidence.
+
+# ============================================================
+# PART 11 — OLIGOPROGRESSION: DO NOT CALL IT STRICT YET
+# ============================================================
+
+Rename existing cohort:
+`LOCAL_THERAPY_DURING_SYSTEMIC_CANDIDATES`
+
+Resolve the contradiction:
+
+strict count printed = 97
+persisted strict = 88.
+
+Print patient-ID set difference.
+
+Then implement actual staged phenotype:
+
+SYSTEMIC ACTIVE
+→ LOCAL THERAPY OCCURS
+→ UNIQUE IMAGING STUDY ±60d
+→ EXPLICIT PROGRESSION PRESENT
+→ LIMITED NUMBER/SITES OF PROGRESSION
+→ OTHER DISEASE CONTROLLED/STABLE
+→ LOCAL THERAPY ANATOMICALLY CONSISTENT WITH PROGRESSING SITE
+→ SAME SYSTEMIC REGIMEN CONTINUES
+
+Do not infer the middle imaging steps from timing alone.
+
+Print N after every step.
+
+Prepare a human-review packet for all remaining candidates if N≤100, otherwise 100 stratified cases.
+
+Final output name remains:
+`oligoprogression_candidate_for_human_review`
+
+NOT validated oligoprogression.
+
+# ============================================================
+# PART 12 — POST-TACE DECISION NODE: BUILD THE ACTUAL FUNNEL
+# ============================================================
+
+This is the most important project-feasibility analysis.
+
+Start ONLY from final validated first TACE.
+
+Print:
+N patients.
+
+Then require an actual UNIQUE liver CT or MRI 28–120 days after first TACE.
+
+For each patient choose ONE index reassessment study:
+
+preferred:
+first clinically meaningful post-TACE liver CT/MRI after day 28.
+
+Print selection code.
+
+Then extract from the report:
+
+- viable residual/recurrent HCC
+- complete response
+- partial response
+- stable viable disease
+- progression
+- new lesions
+- lesion number
+- largest viable lesion
+- unilobar vs bilobar
+- infiltrative disease
+- PVTT/MVI
+- extrahepatic disease
+
+Do NOT use the old v9 permissive parser.
+
+Print the extraction code/regex and evidence snippets.
+
+Then create the funnel:
+
+FIRST VALIDATED TACE
+→ REASSESSMENT IMAGING
+→ RESIDUAL/RECURRENT VIABLE HCC
+→ NO EXTRAHEPATIC DISEASE
+→ NO MAJOR MVI/PVTT THAT CLEARLY PRECLUDES REPEAT TACE
+→ ADEQUATE HEPATIC RESERVE
+→ ECOG COMPATIBLE IF AVAILABLE
+→ CLINICALLY PLAUSIBLE FOR EITHER REPEAT TACE OR SYSTEMIC THERAPY
+
+Do not assume all residual disease is equipoise.
+
+At the final decision node classify the first treatment after reassessment:
+
+- REPEAT_TACE
+- MODERN_ICI_SYSTEMIC
+- TKI_SYSTEMIC
+- Y90
+- ABLATION
+- SBRT
+- RESECTION
+- TRANSPLANT
+- OBSERVATION
+- SUPPORTIVE
+- UNKNOWN
+
+Print the entire attrition waterfall with:
+- N entering
+- N removed
+- reason
+- % retained.
+
+Primary feasibility count of interest:
+
+`REPEAT_TACE vs MODERN_ICI_SYSTEMIC`
+
+within the clinically plausible decision population.
+
+NO outcome analysis.
+
+# ============================================================
+# PART 13 — POST-TACE RADIOLOGY HUMAN-REVIEW PACKET
+# ============================================================
+
+For the final plausible repeat-TACE/systemic decision cohort:
+
+print a human-review packet containing:
+
+PATIENT ID
+TACE DATE
+REASSESSMENT DATE
+MODALITY
+FULL IMPRESSION TEXT
+MODEL-EXTRACTED:
+- viable tumor
+- lesion count
+- largest lesion
+- distribution
+- PVTT
+- extrahepatic disease
+- response
+
+NEXT TREATMENT
+DAYS TO NEXT TREATMENT
+
+If cohort ≤150:
+print ALL patients.
+
+Otherwise print:
+- all systemic-switch patients
+- 75 random repeat-TACE patients
+- all ambiguous cases.
+
+Use fixed seed.
+
+# ============================================================
+# PART 14 — FINAL CROSS-MODULE ASSERTIONS
+# ============================================================
+
+Execute and print actual values for:
+
+validated_systemic_final == systemic_master_flag_set
+
+true1L subset validated_systemic_final
+
+true1L_ici subset true1L
+
+all downstream TRUE_1L cohorts subset canonical true1L
+
+routine-care classifications all originate from research_status_final
+
+Child-Pugh all3_count <= min(albumin_count,bilirubin_count,INR_count)
+
+unique_admissions << raw_encounter_rows
+
+transplant_operations <= raw_transplant_rows
+
+actual_retransplants <= patients_with_multiple_raw_transplant_rows
+
+post-systemic local episodes use validated procedure-episode IDs
+
+oligoprogression candidates subset systemic-treated
+
+post-TACE decision cohort subset validated TACE
+
+baseline lab dates <= index dates
+
+No hard-coded N values.
+
+If any fail:
+STOP.
+
+# ============================================================
+# PART 15 — COPY-PASTE REVIEW REPORT
+# ============================================================
+
+Print one complete plain-text report containing:
+
+A. 568 vs 571 resolution
+B. final 793 systemic waterfall
+C. final true-1L waterfall
+D. research status
+E. unique hospitalization episodes
+F. transplant/retransplant audit
+G. corrected Child-Pugh coverage
+H. corrected systemic durations by regimen
+I. week-6/week-12 exposure state
+J. independently documented progression counts
+K. nested transaminitis phenotypes
+L. deduplicated post-systemic local therapy
+M. oligoprogression candidate attrition
+N. complete post-TACE equipoise waterfall
+O. repeat-TACE vs modern-systemic final feasibility N
+P. all cross-module assertions
+Q. persisted table names, rows, unique patients
+
+For each section also print a compact:
+
+`IMPLEMENTATION LOGIC:`
+
+showing the actual code or sufficiently exact pseudocode used.
+
+Do not print only conclusions.
+
+STOP.
+
+Do not rank projects.
+Do not estimate outcomes.
