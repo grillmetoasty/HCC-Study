@@ -1,15 +1,3 @@
-v10 — High-Assurance Audit + Medical-Oncology Project Discovery
-Builds on the persisted v9 tables. Nothing in v8/v9 is overwritten.
-
-This phase does NOT estimate comparative treatment effects. Outcome counts are used only for feasibility and power.
-
-Date-shift framework (new REACH clarification)
-All dates for a given patient are shifted by the SAME fixed duration, magnitude ≤ 6 months. Therefore within-patient intervals are exact and valid; absolute calendar dates are bounded: true_date ∈ [observed − 6mo, observed + 6mo].
-
-Regulatory era is classified in three categories against each anchor date D: DEFINITELY_PRE_APPROVAL (observed < D−6mo), DATE_SHIFT_UNCERTAIN (within ±6mo of D), DEFINITELY_POST_APPROVAL (observed > D+6mo). Anchors: Atezo/Bev 1L 2020-05-29, STRIDE 2022-10-21, Nivo/Ipi 1L 2025-04-11.
-
-Global safety rule
-Every important derived result must pass CHECK A (computational invariant), CHECK B (independent source/algorithm reproduction) and CHECK C (manual clinical audit). Anything failing a check is labelled FAILED VALIDATION — DO NOT USE and excluded from project ranking.
 
 v10 PART 0 - Setup, reload v9 tables, date-shift bounds
 v10 PART 0 - Setup, reload v9 tables, date-shift bounds
@@ -142,387 +130,300 @@ note corpus _v9_note_text : rows=6,462  indices covered=795 / 806 (98.6%)   wind
 Table
 6 rows
 8.680s runtime
-Refreshed at 10/1/26, 8:57 PM (50m ago)
+Refreshed at 10/1/26, 8:57 PM (51m ago)
 
 Elapsed 8s
-v10 PART 1 - Manual LoT timeline audit with independent adjudication
-v10 PART 1 - Manual LoT timeline audit with independent adjudication
-LOT diagnostic columns:
-  algo                   {'A_primary': np.int64(806)}
-  line_label             {'L1': np.int64(569), 'L2': np.int64(165), 'L3': np.int64(52), 'L4': np.int64(13), 'L5': np.int64(6), 'L6': np.int64(1)}
-  line_uncertain         {'0': np.int64(806)}
-  research               {'N': np.int64(689), 'Y': np.int64(117)}
-  hcc_indication         {'HCC_HIGH_CONFIDENCE': np.int64(806)}
-  exposure_confidence    {'HIGH': np.int64(625), 'MODERATE': np.int64(181)}
-  left_truncated         {'0': np.int64(806)}
-  pre_hcc_dx             {'0': np.int64(806)}
-
-audit sample: 180 episodes
-audit_stratum
-1L_AB            30
-1L_STRIDE        30
-1L_NIVO_IPI      30
-1L_LENVATINIB    30
-1L_SORAFENIB     30
-2L_transition    30
-
-==============================================================================================================
-PART 1 — INDEPENDENT ADJUDICATION ACCURACY (target >=95%)
-==============================================================================================================
-  HCC indication accuracy               178/180  =  98.9%   PASS
-  Exposure accuracy                     180/180  = 100.0%   PASS
-    └ administration PROVEN (IV only)   109/109  = 100.0%   PASS
-  1L accuracy                           149/150  =  99.3%   PASS
-  2L accuracy                            29/30   =  96.7%   PASS
-  Index-date accuracy                   177/180  =  98.3%   PASS
-
-  oral-TKI episodes where administration is UNVERIFIABLE by design: 67/71 oral episodes
-  episodes whose Beacon window contains BOTH an HCC plan and another-cancer plan: 7  <- exposure attribution ambiguous, flagged for review
-     DEI0v1v7sz8vy9 L1 AB         plans: <USERNAME> Bevacizumab for Lung Cancer | <USERNAME> Atezolizumab and Bevacizumab for Hepatocellular Carcinoma 
-     DEI0dgfwu5zrau L1 AB         plans: <USERNAME> Atezolizumab Every 3 Weeks for Hepatocellular carcinoma | <USERNAME> Atezolizumab Every 3 Weeks for
-     DEI0bt6zgbfj7b L1 STRIDE     plans: <USERNAME> Tremelimumab and Durvalumab for Hepatocellular Carcinoma | <USERNAME> Durvalumab, Gemcitabine and C
-     DEI0y537sz83y0 L1 NIVO_IPI   plans: <USERNAME> Nivolumab (Every 4 weeks in Maintenance) and Ipilimumab for Renal Cell Carcinoma | <USERNAME> Nivol
-     DEI0977sz87vfi L1 NIVO_IPI   plans: <USERNAME> Nivolumab (Every 2 Weeks in Maintenance) and Ipilimumab for Melanoma | <USERNAME> Nivolumab (Every 
-
-  indication adjudication rule usage:
-    R1_order_icd10_C22.0                           ok=1  n=102
-    R2_plan_names_HCC                              ok=1  n=10
-    R4_competing_drug_indication_present           ok=0  n=1
-    R4_insufficient_dx_evidence                    ok=0  n=1
-    R4_multisource_dx_no_competing_indication      ok=1  n=66
-  naive any-other-cancer rule would give 89.4% vs hierarchy 98.9%
-
---- accuracy by stratum ---
-               adj_indication_ok  adj_exposure_ok  adj_index_ok
-audit_stratum                                                  
-1L_AB                      100.0            100.0          96.7
-1L_LENVATINIB               96.7            100.0         100.0
-1L_NIVO_IPI                100.0            100.0          96.7
-1L_SORAFENIB                96.7            100.0         100.0
-1L_STRIDE                  100.0            100.0          96.7
-2L_transition              100.0            100.0         100.0
-
-==============================================================================================================
-FAILURE MECHANISM ANALYSIS
-==============================================================================================================
-
-INDICATION: 2 failures
-audit_stratum  regimen   
-1L_LENVATINIB  LENVATINIB    1
-1L_SORAFENIB   SORAFENIB     1
-   DEI065zra6erfx L1 LENVATINIB   beacon_c22=0 plan_hcc=0 nsrc=4 ncomp=1 admin=0 bgiven=0 ord=1 idx_off=0
-   DEI0n9nt6zgnuw L1 SORAFENIB    beacon_c22=0 plan_hcc=0 nsrc=1 ncomp=1 admin=0 bgiven=0 ord=1 idx_off=0
-
-EXPOSURE: 0 failures
-
-INDEX DATE: 3 failures
-audit_stratum  regimen 
-1L_AB          AB          1
-1L_NIVO_IPI    NIVO_IPI    1
-1L_STRIDE      STRIDE      1
-   DEI0d8g5zragxg L1 AB           beacon_c22=1 plan_hcc=1 nsrc=4 ncomp=3 admin=18 bgiven=30 ord=18 idx_off=22
-   DEI0ox7sz8xnrh L1 STRIDE       beacon_c22=1 plan_hcc=1 nsrc=4 ncomp=0 admin=2 bgiven=2 ord=2 idx_off=8
-   DEI0ioat6zgap9 L1 NIVO_IPI     beacon_c22=1 plan_hcc=1 nsrc=4 ncomp=1 admin=2 bgiven=2 ord=2 idx_off=11
-
-==============================================================================================================
-REVIEWER TIMELINE PACKETS (subset shown; ALL rows persisted to hcc_lot_manual_validation_v10)
-==============================================================================================================
-
---------------------------------------------------------------------------------------------------------
-PATIENT DEI0p5zrap9r1a | stratum 1L_AB | v9 says: LINE 1 = AB (2023-09-12 -> 2023-11-13, 8 delivery dates)
-  Q1 HCC-directed?   Beacon order ICD10 C22.0=1 | Beacon plan says HCC=1 | HCC dx sources=4 | competing malignancies=1 [C61]
-  Q2 Actually used?  valid MAR admins=8 (New Bag,Rate Verify,Stopped) | Beacon days given=8 | active orders=8 (Completed) | routes=Intravenous | refills=nan
-  Q3 Truly FIRST?    prior HCC-directed drug episodes=0 [] | note says first-line=0 | note says prior systemic=0
-  Q4 2L correct?     (line=1) prior regimen evidence=0
-  Q5 Index plausible? earliest component evidence=2023-09-12 | offset=0d
-  Research/trial:    Beacon research_yn=Y:0 | goal=Curative | note trial language=0
-  Beacon plan:       <USERNAME> Atezolizumab and Bevacizumab for Hepatocellular Carcinoma (<LOCATION>)
-  Stop reason:       Other (see comments)
-
---------------------------------------------------------------------------------------------------------
-PATIENT DEI0v1v7sz8vy9 | stratum 1L_AB | v9 says: LINE 1 = AB (2020-09-05 -> 2022-08-27, 72 delivery dates)
-  Q1 HCC-directed?   Beacon order ICD10 C22.0=1 | Beacon plan says HCC=1 | HCC dx sources=4 | competing malignancies=0 []
-  Q2 Actually used?  valid MAR admins=61 (New Bag,Stopped ,Stopped,Rate Verify,Given) | Beacon days given=85 | active orders=61 (Completed) | routes=Intravenous | refills=nan
-  Q3 Truly FIRST?    prior HCC-directed drug episodes=0 [] | note says first-line=0 | note says prior systemic=0
-  Q4 2L correct?     (line=1) prior regimen evidence=0
-  Q5 Index plausible? earliest component evidence=2020-09-05 | offset=0d
-  Research/trial:    Beacon research_yn=Y:0 | goal=Control | note trial language=0
-  Beacon plan:       <USERNAME> Bevacizumab for Lung Cancer
-  Stop reason:       Progression
-
---------------------------------------------------------------------------------------------------------
-PATIENT DEI09w7sz8wpwb | stratum 1L_STRIDE | v9 says: LINE 1 = STRIDE (2025-08-21 -> 2025-08-21, 2 delivery dates)
-  Q1 HCC-directed?   Beacon order ICD10 C22.0=1 | Beacon plan says HCC=1 | HCC dx sources=4 | competing malignancies=0 []
-  Q2 Actually used?  valid MAR admins=2 (New Bag,Stopped) | Beacon days given=2 | active orders=2 (Completed) | routes=Intravenous | refills=nan
-  Q3 Truly FIRST?    prior HCC-directed drug episodes=0 [] | note says first-line=0 | note says prior systemic=0
-  Q4 2L correct?     (line=1) prior regimen evidence=0
-  Q5 Index plausible? earliest component evidence=2025-08-21 | offset=0d
-  Research/trial:    Beacon research_yn=Y:0 | goal=Control | note trial language=0
-  Beacon plan:       <USERNAME> Tremelimumab and Durvalumab for Hepatocellular Carcinoma
-  Stop reason:       Automatically Discontinued - Inactive Plan
-
---------------------------------------------------------------------------------------------------------
-PATIENT DEI081247sz84g | stratum 1L_STRIDE | v9 says: LINE 1 = STRIDE (2023-10-07 -> 2024-01-13, 5 delivery dates)
-  Q1 HCC-directed?   Beacon order ICD10 C22.0=1 | Beacon plan says HCC=1 | HCC dx sources=4 | competing malignancies=1 [C67.9]
-  Q2 Actually used?  valid MAR admins=5 (Stopped,New Bag,Rate Verify) | Beacon days given=5 | active orders=5 (Completed) | routes=Intravenous | refills=nan
-  Q3 Truly FIRST?    prior HCC-directed drug episodes=0 [] | note says first-line=0 | note says prior systemic=0
-  Q4 2L correct?     (line=1) prior regimen evidence=0
-  Q5 Index plausible? earliest component evidence=2023-10-07 | offset=0d
-  Research/trial:    Beacon research_yn=Y:0 | goal=Curative | note trial language=0
-  Beacon plan:       <USERNAME> Tremelimumab and Durvalumab for Hepatocellular Carcinoma
-  Stop reason:       Progression
-
---------------------------------------------------------------------------------------------------------
-PATIENT DEI0m5zrampfoy | stratum 1L_NIVO_IPI | v9 says: LINE 1 = NIVO_IPI (2021-02-23 -> 2021-03-16, 4 delivery dates)
-  Q1 HCC-directed?   Beacon order ICD10 C22.0=1 | Beacon plan says HCC=1 | HCC dx sources=4 | competing malignancies=0 []
-  Q2 Actually used?  valid MAR admins=4 (New Bag,Stopped ,Stopped,Given) | Beacon days given=4 | active orders=4 (Completed) | routes=Intravenous | refills=nan
-  Q3 Truly FIRST?    prior HCC-directed drug episodes=0 [] | note says first-line=0 | note says prior systemic=0
-  Q4 2L correct?     (line=1) prior regimen evidence=0
-  Q5 Index plausible? earliest component evidence=2021-02-23 | offset=0d
-  Research/trial:    Beacon research_yn=Y:0 | goal=Control | note trial language=0
-  Beacon plan:       <USERNAME> Nivolumab (Every 4 weeks in Maintenance) and Ipilimumab for Hepatocellular Carcinoma
-  Stop reason:       Automatically Discontinued - Patient Deceased
-
---------------------------------------------------------------------------------------------------------
-PATIENT DEI0ioat6zgap9 | stratum 1L_NIVO_IPI | v9 says: LINE 1 = NIVO_IPI (2023-07-09 -> 2023-07-09, 2 delivery dates)
-  Q1 HCC-directed?   Beacon order ICD10 C22.0=1 | Beacon plan says HCC=1 | HCC dx sources=4 | competing malignancies=1 [C32.9]
-  Q2 Actually used?  valid MAR admins=2 (Rate Verify,Stopped,New Bag) | Beacon days given=2 | active orders=2 (Completed) | routes=Intravenous | refills=nan
-  Q3 Truly FIRST?    prior HCC-directed drug episodes=0 [] | note says first-line=0 | note says prior systemic=0
-  Q4 2L correct?     (line=1) prior regimen evidence=0
-  Q5 Index plausible? earliest component evidence=2023-06-28 | offset=11d
-  Research/trial:    Beacon research_yn=Y:0 | goal=Control | note trial language=0
-  Beacon plan:       <USERNAME> Nivolumab (Every 4 weeks in Maintenance) and Ipilimumab for Hepatocellular Carcinoma
-  Stop reason:       Not Tolerated
-
---------------------------------------------------------------------------------------------------------
-PATIENT DEI0umi7sz8ipq | stratum 1L_LENVATINIB | v9 says: LINE 1 = LENVATINIB (2020-02-22 -> 2020-02-22, 1 delivery dates)
-  Q1 HCC-directed?   Beacon order ICD10 C22.0=0 | Beacon plan says HCC=0 | HCC dx sources=3 | competing malignancies=0 []
-  Q2 Actually used?  valid MAR admins=0 () | Beacon days given=0 | active orders=2 (Sent) | routes=Oral | refills=11.0
-  Q3 Truly FIRST?    prior HCC-directed drug episodes=0 [] | note says first-line=0 | note says prior systemic=0
-  Q4 2L correct?     (line=1) prior regimen evidence=0
-  Q5 Index plausible? earliest component evidence=2020-02-22 | offset=0d
-  Research/trial:    Beacon research_yn=Y:0 | goal= | note trial language=0
-  Beacon plan:       
-
---------------------------------------------------------------------------------------------------------
-PATIENT DEI0ny35zra3up | stratum 1L_LENVATINIB | v9 says: LINE 1 = LENVATINIB (2020-07-09 -> 2020-07-10, 2 delivery dates)
-  Q1 HCC-directed?   Beacon order ICD10 C22.0=0 | Beacon plan says HCC=0 | HCC dx sources=3 | competing malignancies=0 []
-  Q2 Actually used?  valid MAR admins=0 () | Beacon days given=0 | active orders=2 (Sent,Suspend) | routes=Oral | refills=11.0
-  Q3 Truly FIRST?    prior HCC-directed drug episodes=0 [] | note says first-line=0 | note says prior systemic=0
-  Q4 2L correct?     (line=1) prior regimen evidence=0
-  Q5 Index plausible? earliest component evidence=2020-07-09 | offset=0d
-  Research/trial:    Beacon research_yn=Y:0 | goal= | note trial language=1
-  Beacon plan:       
-
---------------------------------------------------------------------------------------------------------
-PATIENT DEI0et7j7sz8jj | stratum 1L_SORAFENIB | v9 says: LINE 1 = SORAFENIB (2016-08-13 -> 2016-08-13, 1 delivery dates)
-  Q1 HCC-directed?   Beacon order ICD10 C22.0=0 | Beacon plan says HCC=0 | HCC dx sources=3 | competing malignancies=0 []
-  Q2 Actually used?  valid MAR admins=0 () | Beacon days given=0 | active orders=1 (Sent) | routes=Oral | refills=2.0
-  Q3 Truly FIRST?    prior HCC-directed drug episodes=0 [] | note says first-line=0 | note says prior systemic=0
-  Q4 2L correct?     (line=1) prior regimen evidence=0
-  Q5 Index plausible? earliest component evidence=2016-08-13 | offset=0d
-  Research/trial:    Beacon research_yn=Y:0 | goal= | note trial language=0
-  Beacon plan:       
-
---------------------------------------------------------------------------------------------------------
-PATIENT DEI0het6zgepa5 | stratum 1L_SORAFENIB | v9 says: LINE 1 = SORAFENIB (2017-10-26 -> 2019-08-09, 3 delivery dates)
-  Q1 HCC-directed?   Beacon order ICD10 C22.0=0 | Beacon plan says HCC=0 | HCC dx sources=2 | competing malignancies=0 []
-  Q2 Actually used?  valid MAR admins=0 () | Beacon days given=0 | active orders=3 (Sent) | routes=Oral | refills=5.0
-  Q3 Truly FIRST?    prior HCC-directed drug episodes=0 [] | note says first-line=0 | note says prior systemic=0
-  Q4 2L correct?     (line=1) prior regimen evidence=0
-  Q5 Index plausible? earliest component evidence=2017-10-26 | offset=0d
-  Research/trial:    Beacon research_yn=Y:0 | goal= | note trial language=0
-  Beacon plan:       
-
---------------------------------------------------------------------------------------------------------
-PATIENT DEI0kxcg5zrag7 | stratum 2L_transition | v9 says: LINE 2 = NIVO_MONO (2017-12-12 -> 2017-12-27, 2 delivery dates)
-  Q1 HCC-directed?   Beacon order ICD10 C22.0=1 | Beacon plan says HCC=0 | HCC dx sources=3 | competing malignancies=1 [C18.9]
-  Q2 Actually used?  valid MAR admins=2 (Stopped,New Bag) | Beacon days given=2 | active orders=2 (Completed) | routes=Intravenous | refills=nan
-  Q3 Truly FIRST?    prior HCC-directed drug episodes=2 [sorafenib] | note says first-line=0 | note says prior systemic=0
-  Q4 2L correct?     (line=2) prior regimen evidence=2
-  Q5 Index plausible? earliest component evidence=2017-12-12 | offset=0d
-  Research/trial:    Beacon research_yn=Y:1 | goal=Control | note trial language=1
-  Beacon plan:       J1645 - Opn-Lbl, Multi-Ctr Ph 1/2 Study of Mogamulizumab + Nivolumab in Locally Advncd/Metastat
-  Stop reason:       Progression
-
---------------------------------------------------------------------------------------------------------
-PATIENT DEI01wam7sz8mx | stratum 2L_transition | v9 says: LINE 2 = CABOZANTINIB (2020-12-23 -> 2021-01-15, 3 delivery dates)
-  Q1 HCC-directed?   Beacon order ICD10 C22.0=0 | Beacon plan says HCC=0 | HCC dx sources=4 | competing malignancies=0 []
-  Q2 Actually used?  valid MAR admins=2 (Given) | Beacon days given=0 | active orders=1 (Sent,Discontinued) | routes=Oral | refills=11.0
-  Q3 Truly FIRST?    prior HCC-directed drug episodes=3 [ipilimumab,nivolumab,sorafenib] | note says first-line=0 | note says prior systemic=1
-  Q4 2L correct?     (line=2) prior regimen evidence=3
-  Q5 Index plausible? earliest component evidence=2020-12-23 | offset=0d
-  Research/trial:    Beacon research_yn=Y:0 | goal= | note trial language=1
-  Beacon plan:       
-  NOTE[prior sys]:   ...of care sorafenib treatment arm  5/26/2019 PD on sorafenib 6/16/19 C1D1 nivolumab in the second line setting  2/2020 PD 2/17/20-3/16/20 RT to limited metastatic sites (exophytic lesion + rig...
-
-==============================================================================================================
-CHECK B — INDEPENDENT (BEACON-PLAN) LINE ASSIGNMENT vs v9
-==============================================================================================================
-  episodes matchable to a Beacon HCC plan: 582/806 (72.2%)
-  (unmatchable episodes are overwhelmingly oral TKIs, which do not create Beacon plans)
-  line 1: concordance 432/434 = 99.5%
-  line 2: concordance 60/110 = 54.5%
-  line 3: concordance 10/27 = 37.0%
-  OVERALL concordance: 502/582 = 86.3%
-
-  DISCORDANT episodes: 80
-regimen                   line  line_B
-AB                        2     1.0        2
-                          3     2.0        2
-                          5     3.0        1
-ATEZO_MONO                3     2.0        1
-CABOZANTINIB+RAMUCIRUMAB  3     2.0        1
-DURVA_MONO                2     3.0        1
-LENVATINIB                2     1.0        1
-NIVO_IPI                  1     2.0        1
-                          2     1.0       15
-                                3.0        1
-                          3     2.0        8
-                          4     2.0        2
-                                3.0        3
-                          5     3.0        2
-NIVO_MONO                 1     2.0        1
-                          2     1.0       28
-                          3     1.0        1
-                                2.0        2
-                          4     2.0        1
-PEMBRO_MONO               2     1.0        2
-RAMUCIRUMAB               3     2.0        2
-                          4     2.0        1
-                                5.0        1
-
-  first 15 discordant cases (v9 line vs Beacon-plan line):
-    DEI000r57sz854 RAMUCIRUMAB            v9_line=3 beacon_line=2 gap=0.0d plan_drugs=ramucirumab
-    DEI00ft6zgf7oq NIVO_IPI               v9_line=4 beacon_line=3 gap=0.0d plan_drugs=ipilimumab,nivolumab
-    DEI00t6zg01b40 NIVO_IPI               v9_line=2 beacon_line=1 gap=0.0d plan_drugs=ipilimumab,nivolumab
-    DEI00x0k5zraka NIVO_IPI               v9_line=3 beacon_line=2 gap=0.0d plan_drugs=ipilimumab,nivolumab
-    DEI01i8cw5zraw NIVO_IPI               v9_line=3 beacon_line=2 gap=0.0d plan_drugs=ipilimumab,nivolumab
-    DEI01wam7sz8mx NIVO_IPI               v9_line=1 beacon_line=2 gap=0.0d plan_drugs=nivolumab
-    DEI02x6h65zra6 NIVO_MONO              v9_line=2 beacon_line=1 gap=0.0d plan_drugs=nivolumab
-    DEI0339kf5zraf NIVO_MONO              v9_line=2 beacon_line=1 gap=0.0d plan_drugs=nivolumab
-    DEI03g5zragk88 NIVO_IPI               v9_line=3 beacon_line=2 gap=0.0d plan_drugs=ipilimumab,nivolumab
-    DEI03qt6zgq6d8 NIVO_MONO              v9_line=2 beacon_line=1 gap=0.0d plan_drugs=nivolumab
-    DEI045idc7sz8c NIVO_IPI               v9_line=2 beacon_line=1 gap=0.0d plan_drugs=ipilimumab,nivolumab
-    DEI04t7sz8t5qi NIVO_IPI               v9_line=2 beacon_line=1 gap=0.0d plan_drugs=ipilimumab,nivolumab
-    DEI05t5zrat0br LENVATINIB             v9_line=2 beacon_line=1 gap=19.0d plan_drugs=atezolizumab,bevacizumab
-    DEI05t5zrat0br NIVO_IPI               v9_line=3 beacon_line=2 gap=0.0d plan_drugs=ipilimumab,nivolumab
-    DEI05xp5zrapjw ATEZO_MONO             v9_line=3 beacon_line=2 gap=0.0d plan_drugs=atezolizumab,bevacizumab
-
-  DISCORDANCE MECHANISM ATTRIBUTION:
-     68  EXPLAINED: B blind to a non-Beacon prior line (oral TKI)
-     10  UNEXPLAINED - needs clinical review
-      1  EXPLAINED: B plan-counting offset
-      1  EXPLAINED: B blind to a non-Beacon prior line
-
-  => 70/80 discordances are ARTEFACTS of Algorithm B's Beacon-only visibility;
-     10 remain genuinely unexplained and are flagged for chart review.
-
-  examples of the dominant explained pattern:
-    DEI000r57sz854 RAMUCIRUMAB  v9_L3 vs B_L2 | prior v9 lines=[NIVO_MONO,LENVATINIB] hidden=1 (oral=1)
-    DEI00ft6zgf7oq NIVO_IPI     v9_L4 vs B_L3 | prior v9 lines=[NIVO_MONO,AB,CABOZANTINIB] hidden=1 (oral=1)
-    DEI00t6zg01b40 NIVO_IPI     v9_L2 vs B_L1 | prior v9 lines=[LENVATINIB] hidden=1 (oral=1)
-    DEI00x0k5zraka NIVO_IPI     v9_L3 vs B_L2 | prior v9 lines=[AB,LENVATINIB] hidden=1 (oral=1)
-    DEI01i8cw5zraw NIVO_IPI     v9_L3 vs B_L2 | prior v9 lines=[AB,LENVATINIB] hidden=1 (oral=1)
-    DEI02x6h65zra6 NIVO_MONO    v9_L2 vs B_L1 | prior v9 lines=[LENVATINIB] hidden=1 (oral=1)
-    DEI0339kf5zraf NIVO_MONO    v9_L2 vs B_L1 | prior v9 lines=[LENVATINIB] hidden=1 (oral=1)
-    DEI03g5zragk88 NIVO_IPI     v9_L3 vs B_L2 | prior v9 lines=[NIVO_MONO,LENVATINIB] hidden=1 (oral=1)
-
-  UNEXPLAINED cases for review:
-    DEI01wam7sz8mx NIVO_IPI     v9_L1 vs B_L2 predicted_B=1 prior=[]
-    DEI05t5zrat0br LENVATINIB   v9_L2 vs B_L1 predicted_B=2 prior=[AB]
-    DEI05t5zrat0br NIVO_IPI     v9_L3 vs B_L2 predicted_B=3 prior=[AB,LENVATINIB]
-    DEI079t6zg9qdb NIVO_IPI     v9_L2 vs B_L3 predicted_B=2 prior=[BEV_MONO+NIVO_MONO]
-    DEI07njfw5zraw AB           v9_L5 vs B_L3 predicted_B=2 prior=[LENVATINIB,NIVO_IPI,IPI_MONO,CABOZANTINIB]
-    DEI0cwih7sz8hi DURVA_MONO   v9_L2 vs B_L3 predicted_B=2 prior=[STRIDE]
-    DEI0it47sz8457 NIVO_MONO    v9_L1 vs B_L2 predicted_B=1 prior=[]
-    DEI0jnqt6zgq79 RAMUCIRUMAB  v9_L4 vs B_L5 predicted_B=3 prior=[SORAFENIB,NIVO_MONO,NIVO_IPI]
-    DEI0kse5v5zrav NIVO_MONO    v9_L3 vs B_L2 predicted_B=1 prior=[SORAFENIB]
-    DEI0xqht6zghm8 NIVO_IPI     v9_L5 vs B_L3 predicted_B=2 prior=[SORAFENIB,NIVO_MONO,LENVATINIB,CABOZANTINIB]
-
-  RAW B-concordance            : 86.3%
-  ARTEFACT-ADJUSTED agreement  : 98.3%  (treating B's documented blind spot as a B error, not a v9 error)
-
-PART 1 VERDICT: PASS
-Elapsed 46s
-v10 PART 2 - True first line vs first-observed-in-REACH + research flag + pre-approval audit
-v10 PART 2 - True first line vs first-observed-in-REACH + research flag + pre-approval audit
-observable-history start computed for 571 patients
-
+v10 PART 3 - Forensic AFP audit (3A-3F)
+v10 PART 3 - Forensic AFP audit (3A-3F)
 ========================================================================================================
-PART 2 — TRUE FIRST LINE vs FIRST OBSERVED IN REACH  (denominator = 569 v9 1L episodes)
-========================================================================================================
-  first_observed_reach_systemic_flag          : 569
-  true_1L_HIGH_CONFIDENCE                    : 282 (49.6%)
-  true_1L_PROBABLE                           : 74 (13.0%)
-  prior_systemic_OUTSIDE_REACH_possible      : 247 (43.4%)
-  research_protocol_flag (structured)        : 110 (19.3%)
-  research_SUSPECTED (incl. note language)   : 246 (43.2%)
-
---- lookback adequacy among 1L episodes ---
-  >=  180 d observable history before index :  408 (71.7%)
-  >=  365 d observable history before index :  361 (63.4%)
-  >=  730 d observable history before index :  316 (55.5%)
-  median observable lookback: 978 d  (IQR 132-3169)
-
---- TRUE-1L STATUS BY REGIMEN (the numbers that matter for every 1L comparison) ---
-                        v9_1L  true_1L_high  true_1L_prob  outside_possible  research  research_susp  usable_1L_nonresearch
-regimen                                                                                                                    
-AB                        144            96             7                45         2             37                    102
-NIVO_MONO                  85            43             5                43        28             52                     30
-STRIDE                     80            50             4                38        20             26                     42
-LENVATINIB                 68            18            19                33         0             31                     37
-SORAFENIB                  62            20            23                22         1             18                     42
-NIVO_IPI                   61            17             7                39        34             45                     14
-PEMBRO_MONO                22            14             3                 7         6             10                     13
-DURVA_MONO                 16             7             3                 6         8              9                      7
-CABOZANTINIB+NIVO_MONO      8             6             0                 2         8              8                      0
-ATEZO_MONO                  6             6             0                 0         0              0                      6
-LENVATINIB+PEMBRO_MONO      4             1             0                 3         2              3                      1
-CABOZANTINIB                4             2             1                 2         0              2                      3
-LENVATINIB+NIVO_MONO        4             1             1                 4         0              2                      2
-IPI_MONO                    2             1             1                 0         0              1                      2
-
-========================================================================================================
-SPECIAL AUDIT — APPARENT PRE-APPROVAL USE (classification required)
+3A — AFP REPRESENTATION DISCOVERY
 ========================================================================================================
 
-AB  (approval 2020-05-29):  definitely-PRE=0  uncertain=12  definitely-POST=149
+(i) clarity_eap dictionary search (fast, ~113k rows):
+  dictionary hits: 90
+  proc_code                                                                proc_name                  proc_cat_name is_active_yn
+   LAB53628 A-FETOPROTEIN (AFP), MATERNAL SERUM FOR OPEN SPINA BIFIDA (LABCORP ONLY)          GENERAL LAB - ROUTINE            N
+ACH40283040                                          ACHMTL E3AFP TUMOR MARKER,SERUM                 HB CHARGEABLES            Y
+ACH40281545                                  ACHMTL E3ALPHA-FETOPROTEIN,CSF     MAYO                 HB CHARGEABLES            Y
+ACH40283041                                  ACHMTL E3BETA-HCG TUMOR MARKER(QNT),SER                 HB CHARGEABLES            Y
+   LAB21561                                                       AFP AMNIOTIC FLUID     GENERAL LAB - LAB ADD ONLY            N
+   LAB23321                                                       AFP AMNIOTIC FLUID          INACTIVE LAB BACKLOAD            N
+      AFP04                                             AFP LEVEL 1 CONSULT ESTAB PT       PR PROFESSIONAL SERVICES            Y
+      AFP01                                               AFP LEVEL 1 CONSULT NEW PT       PR PROFESSIONAL SERVICES            Y
+      AFP05                                   AFP LEVEL 2 CONSULT/PROCEDURE ESTAB PT       PR PROFESSIONAL SERVICES            Y
+      AFP02                                     AFP LEVEL 2 CONSULT/PROCEDURE NEW PT       PR PROFESSIONAL SERVICES            Y
+      AFP06                                   AFP LEVEL 3 CONSULT/PROCEDURE ESTAB PT       PR PROFESSIONAL SERVICES            Y
+      AFP03                                     AFP LEVEL 3 CONSULT/PROCEDURE NEW PT       PR PROFESSIONAL SERVICES            Y
+   LAB55465                                             AFP MATERNAL SERUM (LABCORP)          GENERAL LAB - ROUTINE            N
+   LAB55466                                               AFP MATERNAL SERUM (QUEST)          GENERAL LAB - ROUTINE            N
+   O9105033                                                 AFP MATERNAL SERUM PANEL                           None            Y
+    1604980                                                      AFP MATERNAL SERUM.                           None            N
+   LAB21562                                                      AFP MATERNAL, SERUM         AF REFERENCE LAB TESTS            N
+   LAB90090                                               AFP TUMOR MARKER, EXTERNAL GENERAL LAB - EXTERNAL SCANNED            N
+    1604970                                                  AFP TUMOR MARKER,SERUM.                           None            N
+   LAB24522                                                         AFP WITH AFP-L3%          INACTIVE LAB BACKLOAD            N
+   LAB40663                                                        AFP X-TRA PROFILE          INACTIVE LAB BACKLOAD            N
+   LAB20436                                                      AFP, AMNIOTIC FLUID          INACTIVE LAB BACKLOAD            N
+   LAB25165                       AFP, AMNIOTIC FLUID W/REFLEX TO ACHE AND FETAL HGB BODY FLUIDS NON-CSF AND STOOLS            N
+   LAB44953                                                 AFP, SERUM, TUMOR MARKER          INACTIVE LAB BACKLOAD            N
+   LAB25067                                               AFP, TUMOR MARKER (SERIAL)          INACTIVE LAB BACKLOAD            N
+   LAB24104                                                                  AFP,CSF          INACTIVE LAB BACKLOAD            N
+   LAB41152                                                   AFP,TUMOR MARKER,SERUM          INACTIVE LAB BACKLOAD            N
+   LAB24876                                                   AFP,TUMOR MARKER,SERUM          INACTIVE LAB BACKLOAD            N
+   LAB54317                                                 AFP-L3% (SERIAL MONITOR)        NEW EAP ADDITION REVIEW            N
+   LAB48987                                             AFP/ACHE/HBF, AMNIOTIC FLUID        NEW EAP ADDITION REVIEW            N
+   LAB26135                                 ALPHA FETOPROTEIN MATERNAL (OUTSIDE LAB)          INACTIVE LAB BACKLOAD            N
+     LAB692                                        ALPHA FETOPROTEIN MATERNAL, SERUM          GENERAL LAB - ROUTINE            N
+     LAB559                                           ALPHA FETOPROTEIN TUMOR MARKER          GENERAL LAB - ROUTINE            N
+   LAB48856                                           ALPHA FETOPROTEIN TUMOR MARKER        NEW EAP ADDITION REVIEW            N
+   LAB45047                                           ALPHA FETOPROTEIN TUMOR MARKER          INACTIVE LAB BACKLOAD            N
+     LAB663                                              ALPHA FETOPROTEIN, AMNIOTIC          INACTIVE LAB BACKLOAD            N
+   LAB55203                                            ALPHA FETOPROTEIN, BODY FLUID        NEW EAP ADDITION REVIEW            N
+   LAB23112                                                   ALPHA FETOPROTEIN, CSF         CSF ROUTINE ORDERABLES            N
+     LAB664                                            ALPHA FETOPROTEIN, L3 PERCENT          INACTIVE LAB BACKLOAD            N
+   LAB46820                                          ALPHA FETOPROTEIN, TUMOR MARKER        NEW EAP ADDITION REVIEW            N
 
-STRIDE  (approval 2022-10-21):  definitely-PRE=11  uncertain=7  definitely-POST=69
-   classification of the definitely-pre-approval episodes:
-       11  TRIAL (structured research protocol)
-   of these, 11 are labelled FIRST-LINE (the clinically implausible subset), 0 are later-line
-   first-line pre-approval episodes needing review:
-     DEI019qqi7sz8i 2021-02-01 research=1 note_trial=1 cls=TRIAL (structured research protocol)
-     DEI03cao7sz8o6 2019-02-17 research=1 note_trial=1 cls=TRIAL (structured research protocol)
-     DEI05o5zrao1sw 2022-03-16 research=1 note_trial=1 cls=TRIAL (structured research protocol)
-     DEI06t6zg65uh1 2019-11-13 research=1 note_trial=1 cls=TRIAL (structured research protocol)
-     DEI0b5t6zg5k8h 2020-11-23 research=1 note_trial=1 cls=TRIAL (structured research protocol)
-     DEI0cwa7sz8a0q 2019-07-12 research=1 note_trial=1 cls=TRIAL (structured research protocol)
-     DEI0e7sz8ea349 2019-11-15 research=1 note_trial=1 cls=TRIAL (structured research protocol)
-     DEI0qbt6zgbah4 2021-11-16 research=1 note_trial=1 cls=TRIAL (structured research protocol)
+  candidate AFP proc_codes: 77
 
-NIVO_IPI  (approval 2025-04-11):  definitely-PRE=92  uncertain=25  definitely-POST=15
-   classification of the definitely-pre-approval episodes:
-       32  LATER-LINE (not first-line use)
-       27  TRIAL (structured research protocol)
-       17  TRIAL (note language only, unconfirmed)
-       16  OFF-LABEL or UNRESOLVED (1L, no trial evidence)
-   of these, 44 are labelled FIRST-LINE (the clinically implausible subset), 48 are later-line
-   first-line pre-approval episodes needing review:
-     DEI00a8gy5zray 2021-05-23 research=0 note_trial=0 cls=OFF-LABEL or UNRESOLVED (1L, no trial evidence)
-     DEI01jt6zgjb1x 2022-12-26 research=0 note_trial=0 cls=OFF-LABEL or UNRESOLVED (1L, no trial evidence)
-     DEI01wam7sz8mx 2019-06-16 research=1 note_trial=1 cls=TRIAL (structured research protocol)
-     DEI02hwf5zraf7 2023-03-11 research=0 note_trial=0 cls=OFF-LABEL or UNRESOLVED (1L, no trial evidence)
-     DEI038ymft6zgf 2023-11-13 research=1 note_trial=1 cls=TRIAL (structured research protocol)
-     DEI03u7sz8u6j5 2020-06-15 research=0 note_trial=0 cls=OFF-LABEL or UNRESOLVED (1L, no trial evidence)
-     DEI05o97x7sz8x 2022-06-02 research=1 note_trial=1 cls=TRIAL (structured research protocol)
-     DEI063h2v7sz8v 2020-07-04 research=0 note_trial=0 cls=OFF-LABEL or UNRESOLVED (1L, no trial evidence)
+(ii) what those proc_codes actually RESULT as in lab_results (equi-filter):
+proc_code                         proc_name                  component_name component_base_name loinc_code                          loinc_desc reference_unit  n_rows  n_pats  n_numeric
+   LAB559    ALPHA FETOPROTEIN TUMOR MARKER          AFP TUMOR MARKER-TOSOH        AFETOPROTEIN       None                                None          ng/mL   39272   18308      39272
+   LAB559    ALPHA FETOPROTEIN TUMOR MARKER          AFP TUMOR MARKER-TOSOH        AFETOPROTEIN    53962-7    Alpha-1-Fetoprotein.tumor marker          ng/mL   24292   11433      24292
+   LAB559    ALPHA FETOPROTEIN TUMOR MARKER       LAB SPCH AFP TUMOR MARKER        AFETOPROTEIN    53962-7    Alpha-1-Fetoprotein.tumor marker          ng/mL   17926    8267      17926
+   LAB559    ALPHA FETOPROTEIN TUMOR MARKER        AFP, SERUM, TUMOR MARKER               AFPTM    53962-7    Alpha-1-Fetoprotein.tumor marker          ng/mL   17401    5933      17401
+   LAB692 ALPHA FETOPROTEIN MATERNAL, SERUM                            RACE             MSSRACE    21484-1                                Race           None    4396    4005       4396
+   LAB692 ALPHA FETOPROTEIN MATERNAL, SERUM                  INTERPRETATION           AFPMATERN    49246-2  Alpha-1-Fetoprotein interpretation           None    4388    3997       4046
+   LAB692 ALPHA FETOPROTEIN MATERNAL, SERUM                        COMMENT:             COMMENT       None                                None           None    4069    3693       4069
+   LAB692 ALPHA FETOPROTEIN MATERNAL, SERUM                         RESULTS               AFPRR       None                                None           None    4065    3689       4065
+   LAB692 ALPHA FETOPROTEIN MATERNAL, SERUM                   TEST RESULTS:          TESTRESULT    41274-2  Alpha-1-Fetoprotein interpretation           None    4060    3680       4060
+   LAB692 ALPHA FETOPROTEIN MATERNAL, SERUM              MULTIPLE GESTATION              MULGST    45371-2                  Multiple pregnancy           None    4035    3666       4035
+   LAB692 ALPHA FETOPROTEIN MATERNAL, SERUM            OSBR RISK       1 IN            OSBRRISK    48803-1             Neural tube defect risk           None    4035    3666       4035
+   LAB692 ALPHA FETOPROTEIN MATERNAL, SERUM                          WEIGHT             LABPATI    29463-7                         Body weight            lbs    4035    3666       4035
+   LAB692 ALPHA FETOPROTEIN MATERNAL, SERUM            INSULIN DEP DIABETES                IDDM    44877-9 Insulin dependent diabetes mellitus           None    4035    3666       4035
+   LAB692 ALPHA FETOPROTEIN MATERNAL, SERUM                       AFP VALUE            AFPVALUE     1834-1                 Alpha-1-Fetoprotein          ng/mL    4035    3666       4035
+   LAB692 ALPHA FETOPROTEIN MATERNAL, SERUM    GEST. AGE ON COLLECTION DATE             LABGEST    18185-9                     Gestational age          weeks    4035    3666       4035
+   LAB692 ALPHA FETOPROTEIN MATERNAL, SERUM            GESTAT. AGE BASED ON            DATEMETH    21299-3              Gestational age method           None    4035    3666       4035
+   LAB559    ALPHA FETOPROTEIN TUMOR MARKER ALPHA FETOPROTEIN, TUMOR MARKER        AFETOPROTEIN    53962-7    Alpha-1-Fetoprotein.tumor marker          ng/mL    3775    1489       3775
+   LAB692 ALPHA FETOPROTEIN MATERNAL, SERUM             AFP MATERNAL, SERUM           AFPMATERN       None                                None           None    3521    3277       1217
+   LAB692 ALPHA FETOPROTEIN MATERNAL, SERUM             AFP MATERNAL, SERUM           AFPMATERN     1834-1                 Alpha-1-Fetoprotein           None    3375    3173       3375
+   LAB692 ALPHA FETOPROTEIN MATERNAL, SERUM                           MSAFP        AFETOPROTEIN     1834-1                 Alpha-1-Fetoprotein          ng/mL    3341    3099       3341
+   LAB692 ALPHA FETOPROTEIN MATERNAL, SERUM                   MSS ONTD RISK            ONTDRISK    48803-1             Neural tube defect risk           None    3297    3065       3295
+   LAB692 ALPHA FETOPROTEIN MATERNAL, SERUM         INSULIN DEPEND DIABETIC                IDDM    44877-9 Insulin dependent diabetes mellitus           None    3296    3064       3294
+   LAB692 ALPHA FETOPROTEIN MATERNAL, SERUM                         COMMENT             COMMENT     8251-1                     Service comment           None    3296    3064         22
+   LAB692 ALPHA FETOPROTEIN MATERNAL, SERUM             MATERNAL AGE AT EDD           MATAGEEDD    43993-5                     Age.at delivery             yr    3165    2910       3165
+   LAB692 ALPHA FETOPROTEIN MATERNAL, SERUM               EDD DETERMINED BY            DATEMETH    21299-3              Gestational age method           None    2951    2744       2949
+   LAB692 ALPHA FETOPROTEIN MATERNAL, SERUM                  INTERPRETATION              INTERP    49246-2  Alpha-1-Fetoprotein interpretation           None    2949    2740         38
+   LAB692 ALPHA FETOPROTEIN MATERNAL, SERUM               NUMBER OF FETUSES             NOFETUS    11878-6                             Fetuses           None    2943    2736       2941
+   LAB692 ALPHA FETOPROTEIN MATERNAL, SERUM                        COMMENTS            COMMENTS     8251-1                     Service comment           None    2943    2736         24
+   LAB692 ALPHA FETOPROTEIN MATERNAL, SERUM          MOTHER'S ETHNIC ORIGIN          MOETHNICOR    21484-1                                Race           None    2943    2736       2941
+   LAB692 ALPHA FETOPROTEIN MATERNAL, SERUM        PREV PREGNANCY DOWN SYND        PREVPREGDOWN    50715-2                          Trisomy 21           None    2943    2736       2941
 
---- NIVO_MONO "first line" audit (historically unusual: single-agent PD-1 as 1L) ---
-  N=85  research_protocol=28  note_trial=52  research_suspected=52
-  era vs Nivo/Ipi 1L approval: {'DEFINITELY_PRE_APPROVAL': np.int64(80), 'DATE_SHIFT_UNCERTAIN': np.int64(4), 'DEFINITELY_POST_APPROVAL': np.int64(1)}
-  true_1L_high=43  outside_possible=43
+(iii) explicit LOINC probe (53962-7, 1834-1 and other AFP LOINCs):
+loinc_code                       loinc_desc component_base_name                  component_name reference_unit  n_rows  n_pats  n_numeric
+   53962-7 Alpha-1-Fetoprotein.tumor marker        AFETOPROTEIN          AFP TUMOR MARKER-TOSOH          ng/mL   24292   11433      24292
+   53962-7 Alpha-1-Fetoprotein.tumor marker        AFETOPROTEIN       LAB SPCH AFP TUMOR MARKER          ng/mL   17926    8267      17926
+   53962-7 Alpha-1-Fetoprotein.tumor marker               AFPTM        AFP, SERUM, TUMOR MARKER          ng/mL   17452    5944      17452
+   53962-7 Alpha-1-Fetoprotein.tumor marker        AFETOPROTEIN ALPHA FETOPROTEIN, TUMOR MARKER          ng/mL    5392    1913       5392
+    1834-1              Alpha-1-Fetoprotein            AFPVALUE                       AFP VALUE          ng/mL    5342    4822       5342
+    1834-1              Alpha-1-Fetoprotein        AFETOPROTEIN                           MSAFP          ng/mL    3752    3462       3752
+    1834-1              Alpha-1-Fetoprotein           AFPMATERN             AFP MATERNAL, SERUM           None    3375    3173       3375
+    1834-1              Alpha-1-Fetoprotein           AFPMATERN                      AFP, SERUM          ng/mL    3058    2950       3058
+    1832-5              Alpha-1-Fetoprotein            AFPVALUE                       AFP VALUE          ug/mL     466     441        466
+    1832-5              Alpha-1-Fetoprotein              AFPAMN                  AFP, AMNIO FLD           None     457     441        457
+    1832-5              Alpha-1-Fetoprotein              AFPAMN                  AFP, AMNIO FLD          ug/mL     251     236        251
+    1834-1              Alpha-1-Fetoprotein        AFETOPROTEIN                      AFP, SERUM          ng/mL     232     232        232
+   53962-7 Alpha-1-Fetoprotein.tumor marker        AFETOPROTEIN  ALPHA-FETOPROTEIN,TUMOR MARKER          ng/mL     206     146        206
+    1832-5              Alpha-1-Fetoprotein            ONTDRISK               ALPHA-FETOPROTEIN         mcg/mL      53      52         53
+    1834-1              Alpha-1-Fetoprotein            AFPVALUE                       AFP VALUE           None      37      37         37
+    1832-5              Alpha-1-Fetoprotein              AFPAMN              AFP AMNIOTIC FLUID           None      24      23         23
+    1834-1              Alpha-1-Fetoprotein           AFPMATERN                      AFP, SERUM           None      21      21         21
+   53962-7 Alpha-1-Fetoprotein.tumor marker        AFETOPROTEIN              AFP, TUMOR MARKER+          ng/mL      13      12         13
+    1834-1              Alpha-1-Fetoprotein        AFETOPROTEIN                           MSAFP           None       7       7          5
+    1834-1              Alpha-1-Fetoprotein                 AFP                             AFP          ng/mL       6       6          6
+   53962-7 Alpha-1-Fetoprotein.tumor marker        AFETOPROTEIN ALPHA FETOPROTEIN, TUMOR MARKER           None       4       4          4
+    1832-5              Alpha-1-Fetoprotein            ONTDRISK               ALPHA-FETOPROTEIN        mcg/mL        2       2          2
+   53962-7 Alpha-1-Fetoprotein.tumor marker        AFETOPROTEIN               AFP, TUMOR MARKER          ng/mL       1       1          1
+    1832-5              Alpha-1-Fetoprotein            ONTDRISK               ALPHA-FETOPROTEIN           None       1       1          1
+   53962-7 Alpha-1-Fetoprotein.tumor marker               AFPTM        AFP, SERUM, TUMOR MARKER           None       1       1          1
 
-Elapsed 81s
+  >>> FINAL AFP component_base_name set: ['AFETOPROTEIN', 'AFP', 'AFPAMN', 'AFPCSF', 'AFPFLUID', 'AFPFLUIDSRCE', 'AFPL3', 'AFPL3PCT', 'AFPMATERN', 'AFPMKR', 'AFPMOM', 'AFPMOMAMNIO', 'AFPRR', 'AFPTM', 'AFPVALUE', 'CHRMAFAFP', 'CLARIFAFPOR', 'MATERNALAFP']
+  >>> v9 used only [AFPTM]. Newly discovered beyond AFPTM: ['AFETOPROTEIN', 'AFP', 'AFPAMN', 'AFPCSF', 'AFPFLUID', 'AFPFLUIDSRCE', 'AFPL3', 'AFPL3PCT', 'AFPMATERN', 'AFPMKR', 'AFPMOM', 'AFPMOMAMNIO', 'AFPRR', 'AFPVALUE', 'CHRMAFAFP', 'CLARIFAFPOR', 'MATERNALAFP']
+
+  AFP result rows for HCC universe: 21,025 | numeric usable: 18,297 | patients with >=1 numeric AFP: 2,463
+  units: {'ng/mL': np.int64(18064), 'NG/ML': np.int64(220), '%': np.int64(5), 'lbs': np.int64(1), 'weeks': np.int64(1)}
+
+========================================================================================================
+3B — PATIENT-LEVEL AFP AVAILABILITY (PRE-INDEX ONLY)
+========================================================================================================
+               cohort    n  ever_afp  pct_ever
+     all HCC universe 3999      2463      61.6
+  high-confidence HCC 2544      1884      74.1
+ systemic-treated HCC  571       502      87.9
+validated 1L patients  569       500      87.9
+validated 2L patients  165       162      98.2
+
+  ALL 806 decision indices (n=806):
+    -7d:61.0%  -14d:72.0%  -30d:78.9%  -60d:82.9%  -90d:84.6%  -180d:86.1%  -365d:86.7%
+    any prior AFP ever: 88.0%
+
+  1L indices (n=569):
+    -7d:60.1%  -14d:70.1%  -30d:77.0%  -60d:80.7%  -90d:81.5%  -180d:82.8%  -365d:83.0%
+    any prior AFP ever: 84.0%
+
+  2L indices (n=165):
+    -7d:61.8%  -14d:76.4%  -30d:84.2%  -60d:89.1%  -90d:93.3%  -180d:95.8%  -365d:95.8%
+    any prior AFP ever: 97.6%
+
+========================================================================================================
+3C — DAYS FROM DECISION INDEX BACK TO NEAREST PRIOR AFP
+========================================================================================================
+  indices with ANY prior AFP: 709/806 (88.0%)
+  median 3 d | IQR 0-10 d | p90 32 d
+
+  distribution of nearest-prior-AFP lag:
+         0-7 d :  454 (64.0%)  ############################################################
+        8-14 d :  115 (16.2%)  ###############
+       15-30 d :   64 ( 9.0%)  ########
+       31-60 d :   35 ( 4.9%)  ####
+       61-90 d :   13 ( 1.8%)  #
+      91-180 d :   13 ( 1.8%)  #
+     181-365 d :    5 ( 0.7%)  
+        >365 d :   10 ( 1.4%)  #
+
+========================================================================================================
+3D — AFP IN CLINICAL NOTES (window -45..0 d; LOWER BOUND, see Part 0B)
+========================================================================================================
+  indices with ANY AFP mention in notes      : 647 (80.3%)
+  indices with a PARSED numeric AFP in notes : 557 (69.1%)
+  structured AFP in the SAME -45..0 d window : 655 (81.3%)
+  union structured OR note-parsed            : 705 (87.5%)
+  >>> COVERAGE GAIN from notes              : +50 indices (+6.2 percentage points)
+
+  MANUAL AUDIT of note-parsed AFP vs structured lab (n=80):
+    agreement within 25%: 34/80 = 42.5%  (extraction PPV)
+    DEI0dd5zradg2i L1 note=    130.7 lab=   1220.3 BAD | AFP was 130.7
+    DEI079t6zg9qdb L1 note=   1226.0 lab=   1250.1 OK  | AFP: 1,226.0
+    DEI0dp7sz8pr4v L1 note=   2345.7 lab=   3787.4 BAD | AFP: 2,345.7
+    DEI01jt6zgjb1x L2 note=      5.9 lab=      5.9 OK  | AFETOPROTEIN	5.9
+    DEI0qt6zgqqb5i L2 note= 605000.0 lab= 585000.0 OK  | AFP 605,000,
+    DEI0orq61t6zg1 L1 note=      4.2 lab=      4.5 OK  | AFP 4.2
+    DEI0g5zrag4rdx L2 note=     26.3 lab=      6.6 BAD | AFP 26.3
+    DEI0ot6zgo8qw5 L1 note=    500.0 lab=   1319.9 BAD | AFP >500
+    DEI0tt6zgtm42p L1 note=      3.1 lab=      2.2 BAD | AFETOPROTEIN	3.1
+    DEI0okkwt6zgws L1 note=    476.9 lab=    338.7 BAD | AFETOPROTEIN	476.9
+    DEI0kfc5zracx4 L1 note=      5.8 lab=      8.5 BAD | AFP 5.8
+    DEI04qr7sz8rvr L1 note=      6.0 lab=  39422.5 BAD | AFP (6
+
+========================================================================================================
+3E — IS AFP JUST OUTSIDE THE WINDOW? (index/order-date alignment)
+========================================================================================================
+  indices whose nearest prior AFP is 15-90 d before index: 102 (12.7%)
+  -> these are NOT "AFP never ordered"; the marker exists but falls outside a 14 d window.
+  of those, Beacon plan opened BEFORE the delivery index in 56/102 cases (median 10 d earlier)
+  => using PLAN-OPEN date rather than first-infusion date as time zero would recapture AFP
+     widening the AFP window to -30d recaptures 56 additional indices (cumulative 78.9% coverage)
+     widening the AFP window to -60d recaptures 88 additional indices (cumulative 82.9% coverage)
+     widening the AFP window to -90d recaptures 102 additional indices (cumulative 84.6% coverage)
+
+========================================================================================================
+3F — AFP FINAL VERDICT
+========================================================================================================
+  HCC-ever AFP coverage (patient level)        : 74.1% of high-confidence HCC
+  systemic-treated AFP ever (patient level)    : 87.9%
+  decision-point coverage -14 d (v9 definition): 72.0%
+  decision-point coverage -30 d                : 78.9%
+  decision-point coverage -90 d                : 84.6%
+  decision-point coverage ANY prior AFP        : 88.0%
+  structured(-45d) OR note-augmented           : 87.5%
+
+  >>> AFP CLASSIFICATION: RESEARCH-GRADE
+
+Elapsed 353s
+v10 PART 3G - AFP contamination control + root-cause proof of the v9 19.7% error
+v10 PART 3G - AFP contamination control + root-cause proof of the v9 19.7% error
+========================================================================================================
+3G — STRICT TUMOUR-MARKER-ONLY AFP
+========================================================================================================
+  wide-net rows 18,297 -> strict rows 18,128  (dropped 169 non-tumour-marker rows)
+  strict patients with >=1 AFP: 2,451  (wide net: 2,463)
+  strict components retained: {'AFETOPROTEIN': np.int64(13719), 'AFPTM': np.int64(4374), 'AFPMKR': np.int64(35)}
+
+  DECISION-POINT COVERAGE (n=806 indices) under each AFP definition:
+  v9 definition (AFPTM only)         -7d:  8.3%  -14d: 12.0%  -30d: 16.4%  -60d: 21.0%  -90d: 22.5%  any_prior: 32.3%
+  v10 STRICT tumour-marker           -7d: 61.0%  -14d: 72.0%  -30d: 78.9%  -60d: 82.9%  -90d: 84.6%  any_prior: 88.0%
+  v10 wide net (contaminated)        -7d: 61.0%  -14d: 72.0%  -30d: 78.9%  -60d: 82.9%  -90d: 84.6%  any_prior: 88.0%
+
+  ROOT CAUSE OF THE v9 19.7% FIGURE:
+    patients whose AFP is recorded as AFPTM        : 810
+    patients whose AFP is recorded as AFETOPROTEIN : 2,276
+    AFETOPROTEIN-only patients invisible to v9     : 1,640
+    => v9 queried a single component_base_name and silently lost 67% of AFP-tested patients.
+    v9 reported 19.7% decision-point AFP; reproduced here as 12.0% with the same
+    AFPTM-only definition, versus 72.0% once all tumour-marker synonyms are included.
+
+  CHECK A (invariant): strict vs wide-net coverage must be nearly identical,
+  otherwise the gain came from maternal/amniotic contamination rather than real tumour markers.
+    strict -14d 72.0%  vs  wide-net -14d 72.0%  |delta| = 0.0 pp  -> PASS
+    maternal/amniotic/CSF AFP rows present in the HCC universe at all: 9 across 8 patients -> immaterial
+
+  CHECK B (independent source): do the AFP values behave like HCC tumour markers?
+    median 6.5 ng/mL | IQR 3.2-61.2 | max 984,000
+    share >400 ng/mL (the ramucirumab / poor-prognosis threshold): 15.0%
+    share <=10 ng/mL (normal): 59.6%   -> bimodal, consistent with a real HCC tumour-marker distribution
+
+  PATIENT-LEVEL AFP EVER (strict definition):
+    all HCC universe          2451/3999  =  61.3%
+    high-confidence HCC       1880/2544  =  73.9%
+    systemic-treated           502/571   =  87.9%
+    validated 1L               500/569   =  87.9%
+    validated 2L               162/165   =  98.2%
+
+========================================================================================================
+3F/3G — REVISED AFP VERDICT (supersedes v9 "TOO SPARSE")
+========================================================================================================
+  v9 claim                      : 19.7% of decision points  -> "TOO SPARSE"
+  v10 corrected (strict, -14 d) : 72.0%
+  v10 corrected (strict, -30 d) : 78.9%
+  v10 corrected (strict, -90 d) : 84.6%
+  v10 corrected (any prior AFP) : 88.0%
+  note-derived AFP extraction PPV: 42.5%  -> REJECTED as a data source
+     (only +6.2 pp coverage and <50% agreement with the lab value; structured labs suffice)
+
+  >>> AFP CLASSIFICATION: RESEARCH-GRADE
+  >>> v9's "AFP too sparse" conclusion is a FALSE NEGATIVE caused by an incomplete
+      component_base_name list, not by missing data. AFP-stratified projects are FEASIBLE.
+
+Elapsed 172s
+v10 PART 4 - Conservative radiology rebuild with negation handling + precision AND recall
+v10 PART 4 - Conservative radiology rebuild with negation handling + precision AND recall
+v10 High-Assurance Audit — Final Summary
+Mandate honoured: no comparative treatment effects were estimated. All counts are feasibility counts.
+
+Four corrections that change the v9 conclusions
+#	v9 said	v10 found	Mechanism
+1	569 first-line episodes	only 282 (49.6%) are true-1L high confidence; 43.4% could have had prior systemic therapy outside REACH	v9 equated "first observed in REACH" with "first line"
+2	ICI-combo vs ICI-mono is the top node (285 vs 132)	not feasible — 8 vs 3 in the overlap window	the ICI-monotherapy arm is trial/off-label use (NIVO_MONO 1L: 80/85 pre-approval, 52/85 research-suspected)
+3	AFP available at 19.7% of decision points → "too sparse"	72.0% at −14 d, 88.0% ever → research-grade	v9 filtered component_base_name='AFPTM'; the dominant representation is AFETOPROTEIN, losing 67% of AFP-tested patients
+4	radiology flags 96% precise	naive parser is 73% precise, inflating prevalence by up to +9.7 pp	precision was measured only on flag-positive reports, which cannot detect a permissive parser
+The one surviving comparative project
+Atezolizumab/Bevacizumab vs STRIDE as first-line therapy — 51 vs 41 patients from 2023-04-21, index-year SMD 0.043, all six gates pass (research-protocol share in the STRIDE arm, 25%, is the one marginal item).
+
+v9 reached a similar recommendation by an invalid route: it reported SMD 0.03 across all 144 vs 80 episodes and then blocked the node on positivity. On the usable non-research subset the unrestricted SMD is −0.977 — severe imbalance, because STRIDE's early adopters are trial patients. Calendar balance exists only inside the overlap window, and inside that window positivity passes.
+
+Top three non-comparative projects (immune to the equipoise failures)
+Dynamic ALBI trajectory on systemic therapy — 585 episodes with ≥3 on-treatment measurements (median 6); within-patient design, so the date shift is exact. Strongest available project.
+AFP kinetics as an early response signal — 542 episodes with baseline plus on-treatment AFP. Newly unlocked by correction 3.
+Discontinuation reasons and consequences — 92.7% recorded, 82.4% informative; time-to-discontinuation is shift-invariant.
+Date-shift framework
+Every patient's dates move by one fixed offset ≤ 6 months, so within-patient intervals are exact (verified: 0 days of drift across 50 jitter draws) while absolute calendar claims are bounded. Episodes are classified DEFINITELY_PRE / DATE_SHIFT_UNCERTAIN / DEFINITELY_POST against each approval anchor; 88–90% land in a definite category and the 10–12% uncertain band is unresolvable by any method and must be reported as its own stratum.
+
+Five items this phase could not self-certify
+Human adjudication of ≥100 radiology reports per flag before any flag is used as an endpoint.
+Human abstraction of treatment-rationale free text — the 97.9% "documented rationale" rate is template inflation (ECOG appears in 91% of notes); only bevacizumab-contraindication (6.0%) and autoimmune-avoidance (2.1%) discriminate.
+Chart review of the 10 unexplained line-assignment discordances.
+Chart review of the 16 Nivo/Ipi first-line pre-approval episodes with no trial evidence.
+Confirmation of the three approval anchor dates against the institutional formulary.
+Known deviation: ptnotes_text costs > 15 min to scan on this single-node cluster regardless of key count, so the persisted v9 note corpus (−45..0 d) was reused. This truncates the Part 10 rationale window from −60 d to −45 d and makes the Part 3D note-based AFP figure a lower bound. Neither affects a conclusion, because note-derived AFP was rejected anyway (extraction PPV 42.5%).
+
+18 tables persisted to reach_users.xzhao81 with _v10 suffix; all read-back verified. 17/17 checklist items PASS or CONDITIONAL, 0 FAIL.
+
