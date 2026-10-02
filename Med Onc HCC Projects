@@ -1,2291 +1,1336 @@
-HCC Medical-Oncology REACH Opportunity Atlas v1
-Systematic data-opportunity exploration across all major HCC medical-oncology research domains using Johns Hopkins REACH. Built from canonical validated tables. Every number identifies its unit. MODEL-ASSISTED — HUMAN CONFIRMATION REQUIRED for all phenotype definitions.
-
-Part 0A — Canonical Table Census
-Part 0A — Canonical Table Census
-df:pyspark.sql.connect.dataframe.DataFrame = [pat: string, explicit_cp_class: string ... 3 more fields]
-================================================================================
-PART 0A — CANONICAL TABLE CENSUS
-================================================================================
-
-──────────────────────────────────────────────────────────────────────
-TABLE: reach_users.xzhao81.hcc_master_patient_roster_v12_1
-UNIT OF ANALYSIS:  one row per HCC patient (v12.1)
-N_ROWS:            3,999
-N_UNIQUE_PATIENTS: 3,999
-COLUMNS (30):
-  pat                                      StringType()
-  broad_hcc                                IntegerType()
-  high_confidence_hcc                      IntegerType()
-  hcc_evidence_sources                     StringType()
-  n_sources                                LongType()
-  first_hcc_date                           TimestampType()
-  first_high_confidence_hcc_date           TimestampType()
-  birth_date                               TimestampType()
-  sex                                      StringType()
-  race_ethnicity                           StringType()
-  first_race                               StringType()
-  ethnic_group                             StringType()
-  death_date                               TimestampType()
-  external_death_date                      TimestampType()
-  canonical_death_date                     TimestampType()
-  pat_status                               StringType()
-  deceased_flag                            IntegerType()
-  last_contact                             TimestampType()
-  first_contact                            TimestampType()
-  systemic_raw_signal                      IntegerType()
-  systemic_validated                       IntegerType()
-  true_1l_hc                               IntegerType()
-  tace_flag                                IntegerType()
-  y90_flag                                 IntegerType()
-  ablation_flag                            IntegerType()
-  sbrt_flag                                IntegerType()
-  resection_flag                           IntegerType()
-  transplant_flag                          IntegerType()
-  death_flag                               IntegerType()
-  decompensation_flag                      IntegerType()
-
-──────────────────────────────────────────────────────────────────────
-TABLE: reach_users.xzhao81.hcc_master_patient_roster_v12
-UNIT OF ANALYSIS:  one row per HCC patient (v12)
-N_ROWS:            3,999
-N_UNIQUE_PATIENTS: 3,999
-COLUMNS (26):
-  pat                                      StringType()
-  broad_hcc                                IntegerType()
-  high_confidence_hcc                      IntegerType()
-  hcc_evidence_sources                     StringType()
-  n_sources                                LongType()
-  first_hcc_date                           TimestampType()
-  first_high_confidence_hcc_date           TimestampType()
-  birth_date                               TimestampType()
-  sex                                      StringType()
-  race_ethnicity                           StringType()
-  first_race                               StringType()
-  ethnic_group                             StringType()
-  death_date                               TimestampType()
-  external_death_date                      TimestampType()
-  canonical_death_date                     TimestampType()
-  pat_status                               StringType()
-  deceased_flag                            IntegerType()
-  last_contact                             TimestampType()
-  first_contact                            TimestampType()
-  systemic_treated_flag                    IntegerType()
-  tace_flag                                IntegerType()
-  y90_flag                                 IntegerType()
-  ablation_flag                            IntegerType()
-  resection_flag                           IntegerType()
-  transplant_flag                          IntegerType()
-  sbrt_flag                                IntegerType()
-
-──────────────────────────────────────────────────────────────────────
-TABLE: reach_users.xzhao81.hcc_systemic_patients_canonical_v12_2
-UNIT OF ANALYSIS:  one row per systemic patient
-N_ROWS:            571
-N_UNIQUE_PATIENTS: 571
-COLUMNS (2):
-  pat                                      StringType()
-  provenance                               StringType()
-
-──────────────────────────────────────────────────────────────────────
-TABLE: reach_users.xzhao81.hcc_systemic_lines_canonical_v12_2
-UNIT OF ANALYSIS:  one row per treatment line
-N_ROWS:            806
-N_UNIQUE_PATIENTS: 571
-COLUMNS (27):
-  pat                                      StringType()
-  regimen                                  StringType()
-  comps                                    StringType()
-  start                                    TimestampType()
-  end                                      TimestampType()
-  comp_start_spread                        LongType()
-  n_components                             LongType()
-  n_dates                                  LongType()
-  srcs                                     StringType()
-  beacon_hcc                               LongType()
-  beacon_plan                              StringType()
-  research                                 StringType()
-  competitors                              StringType()
-  hcc_indication                           StringType()
-  exposure_confidence                      StringType()
-  n_orders                                 DoubleType()
-  max_refills                              DoubleType()
-  line                                     LongType()
-  line_note                                StringType()
-  first_hcc_date                           TimestampType()
-  left_truncated                           LongType()
-  pre_hcc_dx                               LongType()
-  line_uncertain                           LongType()
-  line_label                               StringType()
-  dur_days                                 LongType()
-  algo                                     StringType()
-  provenance                               StringType()
-DATE RANGE (start): 2015-08-01 00:00:00 to 2026-07-23 00:00:00
-
-──────────────────────────────────────────────────────────────────────
-TABLE: reach_users.xzhao81.hcc_systemic_lines_canonical_v12
-UNIT OF ANALYSIS:  one row per treatment line (v12)
-N_ROWS:            806
-N_UNIQUE_PATIENTS: 571
-COLUMNS (30):
-  pat                                      StringType()
-  regimen                                  StringType()
-  start                                    TimestampType()
-  comps                                    StringType()
-  end                                      TimestampType()
-  comp_start_spread                        LongType()
-  n_components                             LongType()
-  n_dates                                  LongType()
-  srcs                                     StringType()
-  beacon_hcc                               LongType()
-  beacon_plan                              StringType()
-  research                                 StringType()
-  competitors                              StringType()
-  hcc_indication                           StringType()
-  exposure_confidence                      StringType()
-  n_orders                                 DoubleType()
-  max_refills                              DoubleType()
-  line                                     LongType()
-  line_note                                StringType()
-  first_hcc_date                           TimestampType()
-  left_truncated                           LongType()
-  pre_hcc_dx                               LongType()
-  line_uncertain                           LongType()
-  line_label                               StringType()
-  dur_days                                 LongType()
-  algo                                     StringType()
-  true_1l_high_confidence_flag             LongType()
-  true_1l_probable_flag                    LongType()
-  research_protocol_flag                   LongType()
-  research_suspected_flag                  LongType()
-DATE RANGE (start): 2015-08-01 00:00:00 to 2026-07-23 00:00:00
-
-──────────────────────────────────────────────────────────────────────
-TABLE: reach_users.xzhao81.hcc_full_systemic_waterfall_v12_2
-UNIT OF ANALYSIS:  one row per systemic signal
-N_ROWS:            796
-N_UNIQUE_PATIENTS: 796
-COLUMNS (4):
-  pat                                      StringType()
-  val_category                             StringType()
-  regimen                                  StringType()
-  exclusion_reason                         StringType()
-
-──────────────────────────────────────────────────────────────────────
-TABLE: reach_users.xzhao81.hcc_true_firstline_validation_v10
-UNIT OF ANALYSIS:  one row per true-1L classification
-N_ROWS:            806
-N_UNIQUE_PATIENTS: 571
-COLUMNS (55):
-  regimen                                  StringType()
-  comps                                    StringType()
-  start                                    TimestampType()
-  end                                      TimestampType()
-  comp_start_spread                        LongType()
-  n_components                             LongType()
-  n_dates                                  LongType()
-  srcs                                     StringType()
-  beacon_hcc                               LongType()
-  beacon_plan                              StringType()
-  research                                 StringType()
-  competitors                              StringType()
-  hcc_indication                           StringType()
-  exposure_confidence                      StringType()
-  n_orders                                 DoubleType()
-  max_refills                              DoubleType()
-  line                                     LongType()
-  line_note                                StringType()
-  pat                                      StringType()
-  first_hcc_date                           TimestampType()
-  left_truncated                           LongType()
-  pre_hcc_dx                               LongType()
-  line_uncertain                           LongType()
-  line_label                               StringType()
-  dur_days                                 LongType()
-  algo                                     StringType()
-  comp_list                                StringType()
-  obs_start                                TimestampType()
-  n_enc_total                              LongType()
-  note_firstline                           LongType()
-  note_priorsys                            LongType()
-  note_trial                               LongType()
-  note_outside_care                        LongType()
-  n_notes                                  LongType()
-  own_regimen_era                          StringType()
-  era_atezo_bev                            StringType()
-  era_stride                               StringType()
-  era_nivo_ipi                             StringType()
-  earliest_possible_true_date              TimestampType()
-  latest_possible_true_date                TimestampType()
-  lookback_days                            LongType()
-  adequate_lookback_180d                   LongType()
-  adequate_lookback_365d                   LongType()
-  adequate_lookback_730d                   LongType()
-  res_first                                TimestampType()
-  res_last                                 TimestampType()
-  beacon_research_overlap                  LongType()
-  research_protocol_flag                   LongType()
-  research_suspected_flag                  LongType()
-  first_observed_reach_systemic_flag       LongType()
-  beacon_initial_plan                      LongType()
-  positive_1l_confirmation                 LongType()
-  true_1l_high_confidence_flag             LongType()
-  true_1l_probable_flag                    LongType()
-  prior_systemic_outside_reach_possible_flag LongType()
-
-──────────────────────────────────────────────────────────────────────
-TABLE: reach_users.xzhao81.hcc_regimen_duration_v12_2
-UNIT OF ANALYSIS:  one row per line with duration
-N_ROWS:            806
-N_UNIQUE_PATIENTS: 571
-COLUMNS (12):
-  pat                                      StringType()
-  regimen                                  StringType()
-  line                                     LongType()
-  start_date                               DateType()
-  raw_end_date                             DateType()
-  corrected_end                            DateType()
-  raw_dur                                  IntegerType()
-  corrected_dur                            IntegerType()
-  route_class                              StringType()
-  srcs                                     StringType()
-  exposure_confidence                      StringType()
-  hcc_indication                           StringType()
-
-──────────────────────────────────────────────────────────────────────
-TABLE: reach_users.xzhao81.hcc_tumor_biomarkers_v12
-UNIT OF ANALYSIS:  one row per biomarker measurement
-N_ROWS:            20,441
-N_UNIQUE_PATIENTS: 2,495
-COLUMNS (5):
-  pat                                      StringType()
-  lab_date                                 DateType()
-  afp_value                                DoubleType()
-  component_base_name                      StringType()
-  reference_unit                           StringType()
-
-──────────────────────────────────────────────────────────────────────
-TABLE: reach_users.xzhao81.hcc_decompensation_validated_v12
-UNIT OF ANALYSIS:  one row per decompensation event
-N_ROWS:            26,207
-N_UNIQUE_PATIENTS: 1,768
-COLUMNS (3):
-  pat                                      StringType()
-  event_date                               DateType()
-  decomp_type                              StringType()
-
-──────────────────────────────────────────────────────────────────────
-TABLE: reach_users.xzhao81.hcc_inpatient_admissions_v12_2
-UNIT OF ANALYSIS:  one row per admission
-N_ROWS:            24,661
-N_UNIQUE_PATIENTS: 3,239
-COLUMNS (13):
-  pat                                      StringType()
-  admission_id                             StringType()
-  admission_datetime                       TimestampType()
-  discharge_datetime                       TimestampType()
-  admission_type                           StringType()
-  adt_class                                StringType()
-  disch_disp                               StringType()
-  service_area                             DecimalType(18,0)
-  n_enc_rows                               LongType()
-  admission_source                         StringType()
-  admission_date                           DateType()
-  discharge_date                           DateType()
-  los_days                                 IntegerType()
-
-──────────────────────────────────────────────────────────────────────
-TABLE: reach_users.xzhao81.hcc_inpatient_admissions_v12_1
-UNIT OF ANALYSIS:  one row per admission (v12.1)
-N_ROWS:            104,595
-N_UNIQUE_PATIENTS: 3,853
-COLUMNS (10):
-  pat                                      StringType()
-  pat_enc_csn_id                           DecimalType(18,0)
-  admission_datetime                       TimestampType()
-  discharge_datetime                       TimestampType()
-  admission_date                           DateType()
-  discharge_date                           DateType()
-  enc_type                                 StringType()
-  adt_pat_class                            StringType()
-  hosp_admission_type                      StringType()
-  disch_disp                               StringType()
-
-──────────────────────────────────────────────────────────────────────
-TABLE: reach_users.xzhao81.hcc_research_status_v12_1
-UNIT OF ANALYSIS:  one row per line with research status
-N_ROWS:            282
-N_UNIQUE_PATIENTS: 282
-COLUMNS (8):
-  pat                                      StringType()
-  regimen                                  StringType()
-  research_status_final                    StringType()
-  research                                 StringType()
-  note_trial                               LongType()
-  beacon_research_overlap                  LongType()
-  research_protocol_flag                   LongType()
-  research_suspected_flag                  LongType()
-
-──────────────────────────────────────────────────────────────────────
-TABLE: reach_users.xzhao81.hcc_post_1l_states_v12_1
-UNIT OF ANALYSIS:  one row per post-1L state
-N_ROWS:            282
-N_UNIQUE_PATIENTS: 282
-COLUMNS (11):
-  pat                                      StringType()
-  regimen                                  StringType()
-  start_1l                                 DateType()
-  end_1l                                   DateType()
-  post_1l_state                            StringType()
-  start_2l                                 DateType()
-  regimen_2l                               StringType()
-  canonical_death_date                     TimestampType()
-  first_decomp_date                        DateType()
-  first_post_sys_local                     DateType()
-  hospice_date                             DateType()
-
-──────────────────────────────────────────────────────────────────────
-TABLE: reach_users.xzhao81.hcc_ici_liver_injury_v12
-UNIT OF ANALYSIS:  one row per ICI liver injury
-N_ROWS:            581
-N_UNIQUE_PATIENTS: 482
-COLUMNS (4):
-  pat                                      StringType()
-  ici_start                                DateType()
-  alt_3x_uln_post_ici                      IntegerType()
-  candidate_ici_liver_injury               StringType()
-
-──────────────────────────────────────────────────────────────────────
-TABLE: reach_users.xzhao81.hcc_child_pugh_v12_2
-UNIT OF ANALYSIS:  one row per CP assessment
-N_ROWS:            282
-N_UNIQUE_PATIENTS: 282
-COLUMNS (19):
-  pat                                      StringType()
-  systemic_start                           DateType()
-  albumin                                  DoubleType()
-  alb_date                                 DateType()
-  bilirubin                                DoubleType()
-  bili_date                                DateType()
-  inr                                      DoubleType()
-  inr_date                                 DateType()
-  n_lab_components                         IntegerType()
-  cp_albumin_pts                           IntegerType()
-  cp_bilirubin_pts                         IntegerType()
-  cp_inr_pts                               IntegerType()
-  cp_lab_score                             IntegerType()
-  ascites_present                          IntegerType()
-  enceph_present                           IntegerType()
-  ascites_pts                              IntegerType()
-  enceph_pts                               IntegerType()
-  cp_estimated_total                       IntegerType()
-  cp_class                                 StringType()
-
-──────────────────────────────────────────────────────────────────────
-TABLE: reach_users.xzhao81.hcc_child_pugh_v12_1
-UNIT OF ANALYSIS:  one row per CP assessment (v12.1)
-N_ROWS:            282
-N_UNIQUE_PATIENTS: 282
-COLUMNS (10):
-  pat                                      StringType()
-  idx_date                                 DateType()
-  albumin                                  DoubleType()
-  bilirubin                                DoubleType()
-  inr                                      DoubleType()
-  cp_albumin_pts                           IntegerType()
-  cp_bilirubin_pts                         IntegerType()
-  cp_inr_pts                               IntegerType()
-  cp_partial_score                         IntegerType()
-  cp_reconstructed_class                   StringType()
-
-──────────────────────────────────────────────────────────────────────
-TABLE: reach_users.xzhao81.hcc_surgery_transplant_v12
-UNIT OF ANALYSIS:  one row per surg/transplant
-N_ROWS:            1,503
-N_UNIQUE_PATIENTS: 750
-COLUMNS (8):
-  pat                                      StringType()
-  proc_date                                DateType()
-  surgery_class                            StringType()
-  proc_name                                StringType()
-  source                                   StringType()
-  code                                     StringType()
-  evidence_sources                         ArrayType(StringType(), True)
-  n_raw_records                            LongType()
-
-──────────────────────────────────────────────────────────────────────
-TABLE: reach_users.xzhao81.hcc_locoregional_validated_v12
-UNIT OF ANALYSIS:  one row per LRT procedure
-N_ROWS:            7,027
-N_UNIQUE_PATIENTS: 1,443
-COLUMNS (8):
-  pat                                      StringType()
-  proc_date                                TimestampType()
-  procedure_class                          StringType()
-  code                                     StringType()
-  proc_name                                StringType()
-  source                                   StringType()
-  evidence_sources                         ArrayType(StringType(), True)
-  n_raw_records                            LongType()
-
-──────────────────────────────────────────────────────────────────────
-TABLE: reach_users.xzhao81.hcc_patient_journey_events_v12
-UNIT OF ANALYSIS:  one row per journey event
-N_ROWS:            11,843
-N_UNIQUE_PATIENTS: 3,999
-COLUMNS (6):
-  pat                                      StringType()
-  event_type                               StringType()
-  event_subtype                            StringType()
-  event_date                               DateType()
-  confidence                               StringType()
-  source                                   StringType()
-
-──────────────────────────────────────────────────────────────────────
-TABLE: reach_users.xzhao81.hcc_transaminitis_v12_2
-UNIT OF ANALYSIS:  one row per transaminitis
-N_ROWS:            228
-N_UNIQUE_PATIENTS: 228
-COLUMNS (10):
-  pat                                      StringType()
-  regimen                                  StringType()
-  ici_start                                DateType()
-  ici_end                                  DateType()
-  peak_alt                                 DoubleType()
-  peak_ast                                 DoubleType()
-  alt_grade                                StringType()
-  ast_grade                                StringType()
-  any_transaminitis                        IntegerType()
-  severe_transaminitis                     IntegerType()
-
-──────────────────────────────────────────────────────────────────────
-TABLE: reach_users.xzhao81.hcc_universe_v8
-UNIT OF ANALYSIS:  one row per HCC universe patient
-N_ROWS:            3,999
-N_UNIQUE_PATIENTS: 3,999
-COLUMNS (22):
-  pat                                      StringType()
-  encounter_dx                             LongType()
-  hosp_billing_dx                          LongType()
-  problem_list                             LongType()
-  treatment_plan                           LongType()
-  n_sources                                LongType()
-  first_hcc_date                           TimestampType()
-  beacon_hcc_flag                          IntegerType()
-  broad_hcc                                IntegerType()
-  high_conf_hcc                            IntegerType()
-  birth_date                               TimestampType()
-  gender                                   StringType()
-  death_date                               TimestampType()
-  pat_status                               StringType()
-  first_systemic_date                      TimestampType()
-  first_ab_date                            TimestampType()
-  first_stride_date                        TimestampType()
-  first_ni_date                            TimestampType()
-  first_tki_date                           TimestampType()
-  first_tace_date                          TimestampType()
-  first_ablation_date                      TimestampType()
-  first_resection_date                     TimestampType()
-
-──────────────────────────────────────────────────────────────────────
-TABLE: reach_users.xzhao81.hcc_validated_waterfall_v12_1
-UNIT OF ANALYSIS:  one row per validated waterfall
-N_ROWS:            571
-N_UNIQUE_PATIENTS: 571
-COLUMNS (3):
-  pat                                      StringType()
-  validated_waterfall_category             StringType()
-  regimen                                  StringType()
-
-──────────────────────────────────────────────────────────────────────
-TABLE: reach_users.xzhao81.hcc_dynamic_systemic_albi_v10
-UNIT OF ANALYSIS:  dynamic ALBI
-N_ROWS:            806
-N_UNIQUE_PATIENTS: 571
-COLUMNS (11):
-  pat                                      StringType()
-  line                                     LongType()
-  regimen                                  StringType()
-  n_pre                                    LongType()
-  n_on_tx                                  LongType()
-  albi_base                                DoubleType()
-  albi_worst                               DoubleType()
-  albi_last                                DoubleType()
-  fu_days                                  DoubleType()
-  albi_delta                               DoubleType()
-  grade_increase                           DoubleType()
-
-──────────────────────────────────────────────────────────────────────
-TABLE: reach_users.xzhao81.hcc_child_pugh_validated_v12
-UNIT OF ANALYSIS:  one row per validated CP
-N_ROWS:            2,544
-N_UNIQUE_PATIENTS: 2,544
-COLUMNS (5):
-  pat                                      StringType()
-  explicit_cp_class                        StringType()
-  explicit_cp_score                        IntegerType()
-  reconstructed_cp_class                   StringType()
-  cp_source                                StringType()
-
-================================================================================
-CENSUS SUMMARY
-================================================================================
-ACCESSIBLE:   25 tables
-INACCESSIBLE: 0 tables
-
-ACCESSIBLE TABLES:
-  ✓ hcc_master_patient_roster_v12_1                            3,999 rows   3,999 patients
-  ✓ hcc_master_patient_roster_v12                              3,999 rows   3,999 patients
-  ✓ hcc_systemic_patients_canonical_v12_2                        571 rows     571 patients
-  ✓ hcc_systemic_lines_canonical_v12_2                           806 rows     571 patients
-  ✓ hcc_systemic_lines_canonical_v12                             806 rows     571 patients
-  ✓ hcc_full_systemic_waterfall_v12_2                            796 rows     796 patients
-  ✓ hcc_true_firstline_validation_v10                            806 rows     571 patients
-  ✓ hcc_regimen_duration_v12_2                                   806 rows     571 patients
-  ✓ hcc_tumor_biomarkers_v12                                  20,441 rows   2,495 patients
-  ✓ hcc_decompensation_validated_v12                          26,207 rows   1,768 patients
-  ✓ hcc_inpatient_admissions_v12_2                            24,661 rows   3,239 patients
-  ✓ hcc_inpatient_admissions_v12_1                           104,595 rows   3,853 patients
-  ✓ hcc_research_status_v12_1                                    282 rows     282 patients
-  ✓ hcc_post_1l_states_v12_1                                     282 rows     282 patients
-  ✓ hcc_ici_liver_injury_v12                                     581 rows     482 patients
-  ✓ hcc_child_pugh_v12_2                                         282 rows     282 patients
-  ✓ hcc_child_pugh_v12_1                                         282 rows     282 patients
-  ✓ hcc_surgery_transplant_v12                                 1,503 rows     750 patients
-  ✓ hcc_locoregional_validated_v12                             7,027 rows   1,443 patients
-  ✓ hcc_patient_journey_events_v12                            11,843 rows   3,999 patients
-  ✓ hcc_transaminitis_v12_2                                      228 rows     228 patients
-  ✓ hcc_universe_v8                                            3,999 rows   3,999 patients
-  ✓ hcc_validated_waterfall_v12_1                                571 rows     571 patients
-  ✓ hcc_dynamic_systemic_albi_v10                                806 rows     571 patients
-  ✓ hcc_child_pugh_validated_v12                               2,544 rows   2,544 patients
-Part 0B — Canonical Cohort Validation & Required Assertions
-Part 0B — Canonical Cohort Validation & Required Assertions
-================================================================================
-PART 0B — CANONICAL COHORT VALIDATION
-================================================================================
-
-MASTER ROSTER (v12.1):
-  TOTAL HCC PATIENTS:           3,999
-  BROAD HCC:                    3,999
-  HIGH-CONFIDENCE HCC:          2,544
-  DECEASED:                     1,690
-
-SYSTEMIC UNIVERSE:
-  RAW SYSTEMIC SIGNAL PATIENTS: 796 rows / 796 patients
-  VALIDATED SYSTEMIC PATIENTS:  571 rows / 571 patients
-  CANONICAL TREATMENT LINES:    806 rows / 571 patients
-
-TRUE FIRST-LINE (v10):
-  LINE-1 ROWS:                  569
-  HIGH-CONFIDENCE TRUE 1L:      282 patients
-  PROBABLE TRUE 1L:             74 patients
-  POSSIBLE PRIOR OUTSIDE TX:    247 patients
-
-================================================================================
-REQUIRED ASSERTION: all HC true-1L ⊂ canonical validated systemic
-  ✓ PASSED: all HC true-1L patients are in canonical validated systemic
-
-================================================================================
-CROSS-TABLE RECONCILIATION
-================================================================================
-
-SYSTEMIC PATIENTS:
-  roster v12.1 (systemic_validated=1): 568
-  sys_patients_canonical_v12_2:        571
-  sys_lines_canonical_v12_2 (distinct): 571
-  *** DISCREPANCY ***
-
-DEATHS:
-  roster deceased_flag=1:  1,690
-  journey death events:    0
-
-RESEARCH STATUS:
-  research_status_v12_1:  282 rows / 282 patients
-+-----------------------------+-----+
-|research_status_final        |count|
-+-----------------------------+-----+
-|ROUTINE_CARE                 |177  |
-|UNCERTAIN                    |64   |
-|DEFINITE_INTERVENTIONAL_TRIAL|40   |
-|PROBABLE_INTERVENTIONAL_TRIAL|1    |
-+-----------------------------+-----+
-
-
-POST-1L STATES:
-  post_1l_states_v12_1:  282 rows / 282 patients
-+-------------------------------------+-----+
-|post_1l_state                        |count|
-+-------------------------------------+-----+
-|DOCUMENTED_PROGRESSION_TO_2L         |91   |
-|HOSPICE_OR_DEATH_WITHOUT_NEXT_THERAPY|71   |
-|ADMINISTRATIVE_CENSOR                |52   |
-|DOCUMENTED_PROGRESSION_NO_2L         |29   |
-|LOCAL_CONSOLIDATION_OR_CONVERSION    |27   |
-|HEPATIC_DYSFUNCTION_STOP             |12   |
-+-------------------------------------+-----+
-
-
-SYSTEMIC WATERFALL CATEGORIES:
-+------------------------------+-----+
-|val_category                  |count|
-+------------------------------+-----+
-|DEFINITE_TRUE_1L              |282  |
-|NOT_VALIDATED                 |225  |
-|PRIOR_OUTSIDE_THERAPY_POSSIBLE|213  |
-|PROBABLE_TRUE_1L              |74   |
-|DEFINITE_LATER_LINE           |2    |
-+------------------------------+-----+
-
-
-================================================================================
-PART 0B COMPLETE
-================================================================================
-Part 1 — Complete Systemic Therapy Inventory
-Part 1 — Complete Systemic Therapy Inventory
-================================================================================
-PART 1 — COMPLETE SYSTEMIC-THERAPY INVENTORY
-================================================================================
-
-SOURCE TABLE: reach_users.xzhao81.hcc_systemic_lines_canonical_v12_2
-UNIT OF ANALYSIS: one row per treatment line
-N_ROWS: 806
-N_UNIQUE_PATIENTS: 571
-
-================================================================================
-COUNTS BY LINE (TREATMENT LINES, not patients)
-================================================================================
-+----+-------+----------+
-|line|n_lines|n_patients|
-+----+-------+----------+
-|1   |569    |569       |
-|2   |165    |165       |
-|3   |52     |52        |
-|4   |13     |13        |
-|5   |6      |6         |
-|6   |1      |1         |
-+----+-------+----------+
-
-
-LINE LABEL DISTRIBUTION:
-+----------+-------+----------+
-|line_label|n_lines|n_patients|
-+----------+-------+----------+
-|L1        |569    |569       |
-|L2        |165    |165       |
-|L3        |52     |52        |
-|L4        |13     |13        |
-|L5        |6      |6         |
-|L6        |1      |1         |
-+----------+-------+----------+
-
-
-================================================================================
-COUNTS BY REGIMEN (TREATMENT LINES)
-================================================================================
-+------------------------+-------+----------+
-|regimen                 |n_lines|n_patients|
-+------------------------+-------+----------+
-|AB                      |161    |159       |
-|NIVO_IPI                |132    |131       |
-|NIVO_MONO               |121    |120       |
-|LENVATINIB              |106    |106       |
-|STRIDE                  |87     |87        |
-|SORAFENIB               |64     |64        |
-|CABOZANTINIB            |43     |42        |
-|PEMBRO_MONO             |25     |25        |
-|DURVA_MONO              |20     |20        |
-|CABOZANTINIB+NIVO_MONO  |8      |8         |
-|IPI_MONO                |8      |8         |
-|ATEZO_MONO              |8      |8         |
-|RAMUCIRUMAB             |6      |6         |
-|REGORAFENIB             |5      |5         |
-|LENVATINIB+PEMBRO_MONO  |4      |4         |
-|LENVATINIB+NIVO_MONO    |4      |4         |
-|TREME_MONO              |2      |2         |
-|BEV_MONO+NIVO_MONO      |1      |1         |
-|CABOZANTINIB+RAMUCIRUMAB|1      |1         |
-+------------------------+-------+----------+
-
-
-================================================================================
-REGIMEN × LINE (top combinations)
-================================================================================
-+------------------------+----+-------+----------+
-|regimen                 |line|n_lines|n_patients|
-+------------------------+----+-------+----------+
-|AB                      |1   |144    |144       |
-|NIVO_MONO               |1   |85     |85        |
-|STRIDE                  |1   |80     |80        |
-|LENVATINIB              |1   |68     |68        |
-|SORAFENIB               |1   |62     |62        |
-|NIVO_IPI                |1   |61     |61        |
-|NIVO_IPI                |2   |51     |51        |
-|NIVO_MONO               |2   |31     |31        |
-|LENVATINIB              |2   |30     |30        |
-|PEMBRO_MONO             |1   |22     |22        |
-|CABOZANTINIB            |2   |18     |18        |
-|DURVA_MONO              |1   |16     |16        |
-|NIVO_IPI                |3   |13     |13        |
-|CABOZANTINIB            |3   |13     |13        |
-|AB                      |2   |13     |13        |
-|CABOZANTINIB+NIVO_MONO  |1   |8      |8         |
-|LENVATINIB              |3   |8      |8         |
-|ATEZO_MONO              |1   |6      |6         |
-|STRIDE                  |2   |6      |6         |
-|NIVO_IPI                |4   |5      |5         |
-|CABOZANTINIB            |4   |5      |5         |
-|NIVO_MONO               |3   |4      |4         |
-|LENVATINIB+NIVO_MONO    |1   |4      |4         |
-|CABOZANTINIB            |1   |4      |4         |
-|LENVATINIB+PEMBRO_MONO  |1   |4      |4         |
-|DURVA_MONO              |2   |4      |4         |
-|RAMUCIRUMAB             |3   |3      |3         |
-|PEMBRO_MONO             |2   |3      |3         |
-|IPI_MONO                |3   |3      |3         |
-|AB                      |3   |3      |3         |
-|IPI_MONO                |1   |2      |2         |
-|CABOZANTINIB            |5   |2      |2         |
-|RAMUCIRUMAB             |4   |2      |2         |
-|REGORAFENIB             |2   |2      |2         |
-|IPI_MONO                |2   |2      |2         |
-|NIVO_IPI                |5   |2      |2         |
-|REGORAFENIB             |3   |2      |2         |
-|TREME_MONO              |2   |2      |2         |
-|SORAFENIB               |2   |2      |2         |
-|RAMUCIRUMAB             |1   |1      |1         |
-|CABOZANTINIB+RAMUCIRUMAB|3   |1      |1         |
-|ATEZO_MONO              |2   |1      |1         |
-|AB                      |5   |1      |1         |
-|IPI_MONO                |5   |1      |1         |
-|NIVO_MONO               |4   |1      |1         |
-|STRIDE                  |3   |1      |1         |
-|BEV_MONO+NIVO_MONO      |1   |1      |1         |
-|REGORAFENIB             |1   |1      |1         |
-|ATEZO_MONO              |3   |1      |1         |
-|CABOZANTINIB            |6   |1      |1         |
-+------------------------+----+-------+----------+
-
-
-================================================================================
-TREATMENT ERA CLASSIFICATION
-================================================================================
-
-RATIONALE: dates shifted ±6 months. Using robust boundaries:
-  DEFINITELY_PRE_MODERN: start before 2019-07-01 (>6mo before any ICI combo approval)
-  APPROVAL_BOUNDARY_UNCERTAIN: 2019-07-01 to 2021-06-01
-  DEFINITELY_MODERN: start after 2021-06-01 (>6mo after AB approval)
-+---------------------------+-------+----------+
-|treatment_era              |n_lines|n_patients|
-+---------------------------+-------+----------+
-|APPROVAL_BOUNDARY_UNCERTAIN|176    |137       |
-|DEFINITELY_MODERN          |496    |372       |
-|DEFINITELY_PRE_MODERN      |134    |106       |
-+---------------------------+-------+----------+
-
-
-ERA × REGIMEN for LINE 1 only:
-+---------------------------+----------------------+-------+----------+
-|treatment_era              |regimen               |n_lines|n_patients|
-+---------------------------+----------------------+-------+----------+
-|APPROVAL_BOUNDARY_UNCERTAIN|LENVATINIB            |42     |42        |
-|APPROVAL_BOUNDARY_UNCERTAIN|NIVO_MONO             |23     |23        |
-|APPROVAL_BOUNDARY_UNCERTAIN|AB                    |20     |20        |
-|APPROVAL_BOUNDARY_UNCERTAIN|NIVO_IPI              |10     |10        |
-|APPROVAL_BOUNDARY_UNCERTAIN|STRIDE                |7      |7         |
-|APPROVAL_BOUNDARY_UNCERTAIN|PEMBRO_MONO           |3      |3         |
-|APPROVAL_BOUNDARY_UNCERTAIN|SORAFENIB             |2      |2         |
-|APPROVAL_BOUNDARY_UNCERTAIN|DURVA_MONO            |2      |2         |
-|APPROVAL_BOUNDARY_UNCERTAIN|LENVATINIB+PEMBRO_MONO|1      |1         |
-|APPROVAL_BOUNDARY_UNCERTAIN|LENVATINIB+NIVO_MONO  |1      |1         |
-|APPROVAL_BOUNDARY_UNCERTAIN|CABOZANTINIB          |1      |1         |
-|APPROVAL_BOUNDARY_UNCERTAIN|CABOZANTINIB+NIVO_MONO|1      |1         |
-|DEFINITELY_MODERN          |AB                    |124    |124       |
-|DEFINITELY_MODERN          |STRIDE                |72     |72        |
-|DEFINITELY_MODERN          |NIVO_IPI              |50     |50        |
-|DEFINITELY_MODERN          |NIVO_MONO             |48     |48        |
-|DEFINITELY_MODERN          |PEMBRO_MONO           |19     |19        |
-|DEFINITELY_MODERN          |DURVA_MONO            |12     |12        |
-|DEFINITELY_MODERN          |LENVATINIB            |8      |8         |
-|DEFINITELY_MODERN          |ATEZO_MONO            |6      |6         |
-|DEFINITELY_MODERN          |CABOZANTINIB          |3      |3         |
-|DEFINITELY_MODERN          |LENVATINIB+PEMBRO_MONO|3      |3         |
-|DEFINITELY_MODERN          |IPI_MONO              |2      |2         |
-|DEFINITELY_MODERN          |RAMUCIRUMAB           |1      |1         |
-|DEFINITELY_MODERN          |SORAFENIB             |1      |1         |
-|DEFINITELY_MODERN          |BEV_MONO+NIVO_MONO    |1      |1         |
-|DEFINITELY_MODERN          |LENVATINIB+NIVO_MONO  |1      |1         |
-|DEFINITELY_PRE_MODERN      |SORAFENIB             |59     |59        |
-|DEFINITELY_PRE_MODERN      |LENVATINIB            |18     |18        |
-|DEFINITELY_PRE_MODERN      |NIVO_MONO             |14     |14        |
-|DEFINITELY_PRE_MODERN      |CABOZANTINIB+NIVO_MONO|7      |7         |
-|DEFINITELY_PRE_MODERN      |DURVA_MONO            |2      |2         |
-|DEFINITELY_PRE_MODERN      |LENVATINIB+NIVO_MONO  |2      |2         |
-|DEFINITELY_PRE_MODERN      |NIVO_IPI              |1      |1         |
-|DEFINITELY_PRE_MODERN      |STRIDE                |1      |1         |
-|DEFINITELY_PRE_MODERN      |REGORAFENIB           |1      |1         |
-+---------------------------+----------------------+-------+----------+
-
-
-================================================================================
-OBSERVED LINE 1 vs TRUE FIRST LINE
-================================================================================
-  OBSERVED LINE 1 PATIENTS:     569
-  HIGH-CONFIDENCE TRUE 1L:      282
-  PROBABLE TRUE 1L:             74
-  IMPORTANT: These are DISTINCT CATEGORIES — do not mix.
-
-================================================================================
-EXPOSURE CONFIDENCE
-================================================================================
-+-------------------+-------+----------+
-|exposure_confidence|n_lines|n_patients|
-+-------------------+-------+----------+
-|HIGH               |625    |447       |
-|MODERATE           |181    |169       |
-+-------------------+-------+----------+
-
-
-HCC INDICATION CONFIDENCE:
-+-------------------+-------+----------+
-|hcc_indication     |n_lines|n_patients|
-+-------------------+-------+----------+
-|HCC_HIGH_CONFIDENCE|806    |571       |
-+-------------------+-------+----------+
-
-
-ROUTE CLASS (from regimen_duration_v12_2):
-+-----------+-------+----------+
-|route_class|n_lines|n_patients|
-+-----------+-------+----------+
-|IV_IMMUNO  |562    |469       |
-|ORAL_TKI   |218    |190       |
-|COMBO/OTHER|26     |25        |
-+-----------+-------+----------+
-
-
-================================================================================
-PART 1 COMPLETE
-================================================================================
-Part 2 — Drug-Component Exposure Rebuild
-Part 2 — Drug-Component Exposure Rebuild
-================================================================================
-PART 2 — DRUG-COMPONENT LEVEL EXPOSURE
-================================================================================
-MAR records for systemic patients: 13,914
-
-IV ADMINISTRATIONS (deduplicated):
-+--------------+--------+----------+
-|canonical_drug|n_admins|n_patients|
-+--------------+--------+----------+
-|nivolumab     |1765    |255       |
-|atezolizumab  |1594    |165       |
-|bevacizumab   |1180    |155       |
-|durvalumab    |582     |112       |
-|ipilimumab    |415     |134       |
-|pembrolizumab |237     |32        |
-|tremelimumab  |92      |87        |
-|ramucirumab   |36      |7         |
-+--------------+--------+----------+
-
-MAR ACTION DISTRIBUTION:
-+----------+-----+
-|mar_action|count|
-+----------+-----+
-|New Bag   |5380 |
-|Given     |505  |
-|Restarted |16   |
-+----------+-----+
-
-
-ORAL TKI ORDERS:
-+--------------+--------+----------+
-|canonical_drug|n_orders|n_patients|
-+--------------+--------+----------+
-|lenvatinib    |288     |137       |
-|sorafenib     |171     |69        |
-|cabozantinib  |114     |63        |
-|regorafenib   |11      |5         |
-+--------------+--------+----------+
-
-ORDER STATUS:
-+------------+-----+
-|ord_status  |count|
-+------------+-----+
-|Sent        |450  |
-|Suspend     |66   |
-|Discontinued|39   |
-|NULL        |29   |
-+------------+-----+
-
-DISCONTINUATION REASONS:
-+-------------------------------------------------------------------------------+-----+
-|discon_rsn                                                                     |count|
-+-------------------------------------------------------------------------------+-----+
-|z Renew w/o change (WON'T display on AVS or notify non-JH pharmacies to cancel)|125  |
-|Reorder (won't display on AVS)                                                 |43   |
-|Stop taking at discharge                                                       |43   |
-|Therapy now complete                                                           |21   |
-|x Previously completed or stopped by another clinician (WON'T display on AVS)  |19   |
-|Discharged or transferred (won't display on AVS)                               |15   |
-|z Duplicate entry (WON'T display on AVS or notify non-JH pharmacies to cancel) |10   |
-|Dose/form change                                                               |10   |
-|Medication WON'T Display on AVS                                                |9    |
-|Formulary restriction                                                          |8    |
-|x Error (WON'T display on AVS)                                                 |7    |
-|Alternate therapy                                                              |7    |
-|Adverse reaction                                                               |6    |
-|Therapy completed                                                              |5    |
-|Duplicate entry (won't display on AVS)                                         |5    |
-|Error                                                                          |2    |
-|Error (Pharmacy Use Only)                                                      |2    |
-|x Patient never started or previously stopped (WON'T display on AVS)           |2    |
-|x Change pharmacy (WON'T display on AVS)                                       |1    |
-|x Patient discharged or transferred (WON'T display on AVS)                     |1    |
-|Dose adjustment                                                                |1    |
-|Discontinued by another clinician (won't display on AVS)                       |1    |
-|Ineffective                                                                    |1    |
-+-------------------------------------------------------------------------------+-----+
-
-TKI EXPOSURE CONFIDENCE:
-+--------------+-------------------+---+------+
-|canonical_drug|exposure_confidence|n  |n_pats|
-+--------------+-------------------+---+------+
-|cabozantinib  |HIGH               |89 |51    |
-|cabozantinib  |UNCERTAIN          |25 |23    |
-|lenvatinib    |HIGH               |211|117   |
-|lenvatinib    |UNCERTAIN          |77 |56    |
-|regorafenib   |HIGH               |11 |5     |
-|sorafenib     |HIGH               |139|65    |
-|sorafenib     |UNCERTAIN          |32 |19    |
-+--------------+-------------------+---+------+
-
-
-PERSISTED: hcc_systemic_drug_exposure_medonc_atlas_v1
-  N_ROWS: 6,485
-  N_PATIENTS: 571
-
-SUMMARY BY DRUG:
-+-----------+--------------+---------+----------+----------+----------+
-|agent_class|canonical_drug|n_records|n_patients|earliest  |latest    |
-+-----------+--------------+---------+----------+----------+----------+
-|IV         |nivolumab     |1765     |255       |2016-08-02|2026-09-02|
-|IV         |atezolizumab  |1594     |165       |2020-06-20|2026-08-23|
-|IV         |bevacizumab   |1180     |155       |2020-06-20|2026-08-22|
-|IV         |durvalumab    |582      |112       |2019-02-17|2026-08-24|
-|IV         |ipilimumab    |415      |134       |2020-04-06|2026-08-30|
-|IV         |pembrolizumab |237      |32        |2019-06-23|2026-08-08|
-|IV         |tremelimumab  |92       |87        |2019-02-17|2026-07-23|
-|IV         |ramucirumab   |36       |7         |2019-07-29|2025-09-15|
-|ORAL_TKI   |lenvatinib    |288      |137       |2018-10-26|2026-08-12|
-|ORAL_TKI   |sorafenib     |171      |69        |2015-02-17|2025-08-17|
-|ORAL_TKI   |cabozantinib  |114      |63        |2018-05-29|2026-07-13|
-|ORAL_TKI   |regorafenib   |11       |5         |2017-05-18|2019-05-21|
-+-----------+--------------+---------+----------+----------+----------+
-
-PART 2 COMPLETE
-Parts 3-6 — 1L Cohorts, AB Component Modification, Reasons, Portal HTN
-Parts 3-6 — 1L Cohorts, AB Component Modification, Reasons, Portal HTN
-================================================================================
-PART 3 — FIRST-LINE MODERN MED-ONC COHORTS
-================================================================================
-  A. HC TRUE 1L:                282
-  B. HC+PROBABLE TRUE 1L:       356
-  C. HC ROUTINE-CARE TRUE 1L:   177
-  D. MODERN HC ROUTINE-CARE:    136
-
-COHORT A (282 patients):
-+----------------------+---+
-|regimen               |n  |
-+----------------------+---+
-|AB                    |96 |
-|STRIDE                |50 |
-|NIVO_MONO             |43 |
-|SORAFENIB             |20 |
-|LENVATINIB            |18 |
-|NIVO_IPI              |17 |
-|PEMBRO_MONO           |14 |
-|DURVA_MONO            |7  |
-|CABOZANTINIB+NIVO_MONO|6  |
-|ATEZO_MONO            |6  |
-|CABOZANTINIB          |2  |
-|LENVATINIB+PEMBRO_MONO|1  |
-|IPI_MONO              |1  |
-|LENVATINIB+NIVO_MONO  |1  |
-+----------------------+---+
-
-
-COHORT B (356 patients):
-+----------------------+---+
-|regimen               |n  |
-+----------------------+---+
-|AB                    |103|
-|STRIDE                |54 |
-|NIVO_MONO             |48 |
-|SORAFENIB             |43 |
-|LENVATINIB            |37 |
-|NIVO_IPI              |24 |
-|PEMBRO_MONO           |17 |
-|DURVA_MONO            |10 |
-|CABOZANTINIB+NIVO_MONO|6  |
-|ATEZO_MONO            |6  |
-|CABOZANTINIB          |3  |
-|IPI_MONO              |2  |
-|LENVATINIB+NIVO_MONO  |2  |
-|LENVATINIB+PEMBRO_MONO|1  |
-+----------------------+---+
-
-
-COHORT C (177 patients):
-+----------------------+---+
-|regimen               |n  |
-+----------------------+---+
-|AB                    |71 |
-|STRIDE                |37 |
-|NIVO_MONO             |14 |
-|SORAFENIB             |12 |
-|LENVATINIB            |11 |
-|PEMBRO_MONO           |9  |
-|NIVO_IPI              |8  |
-|ATEZO_MONO            |6  |
-|DURVA_MONO            |5  |
-|LENVATINIB+PEMBRO_MONO|1  |
-|CABOZANTINIB          |1  |
-|IPI_MONO              |1  |
-|LENVATINIB+NIVO_MONO  |1  |
-+----------------------+---+
-
-
-COHORT D (136 patients):
-+--------------------+---+
-|regimen             |n  |
-+--------------------+---+
-|AB                  |58 |
-|STRIDE              |37 |
-|PEMBRO_MONO         |9  |
-|NIVO_MONO           |9  |
-|NIVO_IPI            |6  |
-|ATEZO_MONO          |6  |
-|DURVA_MONO          |5  |
-|LENVATINIB          |3  |
-|CABOZANTINIB        |1  |
-|IPI_MONO            |1  |
-|LENVATINIB+NIVO_MONO|1  |
-+--------------------+---+
-
-
-COHORT D REGIMEN CLASSES:
-+-------------+--------------------+---+
-|regimen_class|regimen             |n  |
-+-------------+--------------------+---+
-|AB           |AB                  |58 |
-|NIVO_IPI     |NIVO_IPI            |6  |
-|OTHER_ICI    |PEMBRO_MONO         |9  |
-|OTHER_ICI    |NIVO_MONO           |9  |
-|OTHER_ICI    |ATEZO_MONO          |6  |
-|OTHER_ICI    |DURVA_MONO          |5  |
-|OTHER_ICI    |LENVATINIB+NIVO_MONO|1  |
-|OTHER_ICI    |IPI_MONO            |1  |
-|STRIDE       |STRIDE              |37 |
-|TKI          |LENVATINIB          |3  |
-|TKI          |CABOZANTINIB        |1  |
-+-------------+--------------------+---+
-
-
-DATA AVAILABILITY BY COHORT:
-  A: deaths=164(58%) 2L=91(32%) AFP=260(92%) ALBI=270(96%) CP=282(100%) medFU=340d
-  C: deaths=104(59%) 2L=58(33%) AFP=167(94%) ALBI=171(97%) CP=177(100%) medFU=294d
-  D: deaths=76(56%) 2L=34(25%) AFP=127(93%) ALBI=130(96%) CP=136(100%) medFU=225d
-
-*** ECOG: NOT reliably available in structured REACH data ***
-*** CP: RECONSTRUCTED from labs+dx, NOT explicit clinical documentation ***
-
-================================================================================
-PART 4 — AB COMPONENT-MODIFICATION ATLAS
-================================================================================
-AB 1L patients: 144
-
-ATEZO admins in AB patients: 1,436 / 144 patients
-BEV admins in AB patients:   1,014 / 137 patients
-
-ATEZO INTER-DOSE INTERVAL DISTRIBUTION:
-  N intervals: 1292
-  Min: 17, Max: 1098, Mean: 24.4
-  Percentiles [5,10,25,50,75,90,95]: [20, 21, 21, 21, 21, 28, 35]
-
-BEV INTER-DOSE INTERVAL DISTRIBUTION:
-  N intervals: 877
-  Min: 5, Max: 1098, Mean: 26.7
-  Percentiles [5,10,25,50,75,90,95]: [20, 21, 21, 21, 21, 41, 49]
-
-EMPIRICALLY SELECTED THRESHOLDS:
-  Normal interval: ~21 days (q3w)
-  Hold definition: gap > 42 days (2x normal)
-  Extended hold: gap > 63 days (3x normal)
-
-AB COMPONENT MODIFICATION PHENOTYPES (PATIENTS):
-+----------------------------------+----------+
-|modification_phenotype            |n_patients|
-+----------------------------------+----------+
-|CONCORDANT_AB                     |91        |
-|FEWER_BEV_THAN_ATEZO              |22        |
-|PERMANENT_BEV_STOP_ATEZO_CONTINUED|22        |
-|NO_BEV_RECORDED                   |7         |
-|BEV_HOLD_ATEZO_CONTINUED          |2         |
-+----------------------------------+----------+
-
-
-PERMANENT BEV DISCONTINUATION WITH ATEZO CONTINUATION: 22 patients
-
-All patients with permanent Bev stop:
-+--------------+----------+----------+----------+-------+-----+-------------+
-|pat           |ab_start  |last_atezo|last_bev  |n_atezo|n_bev|bev_atezo_gap|
-+--------------+----------+----------+----------+-------+-----+-------------+
-|DEI01t6zg1124b|2022-02-10|2024-04-15|2023-05-06|35     |22   |345          |
-|DEI02i77sz87fa|2023-09-26|2025-03-31|2023-12-13|23     |4    |474          |
-|DEI03bjj7sz8jr|2023-12-29|2025-06-13|2025-03-01|16     |7    |104          |
-|DEI045t6zg5qax|2024-12-20|2025-09-26|2025-06-27|11     |6    |91           |
-|DEI04prt6zgris|2023-10-11|2024-04-03|2023-11-01|4      |2    |154          |
-|DEI05xp5zrapjw|2021-11-17|2022-09-28|2022-03-09|7      |6    |203          |
-|DEI07t6zg78970|2024-10-02|2026-08-23|2025-12-07|33     |20   |259          |
-|DEI0bt6zgbojsh|2021-05-14|2022-11-03|2022-06-02|21     |16   |154          |
-|DEI0d8g5zragxg|2021-05-29|2022-04-22|2021-09-11|12     |6    |223          |
-|DEI0fp71pt6zgp|2020-12-26|2026-05-23|2021-09-04|93     |12   |1722         |
-|DEI0h7sz8hy7wb|2021-07-13|2021-09-15|2021-07-13|4      |1    |64           |
-|DEI0jdh5zraho8|2023-02-08|2023-11-08|2023-07-26|14     |6    |105          |
-|DEI0jt6zgjtftr|2021-08-24|2024-04-09|2022-02-01|42     |4    |798          |
-|DEI0jvm55zra5q|2022-06-07|2023-06-25|2023-02-12|16     |9    |133          |
-|DEI0mp7sz8pos1|2022-08-08|2023-03-20|2022-08-08|11     |1    |224          |
-|DEI0oa17sz81fa|2024-06-07|2026-01-03|2025-09-27|25     |23   |98           |
-|DEI0rrgcs5zras|2024-01-03|2026-01-01|2024-03-14|33     |4    |658          |
-|DEI0s265zra6s4|2021-04-06|2022-02-28|2021-08-16|16     |6    |196          |
-|DEI0v1v7sz8vy9|2020-09-05|2022-08-27|2022-04-23|35     |26   |126          |
-|DEI0wq87sz889e|2022-02-19|2024-02-21|2022-12-07|34     |14   |441          |
-|DEI0x5zrax8k0t|2022-06-24|2023-06-10|2022-09-24|16     |5    |259          |
-|DEI0y0em5zramh|2024-10-04|2026-08-07|2025-03-22|29     |8    |503          |
-+--------------+----------+----------+----------+-------+-----+-------------+
-
-
-PERSISTED: hcc_ab_component_states_v1
-  N: 144 rows / 144 patients
-
-================================================================================
-PART 5 — REASONS FOR BEV MODIFICATION (STRUCTURED DATA)
-================================================================================
-AB patients with Bev modification: 46
-
-DECOMPENSATION EVENTS near Bev modification (−30 to +14 days):
-+-----------------+--------+----------+
-|decomp_type      |n_events|n_patients|
-+-----------------+--------+----------+
-|ASCITES_DX       |23      |4         |
-|PARACENTESIS     |16      |3         |
-|ENCEPHALOPATHY_DX|7       |3         |
-|VARICEAL_BLEED   |4       |1         |
-+-----------------+--------+----------+
-
-
-Hospitalized near Bev modification: 14 patients
-Any transaminitis (during AB): 13 patients
-
-*** NOTE: Full reason classification requires note review ***
-*** Available structured signals: decomp events, hospitalizations, transaminitis ***
-*** Candidate reasons not ascertainable from structured data alone: ***
-***   proteinuria, hypertension, wound/surgery, patient preference, trial protocol ***
-
-================================================================================
-PART 6 — AB SAFETY / PORTAL HYPERTENSION PHENOTYPE
-================================================================================
-All AB-treated patients (any line): 159
-
-BASELINE decompensation events before AB:
-+-----------------+----------+
-|decomp_type      |n_patients|
-+-----------------+----------+
-|ASCITES_DX       |74        |
-|ENCEPHALOPATHY_DX|9         |
-|PARACENTESIS     |4         |
-|VARICEAL_BLEED   |2         |
-+-----------------+----------+
-
-
-POST-AB decompensation events (within 1 year):
-+-----------------+----------+
-|decomp_type      |n_patients|
-+-----------------+----------+
-|ASCITES_DX       |67        |
-|PARACENTESIS     |26        |
-|ENCEPHALOPATHY_DX|18        |
-|VARICEAL_BLEED   |4         |
-|SBP              |2         |
-+-----------------+----------+
-
-
-GI/VARICEAL BLEEDING:
-  Baseline (before AB): 2 patients
-  Post-AB (1 year):     4 patients
-
-ALBI at AB start: 141 patients with baseline ALBI
-+-------------------+-------------------+-------------------+-------------------+
-|mean_albi          |median_albi        |min                |max                |
-+-------------------+-------------------+-------------------+-------------------+
-|-2.4612164327602186|-2.5314225109112245|-3.5263225390262014|-0.6689581837653773|
-+-------------------+-------------------+-------------------+-------------------+
-
-
-PERSISTED: hcc_ab_bleeding_risk_v1: 161 rows
-
-PARTS 3-6 COMPLETE
-================================================================================
-
-Parts 7-10 — AB vs STRIDE Selection, Dynamic ALBI/AFP, Tumor x Liver
-Parts 7-10 — AB vs STRIDE Selection, Dynamic ALBI/AFP, Tumor x Liver
-================================================================================
-PART 7 — AB vs STRIDE TREATMENT SELECTION
-================================================================================
-Modern RC HC true-1L: AB=58, STRIDE=37
-
-BASELINE CHARACTERISTICS:
-
-  AB (n=58):
-    Age: 66.6
-    Male: 41 (71%)
-    ALBI: -2.40 (avail: 55)
-    AFP median: 111.0 (avail: 55)
-    Baseline ascites: 28 (48%)
-    Baseline variceal bleed: 2
-    Deaths: 30 (52%)
-
-  STRIDE (n=37):
-    Age: 67.9
-    Male: 31 (84%)
-    ALBI: -2.13 (avail: 36)
-    AFP median: 324.4 (avail: 34)
-    Baseline ascites: 24 (65%)
-    Baseline variceal bleed: 5
-    Deaths: 19 (51%)
-
-*** CHANNELING ASSESSMENT: n too small for formal propensity model ***
-*** AB=58, STRIDE=37 — review arm balance descriptively ***
-
-================================================================================
-PART 8 — EARLY DYNAMIC LIVER-RESERVE (ALBI LANDMARK)
-================================================================================
-Liver labs schema:
-  pat: StringType()
-  lab_date: DateType()
-  component_base_name: StringType()
-  ord_num_value: DoubleType()
-Liver labs rows: 644,967
-Liver labs patients: 3,657
-
-Existing dynamic ALBI (hcc_dynamic_systemic_albi_v10):
-+-------+------+-------+-------+-------------------+-------------------+
-|n_lines|n_base|n_worst|n_delta|mean_base          |mean_delta         |
-+-------+------+-------+-------+-------------------+-------------------+
-|569    |532   |523    |493    |-2.4294485376776795|0.32740527414278203|
-+-------+------+-------+-------+-------------------+-------------------+
-
-ALBI grade increase distribution (1L):
-+------------------+---+
-|albi_change       |n  |
-+------------------+---+
-|WORSENED          |244|
-|STABLE_OR_IMPROVED|325|
-+------------------+---+
-
-
-PERSISTED: hcc_dynamic_albi_medonc_v1: 569 rows
-
-================================================================================
-PART 9 — DYNAMIC AFP PHENOTYPE
-================================================================================
-HC true-1L with baseline AFP: 237 / 282
-
-AFP DYNAMICS (HC true-1L, baseline>20):
-+--------------------------+---+
-|afp_response_w6           |n  |
-+--------------------------+---+
-|LOW_BASELINE_UNINFORMATIVE|86 |
-|MISSING_FU                |47 |
-|DECLINE_GE50              |41 |
-|INCREASE                  |39 |
-|DECLINE_20_50             |17 |
-|STABLE                    |7  |
-+--------------------------+---+
-
-Week-6 AFP available: 171
-Week-12 AFP available: 140
-PERSISTED: hcc_dynamic_afp_medonc_v1: 237 rows
-
-================================================================================
-PART 10 — TUMOR × LIVER DYNAMIC STATE
-================================================================================
-Patients with both AFP and ALBI dynamics: 103
-
-TUMOR × LIVER STATE (conservative definition):
-+-------------------------------------+---+----------+
-|tumor_liver_state                    |n  |n_regimens|
-+-------------------------------------+---+----------+
-|FAVORABLE_TUMOR_DETERIORATING_LIVER  |35 |7         |
-|UNFAVORABLE_TUMOR_DETERIORATING_LIVER|25 |5         |
-|FAVORABLE_TUMOR_PRESERVED_LIVER      |23 |7         |
-|UNFAVORABLE_TUMOR_PRESERVED_LIVER    |20 |7         |
-+-------------------------------------+---+----------+
-
-BY REGIMEN:
-+----------------------+-------------------------------------+---+
-|regimen               |tumor_liver_state                    |n  |
-+----------------------+-------------------------------------+---+
-|AB                    |FAVORABLE_TUMOR_DETERIORATING_LIVER  |17 |
-|AB                    |FAVORABLE_TUMOR_PRESERVED_LIVER      |9  |
-|AB                    |UNFAVORABLE_TUMOR_DETERIORATING_LIVER|13 |
-|AB                    |UNFAVORABLE_TUMOR_PRESERVED_LIVER    |8  |
-|ATEZO_MONO            |UNFAVORABLE_TUMOR_PRESERVED_LIVER    |1  |
-|CABOZANTINIB          |UNFAVORABLE_TUMOR_PRESERVED_LIVER    |1  |
-|CABOZANTINIB+NIVO_MONO|FAVORABLE_TUMOR_PRESERVED_LIVER      |2  |
-|DURVA_MONO            |FAVORABLE_TUMOR_DETERIORATING_LIVER  |1  |
-|LENVATINIB            |FAVORABLE_TUMOR_DETERIORATING_LIVER  |2  |
-|LENVATINIB            |FAVORABLE_TUMOR_PRESERVED_LIVER      |4  |
-|LENVATINIB+NIVO_MONO  |FAVORABLE_TUMOR_PRESERVED_LIVER      |1  |
-|LENVATINIB+PEMBRO_MONO|FAVORABLE_TUMOR_DETERIORATING_LIVER  |1  |
-|NIVO_IPI              |FAVORABLE_TUMOR_PRESERVED_LIVER      |1  |
-|NIVO_IPI              |UNFAVORABLE_TUMOR_DETERIORATING_LIVER|1  |
-|NIVO_IPI              |UNFAVORABLE_TUMOR_PRESERVED_LIVER    |1  |
-|NIVO_MONO             |FAVORABLE_TUMOR_DETERIORATING_LIVER  |7  |
-|NIVO_MONO             |UNFAVORABLE_TUMOR_DETERIORATING_LIVER|7  |
-|NIVO_MONO             |UNFAVORABLE_TUMOR_PRESERVED_LIVER    |4  |
-|PEMBRO_MONO           |FAVORABLE_TUMOR_DETERIORATING_LIVER  |3  |
-|PEMBRO_MONO           |UNFAVORABLE_TUMOR_DETERIORATING_LIVER|1  |
-|SORAFENIB             |FAVORABLE_TUMOR_PRESERVED_LIVER      |3  |
-|SORAFENIB             |UNFAVORABLE_TUMOR_PRESERVED_LIVER    |1  |
-|STRIDE                |FAVORABLE_TUMOR_DETERIORATING_LIVER  |4  |
-|STRIDE                |FAVORABLE_TUMOR_PRESERVED_LIVER      |3  |
-|STRIDE                |UNFAVORABLE_TUMOR_DETERIORATING_LIVER|3  |
-|STRIDE                |UNFAVORABLE_TUMOR_PRESERVED_LIVER    |4  |
-+----------------------+-------------------------------------+---+
-
-
-PARTS 7-10 COMPLETE
-================================================================================
-Parts 11-18 — Failure, 2L, Toxicity, Steroids, Decomp
-Parts 11-18 — Failure, 2L, Toxicity, Steroids, Decomp
-================================================================================
-PART 11 — 1L FAILURE/DISCONTINUATION PHENOTYPE
-================================================================================
-
-USING post_1l_states_v12_1 (HC true-1L):
-+-------------------------------------+---+------+
-|post_1l_state                        |n  |n_pats|
-+-------------------------------------+---+------+
-|DOCUMENTED_PROGRESSION_TO_2L         |91 |91    |
-|HOSPICE_OR_DEATH_WITHOUT_NEXT_THERAPY|71 |71    |
-|ADMINISTRATIVE_CENSOR                |52 |52    |
-|DOCUMENTED_PROGRESSION_NO_2L         |29 |29    |
-|LOCAL_CONSOLIDATION_OR_CONVERSION    |27 |27    |
-|HEPATIC_DYSFUNCTION_STOP             |12 |12    |
-+-------------------------------------+---+------+
-
-BY REGIMEN:
-+----------------------+-------------------------------------+---+
-|regimen               |post_1l_state                        |n  |
-+----------------------+-------------------------------------+---+
-|AB                    |DOCUMENTED_PROGRESSION_TO_2L         |31 |
-|AB                    |HOSPICE_OR_DEATH_WITHOUT_NEXT_THERAPY|27 |
-|AB                    |LOCAL_CONSOLIDATION_OR_CONVERSION    |13 |
-|AB                    |ADMINISTRATIVE_CENSOR                |10 |
-|AB                    |DOCUMENTED_PROGRESSION_NO_2L         |10 |
-|AB                    |HEPATIC_DYSFUNCTION_STOP             |5  |
-|ATEZO_MONO            |DOCUMENTED_PROGRESSION_TO_2L         |4  |
-|ATEZO_MONO            |HOSPICE_OR_DEATH_WITHOUT_NEXT_THERAPY|2  |
-|CABOZANTINIB          |DOCUMENTED_PROGRESSION_TO_2L         |1  |
-|CABOZANTINIB          |ADMINISTRATIVE_CENSOR                |1  |
-|CABOZANTINIB+NIVO_MONO|ADMINISTRATIVE_CENSOR                |3  |
-|CABOZANTINIB+NIVO_MONO|DOCUMENTED_PROGRESSION_TO_2L         |3  |
-|DURVA_MONO            |HOSPICE_OR_DEATH_WITHOUT_NEXT_THERAPY|4  |
-|DURVA_MONO            |ADMINISTRATIVE_CENSOR                |3  |
-|IPI_MONO              |ADMINISTRATIVE_CENSOR                |1  |
-|LENVATINIB            |DOCUMENTED_PROGRESSION_TO_2L         |13 |
-|LENVATINIB            |ADMINISTRATIVE_CENSOR                |3  |
-|LENVATINIB            |DOCUMENTED_PROGRESSION_NO_2L         |1  |
-|LENVATINIB            |HOSPICE_OR_DEATH_WITHOUT_NEXT_THERAPY|1  |
-|LENVATINIB+NIVO_MONO  |DOCUMENTED_PROGRESSION_TO_2L         |1  |
-|LENVATINIB+PEMBRO_MONO|LOCAL_CONSOLIDATION_OR_CONVERSION    |1  |
-|NIVO_IPI              |HOSPICE_OR_DEATH_WITHOUT_NEXT_THERAPY|5  |
-|NIVO_IPI              |DOCUMENTED_PROGRESSION_TO_2L         |5  |
-|NIVO_IPI              |ADMINISTRATIVE_CENSOR                |4  |
-|NIVO_IPI              |DOCUMENTED_PROGRESSION_NO_2L         |2  |
-|NIVO_IPI              |HEPATIC_DYSFUNCTION_STOP             |1  |
-|NIVO_MONO             |DOCUMENTED_PROGRESSION_TO_2L         |12 |
-|NIVO_MONO             |ADMINISTRATIVE_CENSOR                |8  |
-|NIVO_MONO             |DOCUMENTED_PROGRESSION_NO_2L         |8  |
-|NIVO_MONO             |HOSPICE_OR_DEATH_WITHOUT_NEXT_THERAPY|7  |
-|NIVO_MONO             |LOCAL_CONSOLIDATION_OR_CONVERSION    |6  |
-|NIVO_MONO             |HEPATIC_DYSFUNCTION_STOP             |2  |
-|PEMBRO_MONO           |HOSPICE_OR_DEATH_WITHOUT_NEXT_THERAPY|6  |
-|PEMBRO_MONO           |ADMINISTRATIVE_CENSOR                |5  |
-|PEMBRO_MONO           |DOCUMENTED_PROGRESSION_NO_2L         |2  |
-|PEMBRO_MONO           |DOCUMENTED_PROGRESSION_TO_2L         |1  |
-|SORAFENIB             |DOCUMENTED_PROGRESSION_TO_2L         |12 |
-|SORAFENIB             |DOCUMENTED_PROGRESSION_NO_2L         |4  |
-|SORAFENIB             |LOCAL_CONSOLIDATION_OR_CONVERSION    |2  |
-|SORAFENIB             |HEPATIC_DYSFUNCTION_STOP             |1  |
-|SORAFENIB             |HOSPICE_OR_DEATH_WITHOUT_NEXT_THERAPY|1  |
-|STRIDE                |HOSPICE_OR_DEATH_WITHOUT_NEXT_THERAPY|18 |
-|STRIDE                |ADMINISTRATIVE_CENSOR                |14 |
-|STRIDE                |DOCUMENTED_PROGRESSION_TO_2L         |8  |
-|STRIDE                |LOCAL_CONSOLIDATION_OR_CONVERSION    |5  |
-|STRIDE                |HEPATIC_DYSFUNCTION_STOP             |3  |
-|STRIDE                |DOCUMENTED_PROGRESSION_NO_2L         |2  |
-+----------------------+-------------------------------------+---+
-
-PERSISTED: hcc_1l_failure_modes_v1: 282 rows
-
-================================================================================
-PART 12 — SECOND-LINE OPPORTUNITY
-================================================================================
-2L OPPORTUNITY STATUS:
-+-------------------------------------+---+------+------+--------------+
-|post_1l_state                        |n  |deaths|got_2l|med_days_to_2l|
-+-------------------------------------+---+------+------+--------------+
-|DOCUMENTED_PROGRESSION_TO_2L         |91 |57    |91    |91            |
-|HOSPICE_OR_DEATH_WITHOUT_NEXT_THERAPY|71 |71    |0     |NULL          |
-|ADMINISTRATIVE_CENSOR                |52 |0     |0     |NULL          |
-|DOCUMENTED_PROGRESSION_NO_2L         |29 |29    |0     |NULL          |
-|LOCAL_CONSOLIDATION_OR_CONVERSION    |27 |4     |0     |NULL          |
-|HEPATIC_DYSFUNCTION_STOP             |12 |3     |0     |NULL          |
-+-------------------------------------+---+------+------+--------------+
-
-PERSISTED: hcc_2l_opportunity_v1: 282 rows
-
-================================================================================
-PART 13 — POST-ICI SECOND-LINE ATLAS
-================================================================================
-HC true-1L ICI patients: 242
-Reached 2L: 65
-Did not reach 2L: 177
-
-2L REGIMEN AFTER ICI 1L:
-+------------+---+------+
-|regimen_2l  |n  |n_pats|
-+------------+---+------+
-|LENVATINIB  |20 |20    |
-|NIVO_IPI    |19 |19    |
-|AB          |7  |7     |
-|CABOZANTINIB|6  |6     |
-|STRIDE      |5  |5     |
-|TREME_MONO  |2  |2     |
-|DURVA_MONO  |2  |2     |
-|REGORAFENIB |1  |1     |
-|PEMBRO_MONO |1  |1     |
-|IPI_MONO    |1  |1     |
-|ATEZO_MONO  |1  |1     |
-+------------+---+------+
-
-
-1L → 2L TRANSITIONS:
-+----------------------+------------+---+
-|regimen_1l            |regimen_2l  |n  |
-+----------------------+------------+---+
-|AB                    |NIVO_IPI    |16 |
-|AB                    |LENVATINIB  |8  |
-|NIVO_MONO             |AB          |6  |
-|STRIDE                |LENVATINIB  |5  |
-|AB                    |CABOZANTINIB|4  |
-|ATEZO_MONO            |STRIDE      |3  |
-|NIVO_IPI              |LENVATINIB  |3  |
-|CABOZANTINIB+NIVO_MONO|LENVATINIB  |2  |
-|STRIDE                |TREME_MONO  |2  |
-|NIVO_MONO             |LENVATINIB  |2  |
-|NIVO_IPI              |CABOZANTINIB|1  |
-|NIVO_MONO             |CABOZANTINIB|1  |
-|AB                    |STRIDE      |1  |
-|NIVO_MONO             |STRIDE      |1  |
-|NIVO_MONO             |NIVO_IPI    |1  |
-|ATEZO_MONO            |NIVO_IPI    |1  |
-|AB                    |PEMBRO_MONO |1  |
-|NIVO_IPI              |IPI_MONO    |1  |
-|NIVO_MONO             |REGORAFENIB |1  |
-|AB                    |DURVA_MONO  |1  |
-|STRIDE                |DURVA_MONO  |1  |
-|CABOZANTINIB+NIVO_MONO|AB          |1  |
-|LENVATINIB+NIVO_MONO  |NIVO_IPI    |1  |
-|PEMBRO_MONO           |ATEZO_MONO  |1  |
-+----------------------+------------+---+
-
-PERSISTED: hcc_post_ici_2l_atlas_v1: 65 rows
-
-================================================================================
-PART 14 — RAMUCIRUMAB / AFP ≥400 IMPLEMENTATION
-================================================================================
-Ramucirumab-treated patients: 6
-Ramucirumab by line:
-+----+-----+
-|line|count|
-+----+-----+
-|   1|    1|
-|   3|    3|
-|   4|    2|
-+----+-----+
-
-
-Patients entering ≥2L with AFP available: 142
-AFP ≥400 at 2L+ decision: 73
-AFP <400 at 2L+ decision: 69
-Ramucirumab use: 6 (likely TOO RARE for single-center study)
-
-================================================================================
-PART 15 — ICI TOXICITY / RECHALLENGE
-================================================================================
-
-TRANSAMINITIS (from hcc_transaminitis_v12_2):
-+-----------------+--------------------+---+------+
-|any_transaminitis|severe_transaminitis|n  |n_pats|
-+-----------------+--------------------+---+------+
-|0                |0                   |112|112   |
-|1                |0                   |39 |39    |
-|1                |1                   |77 |77    |
-+-----------------+--------------------+---+------+
-
-BY REGIMEN:
-+-----------+-----------------+--------------------+---+
-|regimen    |any_transaminitis|severe_transaminitis|n  |
-+-----------+-----------------+--------------------+---+
-|AB         |1                |1                   |27 |
-|AB         |1                |0                   |17 |
-|AB         |0                |0                   |52 |
-|DURVA_MONO |1                |1                   |4  |
-|DURVA_MONO |0                |0                   |3  |
-|IPI_MONO   |0                |0                   |1  |
-|NIVO_IPI   |1                |0                   |6  |
-|NIVO_IPI   |1                |1                   |4  |
-|NIVO_IPI   |0                |0                   |7  |
-|NIVO_MONO  |1                |0                   |8  |
-|NIVO_MONO  |1                |1                   |19 |
-|NIVO_MONO  |0                |0                   |16 |
-|PEMBRO_MONO|1                |0                   |2  |
-|PEMBRO_MONO|1                |1                   |4  |
-|PEMBRO_MONO|0                |0                   |8  |
-|STRIDE     |1                |1                   |19 |
-|STRIDE     |1                |0                   |6  |
-|STRIDE     |0                |0                   |25 |
-+-----------+-----------------+--------------------+---+
-
-
-ICI LIVER INJURY (from hcc_ici_liver_injury_v12):
-+--------------------------+---+------+
-|candidate_ici_liver_injury|n  |n_pats|
-+--------------------------+---+------+
-|NULL                      |581|482   |
-+--------------------------+---+------+
-
-By ALT>3x ULN:
-+-------------------+-----+
-|alt_3x_uln_post_ici|count|
-+-------------------+-----+
-|               NULL|  581|
-+-------------------+-----+
-
-
-ICI RECHALLENGE (ICI in 1L then ICI in 2L+): 79 patients
-Rechallenge patterns:
-+----------------------+-----------+---+
-|ici_1l                |ici_later  |n  |
-+----------------------+-----------+---+
-|AB                    |NIVO_IPI   |39 |
-|NIVO_MONO             |AB         |8  |
-|NIVO_MONO             |NIVO_IPI   |6  |
-|AB                    |STRIDE     |3  |
-|ATEZO_MONO            |STRIDE     |3  |
-|CABOZANTINIB+NIVO_MONO|NIVO_IPI   |2  |
-|NIVO_IPI              |IPI_MONO   |2  |
-|PEMBRO_MONO           |NIVO_IPI   |2  |
-|AB                    |DURVA_MONO |2  |
-|AB                    |AB         |2  |
-|STRIDE                |TREME_MONO |2  |
-|STRIDE                |AB         |2  |
-|NIVO_IPI              |NIVO_MONO  |2  |
-|NIVO_MONO             |STRIDE     |1  |
-|STRIDE                |NIVO_MONO  |1  |
-|NIVO_IPI              |DURVA_MONO |1  |
-|AB                    |ATEZO_MONO |1  |
-|ATEZO_MONO            |NIVO_IPI   |1  |
-|AB                    |IPI_MONO   |1  |
-|AB                    |PEMBRO_MONO|1  |
-+----------------------+-----------+---+
-only showing top 20 rows
-PERSISTED: hcc_ici_toxicity_rechallenge_v1: 228 rows
-
-================================================================================
-PART 16 — STEROID EXPOSURE
-================================================================================
-Systemic steroid orders: 0 / 0 patients
-
-Steroid distribution:
-+-------+--------+------+
-|steroid|n_orders|n_pats|
-+-------+--------+------+
-+-------+--------+------+
-
-*** Dexamethasone likely includes antiemetic premedication ***
-*** Cannot reliably distinguish dex premedication from therapeutic steroids ***
-
-================================================================================
-PART 17 — AUTOIMMUNE DISEASE
-================================================================================
-*** Autoimmune disease identification requires diagnosis table queries ***
-*** Using encounter_dx for ICI-treated patients ***
-ICI-treated patients with autoimmune dx: 25
-+----+------+----------------------------------------------------------------------------------------+
-|icd3|n_pats|example_dx                                                                              |
-+----+------+----------------------------------------------------------------------------------------+
-|K75 |6     |Autoimmune hepatitis                                                                    |
-|L40 |6     |Psoriasis                                                                               |
-|M06 |6     |Rheumatoid arthritis involving both hands, unspecified whether rheumatoid factor present|
-|K50 |3     |Crohn's disease of both small and large intestine with fistula                          |
-|M05 |2     |Seropositive rheumatoid arthritis                                                       |
-|M31 |2     |Leukocytoclastic vasculitis                                                             |
-|M33 |2     |Polymyositis                                                                            |
-|K51 |1     |UC (ulcerative colitis)                                                                 |
-+----+------+----------------------------------------------------------------------------------------+
-
-
-================================================================================
-PART 18 — DECOMPENSATION DURING SYSTEMIC THERAPY
-================================================================================
-INCIDENT DECOMPENSATION (not present at baseline, within 1yr):
-+-----------------+----------+
-|decomp_type      |n_patients|
-+-----------------+----------+
-|PARACENTESIS     |33        |
-|ASCITES_DX       |26        |
-|ENCEPHALOPATHY_DX|25        |
-|SBP              |4         |
-|VARICEAL_BLEED   |2         |
-|HEPATORENAL      |1         |
-+-----------------+----------+
-
-BY REGIMEN:
-+----------------------+-------+---------------------+
-|regimen               |n_total|n_any_incident_decomp|
-+----------------------+-------+---------------------+
-|AB                    |101    |28                   |
-|STRIDE                |61     |30                   |
-|NIVO_MONO             |45     |6                    |
-|SORAFENIB             |21     |3                    |
-|LENVATINIB            |20     |6                    |
-|NIVO_IPI              |18     |4                    |
-|PEMBRO_MONO           |14     |1                    |
-|ATEZO_MONO            |12     |10                   |
-|DURVA_MONO            |7      |1                    |
-|CABOZANTINIB+NIVO_MONO|6      |0                    |
-|CABOZANTINIB          |2      |0                    |
-|LENVATINIB+PEMBRO_MONO|1      |1                    |
-|IPI_MONO              |1      |0                    |
-|LENVATINIB+NIVO_MONO  |1      |1                    |
-+----------------------+-------+---------------------+
-
-PERSISTED: hcc_medonc_decompensation_v1: 322 rows
-
-PARTS 11-18 COMPLETE
-================================================================================
-Parts 19-23 — Era Evolution, Trials, Supportive, Disparities, Rare
-Parts 19-23 — Era Evolution, Trials, Supportive, Disparities, Rare
-================================================================================
-PART 19 — TREATMENT-ERA EVOLUTION
-================================================================================
-1L REGIMEN BY ERA:
-+----------------------+----------------------+---+
-|era                   |regimen               |n  |
-+----------------------+----------------------+---+
-|CONTEMPORARY_2023_PLUS|AB                    |82 |
-|CONTEMPORARY_2023_PLUS|STRIDE                |63 |
-|CONTEMPORARY_2023_PLUS|NIVO_IPI              |34 |
-|CONTEMPORARY_2023_PLUS|NIVO_MONO             |18 |
-|CONTEMPORARY_2023_PLUS|DURVA_MONO            |10 |
-|CONTEMPORARY_2023_PLUS|PEMBRO_MONO           |8  |
-|CONTEMPORARY_2023_PLUS|ATEZO_MONO            |6  |
-|CONTEMPORARY_2023_PLUS|LENVATINIB            |5  |
-|CONTEMPORARY_2023_PLUS|CABOZANTINIB          |3  |
-|CONTEMPORARY_2023_PLUS|RAMUCIRUMAB           |1  |
-|CONTEMPORARY_2023_PLUS|IPI_MONO              |1  |
-|CONTEMPORARY_2023_PLUS|BEV_MONO+NIVO_MONO    |1  |
-|CONTEMPORARY_2023_PLUS|SORAFENIB             |1  |
-|EARLY_COMBO_2020_21   |AB                    |20 |
-|EARLY_COMBO_2020_21   |NIVO_MONO             |12 |
-|EARLY_COMBO_2020_21   |NIVO_IPI              |10 |
-|EARLY_COMBO_2020_21   |LENVATINIB            |7  |
-|EARLY_COMBO_2020_21   |PEMBRO_MONO           |3  |
-|EARLY_COMBO_2020_21   |STRIDE                |3  |
-|EARLY_COMBO_2020_21   |SORAFENIB             |2  |
-|EARLY_COMBO_2020_21   |LENVATINIB+NIVO_MONO  |1  |
-|EARLY_COMBO_2020_21   |LENVATINIB+PEMBRO_MONO|1  |
-|MATURE_COMBO_2021_23  |AB                    |42 |
-|MATURE_COMBO_2021_23  |NIVO_MONO             |30 |
-|MATURE_COMBO_2021_23  |NIVO_IPI              |16 |
-|MATURE_COMBO_2021_23  |PEMBRO_MONO           |11 |
-|MATURE_COMBO_2021_23  |STRIDE                |9  |
-|MATURE_COMBO_2021_23  |LENVATINIB            |3  |
-|MATURE_COMBO_2021_23  |LENVATINIB+PEMBRO_MONO|3  |
-|MATURE_COMBO_2021_23  |DURVA_MONO            |2  |
-|MATURE_COMBO_2021_23  |LENVATINIB+NIVO_MONO  |1  |
-|MATURE_COMBO_2021_23  |IPI_MONO              |1  |
-|NIVO_MONO_2017_19     |SORAFENIB             |37 |
-|NIVO_MONO_2017_19     |LENVATINIB            |18 |
-|NIVO_MONO_2017_19     |NIVO_MONO             |13 |
-|NIVO_MONO_2017_19     |CABOZANTINIB+NIVO_MONO|7  |
-|NIVO_MONO_2017_19     |LENVATINIB+NIVO_MONO  |2  |
-|NIVO_MONO_2017_19     |DURVA_MONO            |2  |
-|NIVO_MONO_2017_19     |REGORAFENIB           |1  |
-|NIVO_MONO_2017_19     |STRIDE                |1  |
-|NIVO_MONO_2017_19     |NIVO_IPI              |1  |
-|PRE_NIVO_2017         |SORAFENIB             |22 |
-|PRE_NIVO_2017         |NIVO_MONO             |1  |
-|TRANSITION_2019_20    |LENVATINIB            |35 |
-|TRANSITION_2019_20    |NIVO_MONO             |11 |
-|TRANSITION_2019_20    |STRIDE                |4  |
-|TRANSITION_2019_20    |DURVA_MONO            |2  |
-|TRANSITION_2019_20    |CABOZANTINIB          |1  |
-|TRANSITION_2019_20    |CABOZANTINIB+NIVO_MONO|1  |
-+----------------------+----------------------+---+
-
-ERA SIZES:
-+----------------------+-------+------+----------+----------+
-|era                   |n_lines|n_pats|earliest  |latest    |
-+----------------------+-------+------+----------+----------+
-|CONTEMPORARY_2023_PLUS|233    |233   |2023-01-03|2026-07-08|
-|EARLY_COMBO_2020_21   |59     |59    |2020-06-05|2021-05-29|
-|MATURE_COMBO_2021_23  |118    |118   |2021-06-03|2022-12-26|
-|NIVO_MONO_2017_19     |82     |82    |2017-04-25|2019-06-16|
-|PRE_NIVO_2017         |23     |23    |2015-08-01|2017-03-20|
-|TRANSITION_2019_20    |54     |54    |2019-07-03|2020-04-27|
-+----------------------+-------+------+----------+----------+
-
-
-MODERN ERA REGIMEN SHARE (2021+):
-+----------------------+---+----+
-|regimen               |n  |pct |
-+----------------------+---+----+
-|AB                    |124|35.3|
-|STRIDE                |72 |20.5|
-|NIVO_IPI              |50 |14.2|
-|NIVO_MONO             |48 |13.7|
-|PEMBRO_MONO           |19 |5.4 |
-|DURVA_MONO            |12 |3.4 |
-|LENVATINIB            |8  |2.3 |
-|ATEZO_MONO            |6  |1.7 |
-|LENVATINIB+PEMBRO_MONO|3  |0.9 |
-|CABOZANTINIB          |3  |0.9 |
-|IPI_MONO              |2  |0.6 |
-|RAMUCIRUMAB           |1  |0.3 |
-|SORAFENIB             |1  |0.3 |
-|LENVATINIB+NIVO_MONO  |1  |0.3 |
-|BEV_MONO+NIVO_MONO    |1  |0.3 |
-+----------------------+---+----+
-
-
-================================================================================
-PART 20 — CLINICAL TRIAL PARTICIPATION
-================================================================================
-RESEARCH STATUS (HC true-1L):
-+-----------------------------+---+------+
-|research_status_final        |n  |n_pats|
-+-----------------------------+---+------+
-|ROUTINE_CARE                 |177|177   |
-|UNCERTAIN                    |64 |64    |
-|DEFINITE_INTERVENTIONAL_TRIAL|40 |40    |
-|PROBABLE_INTERVENTIONAL_TRIAL|1  |1     |
-+-----------------------------+---+------+
-
-BY REGIMEN:
-+----------------------+-----------------------------+---+
-|regimen               |research_status_final        |n  |
-+----------------------+-----------------------------+---+
-|AB                    |ROUTINE_CARE                 |71 |
-|AB                    |UNCERTAIN                    |24 |
-|AB                    |DEFINITE_INTERVENTIONAL_TRIAL|1  |
-|ATEZO_MONO            |ROUTINE_CARE                 |6  |
-|CABOZANTINIB          |ROUTINE_CARE                 |1  |
-|CABOZANTINIB          |UNCERTAIN                    |1  |
-|CABOZANTINIB+NIVO_MONO|DEFINITE_INTERVENTIONAL_TRIAL|6  |
-|DURVA_MONO            |ROUTINE_CARE                 |5  |
-|DURVA_MONO            |UNCERTAIN                    |1  |
-|DURVA_MONO            |DEFINITE_INTERVENTIONAL_TRIAL|1  |
-|IPI_MONO              |ROUTINE_CARE                 |1  |
-|LENVATINIB            |ROUTINE_CARE                 |11 |
-|LENVATINIB            |UNCERTAIN                    |7  |
-|LENVATINIB+NIVO_MONO  |ROUTINE_CARE                 |1  |
-|LENVATINIB+PEMBRO_MONO|ROUTINE_CARE                 |1  |
-|NIVO_IPI              |ROUTINE_CARE                 |8  |
-|NIVO_IPI              |UNCERTAIN                    |5  |
-|NIVO_IPI              |DEFINITE_INTERVENTIONAL_TRIAL|4  |
-|NIVO_MONO             |DEFINITE_INTERVENTIONAL_TRIAL|18 |
-|NIVO_MONO             |ROUTINE_CARE                 |14 |
-|NIVO_MONO             |UNCERTAIN                    |11 |
-|PEMBRO_MONO           |ROUTINE_CARE                 |9  |
-|PEMBRO_MONO           |UNCERTAIN                    |3  |
-|PEMBRO_MONO           |PROBABLE_INTERVENTIONAL_TRIAL|1  |
-|PEMBRO_MONO           |DEFINITE_INTERVENTIONAL_TRIAL|1  |
-|SORAFENIB             |ROUTINE_CARE                 |12 |
-|SORAFENIB             |UNCERTAIN                    |8  |
-|STRIDE                |ROUTINE_CARE                 |37 |
-|STRIDE                |DEFINITE_INTERVENTIONAL_TRIAL|9  |
-|STRIDE                |UNCERTAIN                    |4  |
-+----------------------+-----------------------------+---+
-
-
-TRIAL FLAGS:
-+----------+--------------+-------------+--------------+
-|note_trial|beacon_overlap|protocol_flag|suspected_flag|
-+----------+--------------+-------------+--------------+
-|104       |41            |41           |105           |
-+----------+--------------+-------------+--------------+
-
-
-================================================================================
-PART 21 — SUPPORTIVE/PALLIATIVE CARE
-================================================================================
-JOURNEY EVENT TYPES:
-+------------------------+----+------+
-|event_type              |n   |n_pats|
-+------------------------+----+------+
-|HCC_DIAGNOSIS           |3999|3999  |
-|TACE                    |2549|1052  |
-|DEATH                   |1633|1633  |
-|SYSTEMIC_LINE_START     |806 |571   |
-|SYSTEMIC_LINE_STOP      |797 |571   |
-|ABLATION                |694 |442   |
-|RESECTION               |358 |340   |
-|TRANSPLANT              |311 |256   |
-|TRUE_INPATIENT_ADMISSION|309 |207   |
-|SBRT_COURSE             |198 |164   |
-|Y90                     |189 |149   |
-+------------------------+----+------+
-
-
-Hospitalizations for systemic patients: 4,054 / 512 patients
-
-HC true-1L with hospice date: 124
-Hospice/death without next therapy: 71
-
-================================================================================
-PART 22 — TREATMENT ACCESS / DISPARITIES
-================================================================================
-SYSTEMIC PATIENTS BY RACE/ETHNICITY:
-+--------------+---+
-|race_ethnicity|n  |
-+--------------+---+
-|Hispanic      |471|
-|White         |69 |
-|Black         |18 |
-|Other         |6  |
-|NotDisclose   |2  |
-|Vietnamese    |2  |
-|Filipino      |1  |
-|Chinese       |1  |
-|Korean        |1  |
-+--------------+---+
-
-SYSTEMIC PATIENTS BY SEX:
-+------+-----+
-|   sex|count|
-+------+-----+
-|Female|  141|
-|  Male|  430|
-+------+-----+
-
-
-HC TRUE-1L BY RACE/ETHNICITY AND REGIMEN:
-+--------------+---+--------+--------+
-|race_ethnicity|n  |combo_io|tki_mono|
-+--------------+---+--------+--------+
-|Hispanic      |249|140     |37      |
-|White         |20 |12      |1       |
-|Black         |8  |7       |0       |
-|Other         |3  |3       |0       |
-|Filipino      |1  |1       |0       |
-|NotDisclose   |1  |0       |0       |
-+--------------+---+--------+--------+
-
-
-================================================================================
-PART 23 — RARE / HIGH-VALUE PHENOTYPES
-================================================================================
-Systemic patients with liver transplant: 12
-Conversion surgery after systemic: 73 patients
-LRT after systemic: 154 patients
-
->2yr on first-line: 8 patients
-+--------+-----+
-|regimen |count|
-+--------+-----+
-|AB      |5    |
-|STRIDE  |2    |
-|NIVO_IPI|1    |
-+--------+-----+
-
-Rapid progressors (<90d 1L then 2L): 93 patients
-
-Child-Pugh B at any systemic start: 0 patients
-
-PARTS 19-23 COMPLETE
-================================================================================
-Parts 24-30 — Feasibility Matrix, REACH Advantages, Validity, Final Report
-Parts 24-30 — Feasibility Matrix, REACH Advantages, Validity, Final Report
-================================================================================
-PART 24 — PROJECT FEASIBILITY MATRIX
-================================================================================
-
-TOTAL PROJECT FAMILIES EVALUATED: 26
-
-------------------------------------------------------------------------------------------------------------------------
-PROJECT FAMILY                             DESIGN               N            EVENTS          LIMITATION                         
-------------------------------------------------------------------------------------------------------------------------
-AB bev-modification phenotype              Descriptive cohort   144          22              N small for multivariable          
-AB bev-modification outcomes               Comparative          22 vs 91     22 events       N too small for adjusted analysis  
-AB vs STRIDE selection                     Comparative          58 vs 37     49 deaths       N marginal for adjusted comparison 
-AB vs STRIDE outcomes                      Comparative          58 vs 37     49 deaths       Confounding by indication          
-Dynamic ALBI on 1L therapy                 Prognostic           532          493 deltas      Good power                         
-Dynamic AFP on 1L therapy                  Prognostic           151          104 w/FU        Baseline>20 filter reduces n       
-Tumor x Liver dynamic state                Prognostic           103          103             N modest but informative           
-1L failure modes                           Descriptive          282          282             Good power                         
-Post-1L second-line patterns               Descriptive          91           91              Good power                         
-Post-ICI 2L atlas                          Descriptive          65           65              Modest n                           
-Ramucirumab/AFP>=400                       Descriptive          142          73              Ramu n=6 TOO RARE                  
-ICI transaminitis                          Descriptive          228          116             Good power                         
-ICI rechallenge                            Descriptive          79           79              Modest n; outcomes need FU         
-Steroid exposure                           Descriptive          571          0               NO STEROID ORDERS FOUND: data gap  
-Autoimmune disease + ICI                   Descriptive          ~400+        25              N small for outcomes               
-Incident decompensation on 1L              Prognostic           282          ~75 incident    Good power                         
-Treatment era evolution                    Descriptive          569          569             Excellent power                    
-Clinical trial participation               Descriptive          282          41              Good data quality                  
-Conversion surgery after systemic          Descriptive          571          73              Good power                         
-LRT after systemic                         Descriptive          571          154             Excellent power                    
-Portal HTN/bleeding on AB                  Safety               159          4 post-AB vari  Variceal bleed n=4 TOO RARE        
-Rapid progressors                          Descriptive          93           93              Good power                         
-Health disparities                         Descriptive          571          571             83% Hispanic: UNIQUE cohort        
-Long responders >2yr                       Descriptive          8            8               N=8 TOO SMALL alone                
-Transplant after systemic                  Descriptive          12           12              N=12 case series                   
-Hospice/palliative transition              Descriptive          282          124             Good power                         
-------------------------------------------------------------------------------------------------------------------------
-
-
-FEASIBILITY TIERS:
-
-  TIER 1 — HIGHLY FEASIBLE (n>100, good events, clear endpoint):
-    ✓ Dynamic ALBI on 1L therapy
-    ✓ 1L failure modes
-    ✓ Treatment era evolution
-    ✓ ICI transaminitis
-    ✓ Incident decompensation on 1L
-    ✓ LRT after systemic
-    ✓ Post-1L second-line patterns
-    ✓ Clinical trial participation
-    ✓ Health disparities
-    ✓ Hospice/palliative transition
-
-  TIER 2 — FEASIBLE WITH CAVEATS (n=50-100, or modest events):
-    ~ AB bev-modification phenotype
-    ~ AB vs STRIDE selection
-    ~ Dynamic AFP on 1L therapy
-    ~ Tumor x Liver dynamic state
-    ~ Post-ICI 2L atlas
-    ~ ICI rechallenge
-    ~ Conversion surgery after systemic
-    ~ Rapid progressors
-
-  TIER 3 — UNDERPOWERED / DATA GAP:
-    ✗ AB bev-modification outcomes (n=22)
-    ✗ AB vs STRIDE outcomes (n=58v37)
-    ✗ Ramucirumab (n=6)
-    ✗ Steroid exposure (NO DATA)
-    ✗ Autoimmune + ICI (n=25)
-    ✗ Portal HTN/bleeding (variceal n=4)
-    ✗ Long responders (n=8)
-    ✗ Transplant after systemic (n=12)
-
-================================================================================
-PART 25 — REQUIRED CANDIDATE PROJECT FAMILIES
-================================================================================
-
-HIGHEST-PRIORITY PROJECT FAMILIES (data-supported, clinically important):
-
-1. FIRST-LINE TREATMENT SELECTION & OUTCOMES IN THE ICI ERA
-   Core question: How are patients selected for AB vs STRIDE vs other ICI at JHU?
-   Cohort: 136 modern RC HC true-1L (58 AB, 37 STRIDE, 31 other)
-   Unique: Largest single-center AB vs STRIDE descriptive comparison
-   Endpoints: treatment selection predictors, OS, PFS, toxicity
-   Power: DESCRIPTIVE yes, COMPARATIVE marginal
-
-2. ATEZO/BEV COMPONENT MODIFICATION IN REAL WORLD
-   Core question: When/why is bevacizumab discontinued while atezolizumab continues?
-   Cohort: 144 AB patients; 22 permanent bev stop, 22 fewer bev
-   Unique: Admin-level IV component resolution (REACH has MAR data)
-   Endpoints: modification rate, timing, structured reasons, outcomes
-   Power: DESCRIPTIVE excellent, OUTCOMES modest
-
-3. DYNAMIC LIVER-RESERVE (ALBI) TRAJECTORY ON FIRST-LINE ICI
-   Core question: How does ALBI change during 1L therapy, and does early change predict outcomes?
-   Cohort: 532 with baseline ALBI, 493 with delta
-   Unique: Large cohort with pre/on-treatment ALBI dynamics
-   Endpoints: ALBI grade worsening, ALBI delta as prognostic biomarker
-   Power: EXCELLENT
-
-4. EARLY AFP DYNAMICS AS TREATMENT RESPONSE BIOMARKER
-   Core question: Does early AFP change predict outcomes in HCC ICI era?
-   Cohort: 237 with baseline AFP, 171 with week-6 AFP
-   Unique: Real-world AFP dynamics across multiple regimens
-   Endpoints: AFP response rate, AFP as outcome predictor
-   Power: GOOD
-
-5. TUMOR-BIOLOGY x LIVER-RESERVE INTERACTION
-   Core question: Do AFP and ALBI dynamics jointly predict outcomes?
-   Cohort: 103 with both AFP and ALBI dynamics
-   Unique: Novel combined phenotype classification
-   Endpoints: 4-quadrant state distribution, OS by combined state
-   Power: MODEST but sufficient for descriptive
-
-6. FIRST-LINE FAILURE MODES & POST-1L OUTCOMES
-   Core question: What happens after 1L stops? Who gets 2L? Who goes to hospice?
-   Cohort: 282 HC true-1L
-   Unique: Granular failure mode classification
-   Endpoints: failure mode distribution, 2L uptake, time-to-2L
-   Power: EXCELLENT
-
-7. POST-ICI SECOND-LINE TREATMENT PATTERNS
-   Core question: What 2L is given after ICI 1L, and do patterns differ by 1L regimen?
-   Cohort: 65 reaching 2L from ICI 1L (242 total ICI 1L)
-   Unique: Real-world 2L after ICI with administration-level data
-   Endpoints: 2L regimen distribution, 1L->2L transitions
-   Power: DESCRIPTIVE yes, OUTCOMES limited
-
-8. ICI-ASSOCIATED HEPATOTOXICITY AND RECHALLENGE
-   Core question: How often does transaminitis occur? Who gets rechallenged with ICI?
-   Cohort: 228 transaminitis-evaluable, 79 ICI rechallenged
-   Unique: Structured liver injury + rechallenge patterns
-   Endpoints: transaminitis rate by regimen, rechallenge outcomes
-   Power: GOOD for descriptive, MODEST for rechallenge outcomes
-
-9. INCIDENT DECOMPENSATION DURING SYSTEMIC THERAPY
-   Core question: How often do patients develop NEW decomp on therapy?
-   Cohort: 282 HC true-1L, ~75 incident decomp events
-   Unique: Incident (not prevalent) decomp classification
-   Endpoints: incident decomp rate by regimen, decomp type distribution
-   Power: GOOD
-
-10. TREATMENT ERA EVOLUTION AT A HIGH-VOLUME CENTER
-    Core question: How have HCC treatment patterns changed 2015-2026?
-    Cohort: 569 first-line patients spanning 6 eras
-    Unique: 11-year longitudinal view with consistent data infrastructure
-    Endpoints: regimen share by era, uptake curves
-    Power: EXCELLENT
-
-11. HCC HEALTH DISPARITIES: A PREDOMINANTLY HISPANIC COHORT
-    Core question: How do treatment patterns/outcomes differ by race/ethnicity?
-    Cohort: 571 systemic (83% Hispanic, unique nationally)
-    Unique: EXTREMELY RARE large Hispanic-majority HCC cohort
-    Endpoints: regimen selection by race, OS by race/ethnicity
-    Power: EXCELLENT (for Hispanic group); minority groups small
-
-12. CONVERSION SURGERY & LRT AFTER SYSTEMIC THERAPY
-    Core question: Who undergoes surgery/LRT after systemic, and what are outcomes?
-    Cohort: 73 conversion surgery, 154 LRT after systemic
-    Unique: Large conversion surgery cohort from single center
-    Endpoints: conversion rate, procedure types, post-procedure outcomes
-    Power: EXCELLENT
-
-================================================================================
-PART 26 — WHAT REACH IS UNIQUELY GOOD AT
-================================================================================
-
-REACH UNIQUE ADVANTAGES FOR HCC MED-ONC RESEARCH:
-
-1. ADMINISTRATION-LEVEL IV DATA (MAR)
-   - Actual dates of each atezolizumab, bevacizumab, nivolumab, etc. infusion
-   - Enables component modification analysis (Bev hold/stop)
-   - NOT available in claims data, tumor registries, or most EHR studies
-
-2. PREDOMINANTLY HISPANIC COHORT (83%)
-   - Nationally unique ethnic composition for HCC
-   - Enables disparities research in an underrepresented population
-   - Most published HCC series are <10% Hispanic
-
-3. LONG LONGITUDINAL SPAN (2015-2026)
-   - Pre-ICI, single-agent ICI, combo ICI eras all represented
-   - 569 first-line patients spanning entire modern treatment evolution
-
-4. GRANULAR TREATMENT LINE VALIDATION
-   - True first-line classification with high-confidence flags
-   - Research status (routine care vs. trial) per patient
-   - Post-1L state classification (progression, hospice, censor, etc.)
-
-5. RECONSTRUCTED LIVER RESERVE (ALBI + Child-Pugh)
-   - 532 patients with dynamic ALBI (baseline + on-treatment)
-   - Lab-level longitudinal data for ALBI trajectory analysis
-
-6. RICH TUMOR BIOLOGY (AFP)
-   - 2,495 patients with AFP measurements, 237 HC true-1L with baseline AFP
-   - Week-6 and week-12 landmark AFP dynamics available
-
-7. DECOMPENSATION PHENOTYPING
-   - 26,207 validated events across 1,768 patients
-   - Incident vs prevalent decomp classification possible
-   - Ascites, paracentesis, encephalopathy, variceal bleed, SBP, hepatorenal
-
-8. COMPLETE JOURNEY MAP
-   - 11,843 journey events across 3,999 patients
-   - TACE, ablation, resection, transplant, SBRT, Y90, systemic, death
-   - Enables multimodal treatment sequencing analysis
-
-9. BEACON INTEGRATION
-   - Protocol-level treatment plan data for ICI regimens
-   - Validates regimen classification and identifies research protocols
-
-KEY LIMITATIONS:
-  - ECOG performance status NOT reliably captured
-  - Child-Pugh is RECONSTRUCTED, not clinician-documented
-  - Oral TKI adherence/actual exposure UNCERTAIN (orders only, no MAR)
-  - Imaging response (RECIST/mRECIST) NOT available in structured data
-  - Single-center (generalizability vs. depth tradeoff)
-  - Steroid exposure DATA GAP (0 orders found — likely data quality issue)
-
-================================================================================
-PART 27 — PHENOTYPE VALIDITY CHECKLIST
-================================================================================
-
-PHENOTYPE                      VALIDITY           NOTES
-----------------------------------------------------------------------------------------------------
-HCC diagnosis                  HIGH               Multi-source: dx codes + tumor board + Beacon
-Systemic exposure (IV)         HIGH               MAR-confirmed administration dates
-Systemic exposure (oral TKI)   MODERATE           Orders only; no MAR confirmation
-Regimen classification         HIGH               Beacon-validated + multi-source
-Treatment line                 HIGH               Validated with HC/probable/uncertain tiers
-Research status                HIGH               Multi-signal: notes, Beacon, protocol flags
-ALBI score                     HIGH               Computed from albumin + bilirubin labs
-Child-Pugh                     MODERATE           RECONSTRUCTED from labs+dx; NOT explicit
-AFP                            HIGH               Direct lab measurement
-Decompensation                 MODERATE-HIGH      Validated from dx codes; some ascites may be imaging-only
-Transaminitis                  HIGH               Lab-based; severity grading from values
-ICI liver injury               LOW                All NULL in current data — needs investigation
-Death                          HIGH               1,690/3,999 deceased with canonical death dates
-Hospitalization                HIGH               24,661 admissions from encounter data
-Surgery/transplant             HIGH               1,503 procedures from CPT/procedure data
-LRT procedures                 HIGH               7,027 validated procedures
-Steroid exposure               FAILED             0 orders found — data extraction issue
-ECOG                           NOT AVAILABLE      Not reliably captured in structured REACH
-Imaging response               NOT AVAILABLE      RECIST/mRECIST not in structured data
-
-================================================================================
-PARTS 28-29 — INTERNAL CONSISTENCY ASSERTIONS
-================================================================================
-✓ Assert 1: All 282 HC true-1L patients are in validated systemic
-✓ Assert 2: Canonical lines count = 806 (expected 806)
-✓ Assert 3: Master roster = 3999 (expected 3999)
-✓ Assert 4: Drug exposure table = 6485 rows
-✓ Assert 5.1: hcc_ab_component_states_v1 = 144 rows
-✓ Assert 5.2: hcc_ab_bleeding_risk_v1 = 161 rows
-✓ Assert 5.3: hcc_dynamic_albi_medonc_v1 = 569 rows
-✓ Assert 5.4: hcc_dynamic_afp_medonc_v1 = 237 rows
-✓ Assert 5.5: hcc_1l_failure_modes_v1 = 282 rows
-✓ Assert 5.6: hcc_2l_opportunity_v1 = 282 rows
-✓ Assert 5.7: hcc_post_ici_2l_atlas_v1 = 65 rows
-✓ Assert 5.8: hcc_ici_toxicity_rechallenge_v1 = 228 rows
-✓ Assert 5.9: hcc_medonc_decompensation_v1 = 322 rows
-✓ Assert 5.10: hcc_systemic_drug_exposure_medonc_atlas_v1 = 6,485 rows
-
-✓✓✓ ALL ASSERTIONS PASSED ✓✓✓
-
-================================================================================
-PART 30 — FINAL HCC MED-ONC OPPORTUNITY ATLAS REPORT
-================================================================================
-
-════════════════════════════════════════════════════════════════════════════════
-    HCC MEDICAL-ONCOLOGY DATA OPPORTUNITY ATLAS v1
-    Johns Hopkins REACH — October 2026
-════════════════════════════════════════════════════════════════════════════════
-
-DATA FOUNDATION:
-  - 3,999 HCC patients (2,544 high-confidence)
-  - 571 validated systemic patients, 806 treatment lines
-  - 282 HC true first-line, 177 routine care
-  - 136 modern era (post-June 2021) HC routine care
-  - 6,485 drug-component exposure records (IV MAR + oral orders)
-  - 26,207 decompensation events, 24,661 hospitalizations
-  - 20,441 AFP measurements, 644,967 liver lab values
-  - 7,027 LRT procedures, 1,503 surgery/transplant events
-
-TOP 12 PROJECT FAMILIES BY FEASIBILITY AND IMPACT:
-
-  ★ 1. DYNAMIC ALBI TRAJECTORY ON 1L ICI (n=532)
-     Strongest statistical power; novel biomarker question
-
-  ★ 2. TREATMENT ERA EVOLUTION 2015-2026 (n=569)
-     Comprehensive; low-risk descriptive; high publication value
-
-  ★ 3. HEALTH DISPARITIES: HISPANIC-MAJORITY HCC (n=571)
-     NATIONALLY UNIQUE 83% Hispanic cohort; high impact
-
-  ★ 4. 1L FAILURE MODES & POST-1L OPPORTUNITY (n=282)
-     Complete outcome classification; strong clinical relevance
-
-  ★ 5. AB COMPONENT MODIFICATION (n=144, 22 bev-stop)
-     Leverages REACH’s unique MAR data; clinically novel
-
-  ★ 6. EARLY AFP DYNAMICS AS RESPONSE BIOMARKER (n=151-237)
-     Timely question; real-world AFP dynamics understudied
-
-  ★ 7. CONVERSION SURGERY/LRT AFTER SYSTEMIC (n=73 surg, 154 LRT)
-     Large for single center; multimodal sequencing
-
-  ★ 8. ICI HEPATOTOXICITY + RECHALLENGE (n=228 tox, 79 rechallenge)
-     Clinically important safety question
-
-  ★ 9. INCIDENT DECOMPENSATION ON SYSTEMIC (n=282, ~75 events)
-     Novel incident vs prevalent decomp classification
-
-  ★ 10. AB vs STRIDE TREATMENT SELECTION (n=58 vs 37)
-      Clinically topical; descriptive power adequate
-
-  ★ 11. POST-ICI SECOND-LINE PATTERNS (n=65 reaching 2L)
-      Real-world 2L data after ICI; high clinical relevance
-
-  ★ 12. HOSPICE/END-OF-LIFE TRANSITION (n=282, 124 hospice)
-      Understudied in HCC; strong n
-
-ADDITIONAL CANDIDATES (smaller n, possible as secondary analyses):
-  - Tumor x Liver combined phenotype (n=103)
-  - Clinical trial participation characterization (n=282)
-  - Rapid progressors (<90d, n=93)
-  - ICI in autoimmune disease (n=25)
-
-UNDERPOWERED / NOT CURRENTLY FEASIBLE:
-  - Ramucirumab (n=6)
-  - Steroid exposure (data gap)
-  - Portal HTN/variceal bleed (n=4 events)
-  - Long responders (n=8)
-  - Transplant after systemic (n=12; case series only)
-
-KEY DATA GAPS TO RESOLVE BEFORE PROJECT SELECTION:
-  1. Steroid orders = 0 — likely data extraction issue in _v9_src_mo
-  2. ICI liver injury table all NULL — needs investigation  
-  3. ECOG not available — limits comparability with trials
-  4. Imaging response (RECIST) not structured — manual review needed
-  5. Oral TKI adherence uncertain — orders only, no MAR
-
-PERSISTED ATLAS TABLES (10 tables in reach_users.xzhao81):
-  - hcc_systemic_drug_exposure_medonc_atlas_v1   (6,485 rows)
-  - hcc_ab_component_states_v1                   (144 rows)
-  - hcc_ab_bleeding_risk_v1                      (161 rows)
-  - hcc_dynamic_albi_medonc_v1                   (569 rows)
-  - hcc_dynamic_afp_medonc_v1                    (237 rows)
-  - hcc_1l_failure_modes_v1                      (282 rows)
-  - hcc_2l_opportunity_v1                        (282 rows)
-  - hcc_post_ici_2l_atlas_v1                     (65 rows)
-  - hcc_ici_toxicity_rechallenge_v1              (228 rows)
-  - hcc_medonc_decompensation_v1                 (322 rows)
-
-ENTIRE ATLAS COMPLETED: 30/30 PARTS EXECUTED
-
-================================================================================
-HCC MEDONC OPPORTUNITY ATLAS v1 — COMPLETE
-================================================================================
+Follow every mandatory requirement in `skills.md`.
+
+This is NOT another broad opportunity atlas.
+
+This is a FINAL PROJECT-LOCKDOWN ANALYSIS for three specific medical-oncology HCC projects that the investigators are considering discussing with Mari Nakazawa and Mark Yarchoan.
+
+The purpose is to answer:
+
+1. Is each project actually feasible in REACH?
+2. What is the exact usable cohort?
+3. Are the key phenotypes valid?
+4. How many meaningful outcome events exist?
+5. What manual review would be required?
+6. Which assumptions remain unresolved?
+
+DO NOT rank projects.
+DO NOT estimate causal treatment effects.
+DO NOT perform survival modeling yet.
+DO NOT reuse stale summary counts without regenerating them from current canonical patient IDs.
+DO NOT silently use older v9/v10/v12/v12.1 phenotypes when this prompt asks you to rebuild them.
+
+The three candidate projects are:
+
+PROJECT A:
+EARLY TUMOR-BIOLOGY × HEPATIC-RESERVE DYNAMICS AND PRESERVATION OF SUBSEQUENT THERAPEUTIC OPPORTUNITY
+
+PROJECT B:
+REAL-WORLD CLINICAL DETERMINANTS OF ATEZOLIZUMAB/BEVACIZUMAB VS STRIDE SELECTION
+
+PROJECT C:
+CAUSE-SPECIFIC FIRST-LINE ICI DISCONTINUATION AND SUBSEQUENT TREATMENT ACCESS
+
+The key principle:
+
+**Generate the cohort first. Validate the phenotype second. Only then print feasibility.**
+
+# ============================================================
+# PART 0 — CANONICAL SOURCE DECLARATION
+# ============================================================
+
+Use these tables as the starting source hierarchy.
+
+### MASTER / HCC
+`reach_users.xzhao81.hcc_master_patient_roster_v12_1`
+
+Relevant columns:
+- pat
+- broad_hcc
+- high_confidence_hcc
+- first_hcc_date
+- canonical_death_date
+- last_contact
+- systemic_raw_signal
+- systemic_validated
+- true_1l_hc
+- decompensation_flag
+
+IMPORTANT:
+The master roster systemic_validated count is known to differ slightly from the canonical systemic table.
+
+Therefore:
+
+DO NOT use the roster's systemic_validated flag as the canonical systemic denominator.
+
+### CANONICAL SYSTEMIC PATIENTS
+`reach_users.xzhao81.hcc_systemic_patients_canonical_v12_2`
+
+Expected unit:
+one row per validated systemic-treated HCC patient.
+
+Expected approximate N:
+571.
+
+Columns:
+- pat
+- provenance
+
+### CANONICAL SYSTEMIC LINES
+`reach_users.xzhao81.hcc_systemic_lines_canonical_v12_2`
+
+Use for:
+- regimen
+- line
+- start
+- end
+- comps
+- srcs
+- exposure_confidence
+- hcc_indication
+- n_orders
+- max_refills
+- line_note
+- dur_days
+- provenance
+
+Relevant columns explicitly:
+- pat
+- regimen
+- comps
+- start
+- end
+- exposure_confidence
+- line
+- line_label
+- hcc_indication
+- srcs
+- beacon_hcc
+- beacon_plan
+
+### TRUE FIRST-LINE VALIDATION
+`reach_users.xzhao81.hcc_true_firstline_validation_v10`
+
+Use ONLY for the true-first-line evidence fields that are not currently stored in v12_2.
+
+Relevant columns:
+- pat
+- regimen
+- start
+- line
+- true_1l_high_confidence_flag
+- true_1l_probable_flag
+- prior_systemic_outside_reach_possible_flag
+- note_firstline
+- note_priorsys
+- note_trial
+- note_outside_care
+- lookback_days
+- adequate_lookback_180d
+- adequate_lookback_365d
+- beacon_initial_plan
+- positive_1l_confirmation
+- era_atezo_bev
+- era_stride
+- era_nivo_ipi
+
+IMPORTANT:
+Join v10 to the canonical v12_2 lines using:
+
+PRIMARY:
+pat + line + regimen + start
+
+If timestamp/date type differs:
+cast to DATE on both sides and join:
+pat + line + regimen + DATE(start)
+
+Before proceeding print:
+- duplicate key count in each table
+- matched rows
+- unmatched rows
+- join multiplicity.
+
+If join multiplicity >1.01:
+STOP and debug.
+
+### RESEARCH STATUS
+`reach_users.xzhao81.hcc_research_status_v12_1`
+
+Relevant columns:
+- pat
+- regimen
+- research_status_final
+- research
+- note_trial
+- beacon_research_overlap
+- research_protocol_flag
+- research_suspected_flag
+
+Use `research_status_final` as the ONLY canonical trial/routine-care variable.
+
+### AFP
+`reach_users.xzhao81.hcc_tumor_biomarkers_v12`
+
+Relevant columns:
+- pat
+- lab_date
+- afp_value
+- component_base_name
+- reference_unit
+
+This table is already the corrected strict AFP phenotype.
+
+DO NOT independently query only `AFPTM`.
+
+### DECOMPENSATION
+`reach_users.xzhao81.hcc_decompensation_validated_v12`
+
+Columns:
+- pat
+- event_date
+- decomp_type
+
+Known event types include:
+- ASCITES_DX
+- PARACENTESIS
+- ENCEPHALOPATHY_DX
+- VARICEAL_BLEED
+- SBP
+- HEPATORENAL
+
+### DEATH
+Use:
+`canonical_death_date`
+from the master roster.
+
+### IV MEDICATION ADMINISTRATIONS
+Use raw `med_admin` plus the persisted component-level table if helpful:
+
+`reach_users.xzhao81.hcc_systemic_drug_exposure_medonc_atlas_v1`
+
+But confirm the persisted table against raw MAR for:
+- atezolizumab
+- bevacizumab
+- durvalumab
+- tremelimumab
+- nivolumab
+- ipilimumab
+- pembrolizumab
+
+MAR ACTIONS:
+- `New Bag`
+- `Given`
+- `Restarted`
+
+Prior work showed `New Bag` is essential.
+
+### ALBI
+DO NOT use:
+`hcc_dynamic_systemic_albi_v10`
+as the final analysis phenotype.
+
+It used observed line-1 patients and non-fixed "worst on treatment" summaries.
+
+Recalculate ALBI from raw liver labs for the exact cohort and exact landmark windows defined below.
+
+ALBI formula:
+
+bilirubin_umol_L = bilirubin_mg_dL × 17.104
+albumin_g_L = albumin_g_dL × 10
+
+ALBI =
+0.66 × log10(bilirubin_umol_L)
+− 0.085 × albumin_g_L
+
+mALBI:
+Grade 1: <= -2.60
+Grade 2a: > -2.60 and <= -2.27
+Grade 2b: > -2.27 and <= -1.39
+Grade 3: > -1.39
+
+Remove sentinel/invalid lab values.
+
+### CHILD-PUGH
+Do NOT use `hcc_child_pugh_v12_2` reconstructed class as a primary covariate.
+
+The diagnosis-absence logic is insufficient.
+
+If explicit clinician-documented CP from:
+`hcc_child_pugh_validated_v12`
+is available, print it separately.
+
+Never substitute ALBI for CP.
+
+### FIRST-LINE FAILURE STATES
+DO NOT use `hcc_post_1l_states_v12_1` as ground truth.
+
+It may infer progression from second-line initiation.
+
+It may be used only as a comparison table after rebuilding the phenotype below.
+
+# ============================================================
+# PART 1 — BUILD ONE CANONICAL HIGH-CONFIDENCE TRUE-1L COHORT
+# ============================================================
+
+Start from canonical systemic lines.
+
+Join true-first-line evidence.
+
+Select:
+
+`true_1l_high_confidence_flag = 1`
+
+and only one true-1L row per patient.
+
+Expected approximate N:
+282.
+
+Required assertions:
+
+1. every selected patient exists in
+`hcc_systemic_patients_canonical_v12_2`
+
+2. exactly one selected 1L regimen per patient
+
+3. line should generally equal 1, but DO NOT force line=1 if a validated true-first-line classification uses another stored line number; instead print discrepancies.
+
+Print:
+
+TOTAL HC TRUE 1L N
+
+by regimen:
+- AB
+- STRIDE
+- NIVO_IPI
+- NIVO_MONO
+- PEMBRO_MONO
+- DURVA_MONO
+- ATEZO_MONO
+- LENVATINIB
+- SORAFENIB
+- CABOZANTINIB
+- other
+
+Also join:
+`research_status_final`
+
+Print:
+- ROUTINE_CARE
+- DEFINITE_INTERVENTIONAL_TRIAL
+- PROBABLE_INTERVENTIONAL_TRIAL
+- UNCERTAIN
+
+Persist:
+`hcc_medonc_lockdown_true1l_v1`
+
+# ============================================================
+# PROJECT A
+# EARLY TUMOR × LIVER DYNAMICS → THERAPEUTIC OPPORTUNITY
+# ============================================================
+
+# ============================================================
+# PART 2 — DEFINE THE PROJECT A TARGET POPULATION
+# ============================================================
+
+Primary Project A population:
+
+HC true-1L patients receiving an ICI-containing first-line regimen.
+
+Define ICI-containing regimens explicitly:
+
+- AB
+- STRIDE
+- NIVO_IPI
+- NIVO_MONO
+- PEMBRO_MONO
+- DURVA_MONO
+- ATEZO_MONO
+- CABOZANTINIB+NIVO_MONO
+- LENVATINIB+PEMBRO_MONO
+- LENVATINIB+NIVO_MONO
+- other only if clearly ICI-containing
+
+Print exact inclusion list.
+
+DO NOT include pure oral TKI monotherapy in the primary cohort.
+
+Construct sensitivity cohorts:
+
+A1:
+all HC true-1L ICI
+
+A2:
+routine-care HC true-1L ICI only
+
+A3:
+modern-era HC true-1L ICI
+
+A4:
+modern-era routine-care HC true-1L ICI
+
+Print N and regimen distribution for each.
+
+Do not choose one yet.
+
+# ============================================================
+# PART 3 — EXACT FIXED-LANDMARK ALBI
+# ============================================================
+
+For every Project A patient calculate:
+
+### BASELINE ALBI
+Preferred window:
+day -14 through day 0 relative to 1L start.
+
+Fallback sensitivity:
+day -30 through day 0.
+
+Never use labs after systemic start for baseline.
+
+For each patient:
+- find albumin closest to start
+- find bilirubin closest to start
+- require both within the selected baseline window
+- ideally same day
+- if different days, print date separation
+
+Define:
+`baseline_pair_gap_days`
+
+Primary paired-lab rule:
+albumin and bilirubin no more than 3 days apart.
+
+Sensitivity:
+7 days apart.
+
+### WEEK-6 ALBI
+Target day:
+42.
+
+Primary window:
+day 28 through day 56.
+
+Choose albumin/bilirubin pair closest to day 42.
+
+Require:
+- both labs inside window
+- pair dates <=3 days apart
+
+### WEEK-12 ALBI
+Target day:
+84.
+
+Window:
+day 70 through day 98.
+
+Same pairing logic.
+
+Derive:
+- albi_baseline
+- albi_week6
+- delta_albi_week6
+- malbi_baseline
+- malbi_week6
+- malbi_grade_change_week6
+- week12 analogues
+
+PRINT THE EXACT PYSPARK/SQL WINDOW LOGIC.
+
+Print:
+- N baseline
+- N week6
+- N paired baseline+week6
+- N week12
+- N paired baseline+week12
+
+by regimen.
+
+Print distribution of:
+- days from target landmark to selected labs
+- albumin/bilirubin date gap
+
+Any use of `albi_worst`, `albi_last`, or old v10 dynamic-ALBI summaries is prohibited for the primary phenotype.
+
+Persist:
+`hcc_medonc_lockdown_albi_landmarks_v1`
+
+# ============================================================
+# PART 4 — EXACT FIXED-LANDMARK AFP
+# ============================================================
+
+Use:
+`hcc_tumor_biomarkers_v12`
+
+### BASELINE AFP
+Primary:
+-30 through day 0.
+
+Sensitivity:
+-14 through day 0.
+
+Choose nearest PRE-TREATMENT AFP.
+
+Never use post-treatment AFP as baseline.
+
+### WEEK 6
+days 28 through 56.
+
+Choose AFP closest to day 42.
+
+### WEEK 12
+days 70 through 98.
+
+Choose AFP closest to day 84.
+
+Derive:
+
+- afp_baseline
+- afp_week6
+- afp_week12
+- delta_log_afp_week6
+- delta_log_afp_week12
+- pct_change_afp_week6
+- pct_change_afp_week12
+
+AFP informative status:
+
+Print separate analyses for baseline thresholds:
+- >10 ng/mL
+- >20 ng/mL
+- >100 ng/mL
+- >=400 ng/mL
+
+DO NOT choose the threshold based on outcomes.
+
+For percent change:
+do not treat patients with very low baseline AFP as meaningful percentage responders.
+
+Print for each threshold:
+- eligible N
+- week6 paired N
+- week12 paired N
+
+Print week6 categories descriptively:
+- >=50% decrease
+- 20–49% decrease
+- <20% change
+- increase
+
+Persist:
+`hcc_medonc_lockdown_afp_landmarks_v1`
+
+# ============================================================
+# PART 5 — WEEK-6 LANDMARK ELIGIBILITY
+# ============================================================
+
+This is essential to avoid immortal-time bias.
+
+At day 42, define eligibility using ONLY information available through day 42.
+
+Patient must:
+- be alive at day 42
+- have been observed in REACH through day 42
+- not have started definite 2L before day 42
+
+DO NOT require:
+- future treatment
+- future AFP
+- future ALBI
+- survival beyond day 42.
+
+Treatment interruption does NOT automatically exclude the patient.
+
+Print:
+
+HC ICI TRUE1L
+→ alive day42
+→ observed day42
+→ no 2L before day42
+→ baseline ALBI
+→ week6 ALBI
+→ baseline AFP
+→ week6 AFP
+→ both dynamic biomarkers available
+
+with exact N at each step.
+
+This exact final N is the primary feasibility denominator for Project A.
+
+Persist:
+`hcc_medonc_projectA_week6_landmark_v1`
+
+# ============================================================
+# PART 6 — DEFINE EARLY TUMOR × LIVER VARIABLES
+# ============================================================
+
+Do not optimize categories to outcomes.
+
+Primary variables should remain CONTINUOUS:
+
+- delta_log_afp_week6
+- delta_albi_week6
+
+Also create descriptive categories.
+
+Tumor:
+
+AFP_FAVORABLE_50 =
+>=50% AFP decline if baseline AFP >20
+
+AFP_FAVORABLE_20 =
+>=20% decline if baseline AFP >20
+
+AFP_UNINFORMATIVE =
+baseline AFP <=20
+
+Liver:
+
+Use multiple PRESPECIFIED descriptive definitions:
+
+L1:
+delta ALBI <=0 vs >0
+
+L2:
+delta ALBI <0.25 vs >=0.25
+
+L3:
+mALBI grade worsened yes/no
+
+DO NOT select the best definition using outcomes.
+
+Print 2×2 counts for every prespecified combination.
+
+Do not call this a validated biomarker.
+
+# ============================================================
+# PART 7 — INCIDENT DECOMPENSATION AFTER LANDMARK
+# ============================================================
+
+Using:
+`hcc_decompensation_validated_v12`
+
+First identify PREVALENT decompensation before day42.
+
+For each type separately:
+- ascites
+- paracentesis
+- encephalopathy
+- variceal bleed
+- SBP
+- hepatorenal syndrome
+
+Incident post-landmark event requires NO previous same event type before day42.
+
+Create:
+- first_incident_decomp_after_d42
+- decomp_type
+- days_from_landmark
+
+Do NOT treat an old history of ascites as new ascites.
+
+Print exact counts.
+
+# ============================================================
+# PART 8 — DEFINE "SUBSEQUENT THERAPEUTIC OPPORTUNITY"
+# ============================================================
+
+Do NOT create one outcome yet.
+
+Build component outcomes.
+
+### A. ACTUAL 2L RECEIPT
+From canonical systemic lines:
+
+- first systemic line after HC true 1L
+- start date > day42
+- regimen
+- days from day42
+
+Print:
+N who receive any subsequent systemic therapy.
+
+### B. ALIVE WITHOUT 2L
+Print separately.
+
+### C. DEATH WITHOUT 2L
+Print:
+- within 30d after landmark
+- 60d
+- 90d
+- 180d
+- ever during follow-up
+
+### D. INCIDENT DECOMPENSATION BEFORE 2L
+Print:
+N and event type.
+
+### E. HOSPICE BEFORE 2L
+Use only if hospice date source is validated.
+
+### F. DOCUMENTED CLINICAL REASON NO 2L
+Do NOT infer this yet.
+This will be addressed in Project C.
+
+Define two candidate outcomes for future discussion only:
+
+OUTCOME 1:
+receipt of subsequent systemic therapy
+
+OUTCOME 2:
+composite loss of therapeutic opportunity =
+death OR hospice OR new major hepatic decompensation before any subsequent systemic therapy
+
+DO NOT analyze association yet.
+
+Print event counts and competing-event chronology.
+
+# ============================================================
+# PART 9 — PROJECT A FEASIBILITY
+# ============================================================
+
+Print:
+
+A1 all HC true1L ICI:
+N week6 landmark
+N paired AFP
+N paired ALBI
+N paired both
+N subsequent systemic
+N deaths
+N decomp before next systemic
+N hospice before next systemic
+
+Repeat for:
+A2 routine-care
+A3 modern
+A4 modern routine-care
+
+Also print:
+median follow-up from week6 landmark.
+
+Print counts by first-line regimen.
+
+Feasibility flags:
+
+If paired-biomarker N <80:
+`PROJECT A SAMPLE SIZE CONCERN`
+
+If subsequent-therapy events <25:
+`PROJECT A EVENT COUNT CONCERN`
+
+If >30% of landmark cohort missing paired AFP:
+`PROJECT A AFP SELECTION CONCERN`
+
+No project ranking.
+
+# ============================================================
+# PROJECT B
+# AB VS STRIDE TREATMENT-SELECTION MECHANISMS
+# ============================================================
+
+# ============================================================
+# PART 10 — BUILD EXACT PROJECT B COHORT
+# ============================================================
+
+Primary cohort:
+
+HC true-1L
+AND
+research_status_final = ROUTINE_CARE
+AND
+regimen in {AB, STRIDE}
+
+For calendar robustness:
+
+Create:
+B1 all routine-care HC AB/STRIDE
+B2 robust era where BOTH regimens were clinically available
+
+Because dates are shifted ±6 months:
+
+For STRIDE approval boundary, define:
+- definitely unavailable
+- uncertain ±6 months
+- definitely available
+
+Use a documented approval anchor in code comments but do not assume exact observed date is unshifted.
+
+Print exact B1/B2 Ns.
+
+Expected broad approximate counts:
+AB ~71 routine care
+STRIDE ~37 routine care.
+
+Expected modern subset previously:
+AB ~58
+STRIDE ~37.
+
+RECOMPUTE.
+
+Persist:
+`hcc_medonc_projectB_ab_stride_selection_v1`
+
+# ============================================================
+# PART 11 — SELECTION VARIABLE INVENTORY
+# ============================================================
+
+For EACH candidate variable print:
+
+SOURCE TABLE
+FIELD
+TIME WINDOW
+PATIENT COVERAGE
+AB COUNT
+STRIDE COUNT
+MISSINGNESS
+EXACT LOGIC
+
+Variables:
+
+### LIVER RESERVE
+- baseline ALBI
+- mALBI
+- explicit clinician-documented CP if available
+
+Do NOT use reconstructed CP as primary.
+
+### PORTAL HYPERTENSION / BLEEDING
+- prior variceal bleed
+- prior GI bleed
+- ascites
+- paracentesis
+- encephalopathy
+- known varices
+- EGD before treatment
+- variceal banding
+- nonselective beta-blocker use if reliable
+- platelet count
+
+### BEVACIZUMAB-SPECIFIC CONTRAINDICATION SIGNALS
+- proteinuria
+- urine protein/creatinine if available
+- CKD/eGFR
+- uncontrolled hypertension if BP is reliably available
+- recent major surgery/procedure
+- arterial/venous thrombosis
+- anticoagulation
+- antiplatelet use
+
+### ICI-SPECIFIC SIGNALS
+- autoimmune disease
+- chronic immunosuppression
+- prior solid organ transplant
+
+### GENERAL
+- age
+- sex
+- AFP
+- treatment year/era
+- prior LRT
+- baseline hospitalization burden
+- ECOG if note-derived structured extraction is actually available
+
+DO NOT include the current `race_ethnicity` variable until it is repaired.
+
+Do NOT use the atlas's Hispanic field.
+
+# ============================================================
+# PART 12 — REPAIR DEMOGRAPHICS BEFORE ANY USE
+# ============================================================
+
+Investigate:
+`race_ethnicity`
+`first_race`
+`ethnic_group`
+
+The atlas claimed 471/571 systemic patients were Hispanic.
+
+Treat this as a likely mapping bug.
+
+Print raw value distributions for:
+- first_race
+- ethnic_group
+- race_ethnicity
+
+for:
+- all 3,999 HCC
+- 571 systemic
+- 282 HC true1L
+
+Print the code that originally created `race_ethnicity` if recoverable.
+
+Do not use demographics other than age/sex in Project B unless this is reconciled.
+
+# ============================================================
+# PART 13 — AB VS STRIDE CHANNELING DIAGNOSTICS
+# ============================================================
+
+No outcome comparison.
+
+For B2:
+
+Print each covariate by arm:
+- mean/SD or median/IQR
+- missing N
+- standardized mean difference
+
+Use a parsimonious treatment-selection model only if supported.
+
+Because N is small:
+
+Prefer:
+- Firth logistic regression
+OR
+- penalized logistic regression
+
+over ordinary maximum-likelihood logistic regression if separation exists.
+
+Outcome:
+STRIDE vs AB selection.
+
+Candidate model should NOT exceed reasonable degrees of freedom.
+
+Print:
+- univariable estimates
+- penalized multivariable estimates
+- confidence intervals
+- model convergence
+- apparent discrimination
+- calibration caution
+
+The goal is not prediction performance.
+
+The goal is identifying strong channeling variables.
+
+Print:
+- propensity distributions
+- common support
+- patients outside support
+
+Do NOT estimate AB-vs-STRIDE survival.
+
+# ============================================================
+# PART 14 — NOTE REVIEW TARGET FOR PROJECT B
+# ============================================================
+
+Identify patients where structured data cannot explain treatment choice.
+
+For every B2 patient create:
+
+STRUCTURED_SELECTION_SIGNAL:
+
+- BEV_AVOIDANCE_SIGNAL
+- DUAL_ICI_AVOIDANCE_SIGNAL
+- BOTH_PLAUSIBLE
+- UNCLEAR
+
+Rules must be printed.
+
+Then select:
+
+ALL UNCLEAR patients
+PLUS
+20 random structured-signal patients
+
+for note review.
+
+Print for each:
+- pat
+- regimen
+- start
+- baseline ALBI
+- AFP
+- varices/bleeding
+- anticoagulation
+- autoimmune disease
+- renal function
+- recent procedure
+- structured signal
+
+Then retrieve oncology note snippets near treatment decision if accessible.
+
+Search phrases:
+- "atezolizumab"
+- "bevacizumab"
+- "durvalumab"
+- "tremelimumab"
+- "STRIDE"
+- "varices"
+- "bleeding"
+- "anticoag"
+- "proteinuria"
+- "hypertension"
+- "autoimmune"
+- "discussed"
+- "preferred"
+- "contraindication"
+
+Print evidence snippets.
+
+Label:
+MODEL-ASSISTED — HUMAN CONFIRMATION REQUIRED.
+
+# ============================================================
+# PROJECT C
+# WHY DOES FIRST-LINE ICI END?
+# ============================================================
+
+# ============================================================
+# PART 15 — PROJECT C COHORT
+# ============================================================
+
+Use the same canonical HC true-1L ICI population as Project A.
+
+Build:
+C1 all HC true1L ICI
+C2 routine-care HC true1L ICI
+C3 modern routine-care HC true1L ICI
+
+Print N.
+
+# ============================================================
+# PART 16 — IDENTIFY THE TRUE 1L STOP DATE
+# ============================================================
+
+Do NOT blindly use the canonical `end` field.
+
+For each regimen build clinical stop logic.
+
+### AB
+Line may continue if:
+- bevacizumab stopped
+- atezolizumab continues
+
+Therefore:
+AB line stops only when the active systemic strategy ends/switches.
+
+### STRIDE
+Tremelimumab is one dose.
+Durvalumab maintenance is continuation of the same line.
+
+Do NOT call STRIDE stopped after tremelimumab disappears.
+
+### NIVO_IPI
+Nivolumab maintenance after induction remains same line.
+
+### MONO ICI
+Use actual administration sequence.
+
+Build:
+
+- last confirmed administration
+- next systemic regimen start
+- explicit plan discontinuation if available
+- death
+- last follow-up
+
+Create:
+`stop_date_confidence`
+HIGH / PROBABLE / UNCERTAIN
+
+Print 20 timelines per major regimen:
+AB
+STRIDE
+NIVO_IPI
+NIVO_MONO
+
+# ============================================================
+# PART 17 — CAUSE OF 1L CESSATION
+# ============================================================
+
+Do NOT infer progression from starting 2L.
+
+For every patient whose first-line therapy ended, search the following evidence hierarchy:
+
+1. Beacon/treatment-plan discontinuation reason
+2. oncology note near treatment stop
+3. explicit radiology progression text
+4. decompensation event chronology
+5. toxicity event chronology
+6. hospice/death chronology
+
+Classify ONLY when supported.
+
+Final mutually exclusive categories:
+
+A. DOCUMENTED_TUMOR_PROGRESSION
+B. HEPATIC_DECOMPENSATION
+C. TREATMENT_TOXICITY
+D. BLEEDING_OR_VEGF_COMPLICATION
+E. OTHER_COMORBIDITY
+F. RESPONSE_OR_PLANNED_STRATEGY_CHANGE
+G. PATIENT_PREFERENCE
+H. TRANSFER_OR_OUTSIDE_CARE
+I. DEATH_DURING_ACTIVE_1L
+J. ONGOING_1L_AT_CENSOR
+K. UNKNOWN
+
+For every classified patient preserve:
+
+- evidence_source
+- evidence_date
+- evidence_text
+- classification_confidence
+
+Do NOT use:
+"2L started therefore progression"
+
+as a classification rule.
+
+# ============================================================
+# PART 18 — EXPLICITLY AUDIT THE OLD STATE TABLE
+# ============================================================
+
+Compare the rebuilt classifications against:
+
+`hcc_post_1l_states_v12_1`
+
+Print a confusion table.
+
+Specifically inspect every old patient classified:
+
+`DOCUMENTED_PROGRESSION_TO_2L`
+
+Print:
+
+N old progression-to-2L
+N with independent progression evidence
+N without independent progression evidence
+
+Also inspect:
+`DOCUMENTED_PROGRESSION_NO_2L`
+
+Print same.
+
+If >10% lack independent progression support:
+print:
+
+`*** OLD FAILURE-MODE PHENOTYPE NOT VALID FOR PRIMARY ANALYSIS ***`
+
+# ============================================================
+# PART 19 — SUBSEQUENT TREATMENT ACCESS
+# ============================================================
+
+After validated 1L cessation classify:
+
+- RECEIVED_2L
+- DIED_BEFORE_2L
+- HOSPICE_BEFORE_2L
+- HEPATIC_DECOMPENSATION_BEFORE_2L
+- TRANSFERRED/UNKNOWN
+- OTHER_NO_2L
+
+Do NOT call someone "eligible but untreated" unless eligibility is documented.
+
+For 2L recipients print:
+- regimen
+- time from 1L stop
+- ALBI near 1L end
+- AFP near 1L end
+- last decomp status
+
+For non-2L patients print:
+- death timing
+- decompensation
+- hospice
+- documented reason.
+
+# ============================================================
+# PART 20 — HUMAN REVIEW BURDEN FOR PROJECT C
+# ============================================================
+
+Print:
+
+N total 1L stops
+N classified from structured data alone
+N requiring note review
+N remaining unknown after note search
+
+If <=100 need note review:
+print ALL patient IDs and relevant evidence snippets.
+
+If >100:
+print all uncertain + fixed-seed random 50 validated.
+
+# ============================================================
+# PART 21 — PROJECT-BY-PROJECT FEASIBILITY TABLE
+# ============================================================
+
+Generate exactly this table:
+
+PROJECT A:
+- HC true1L ICI N
+- week6 landmark N
+- paired ALBI N
+- paired AFP N
+- paired BOTH N
+- subsequent systemic N
+- death N
+- incident decomp before 2L N
+- hospice before 2L N
+- manual review requirement
+- primary missingness concern
+
+PROJECT B:
+- AB N
+- STRIDE N
+- total N
+- ALBI coverage
+- AFP coverage
+- varices/bleed coverage
+- anticoagulation coverage
+- renal coverage
+- autoimmune coverage
+- recent-procedure coverage
+- structured selection signal N
+- unclear selection N
+- note review N
+
+PROJECT C:
+- HC true1L ICI N
+- confirmed 1L stops
+- progression stops
+- hepatic stops
+- toxicity stops
+- other stops
+- ongoing/censored
+- unknown
+- received 2L
+- no 2L
+- note review N
+
+Do NOT score.
+
+# ============================================================
+# PART 22 — GO / NO-GO THRESHOLDS
+# ============================================================
+
+Apply mechanical feasibility checks only.
+
+### PROJECT A
+GO-FOR-DISCUSSION if:
+- paired week6 AFP+ALBI >=100
+AND
+- >=25 subsequent systemic-treatment events
+AND
+- biomarker missingness does not obviously select only long survivors
+
+Otherwise:
+NEEDS MODIFICATION.
+
+### PROJECT B
+GO-FOR-DISCUSSION if:
+- total AB+STRIDE >=80
+AND
+- at least 5 clinically meaningful selection variables have >=80% coverage
+AND
+- structured/note data produce a plausible treatment-selection signal
+
+Otherwise:
+NEEDS MODIFICATION.
+
+### PROJECT C
+GO-FOR-DISCUSSION if:
+- >=150 patients have a confirmed cessation/ongoing state
+AND
+- >=70% of actual 1L stops have a cause classified at HIGH/PROBABLE confidence
+AND
+- unknown cause <=20%
+
+Otherwise:
+NEEDS MODIFICATION.
+
+These are feasibility flags, not project rankings.
+
+# ============================================================
+# PART 23 — COPY-PASTE REVIEW REPORT
+# ============================================================
+
+Print one complete plain-text report:
+
+============================================================
+HCC MED-ONC PROJECT LOCKDOWN REPORT
+============================================================
+
+SECTION A — CANONICAL COHORT
+- exact true1L population
+- regimen counts
+- research-status counts
+- discrepancies
+
+SECTION B — PROJECT A
+- landmark construction code
+- ALBI code
+- AFP code
+- attrition waterfall
+- paired-biomarker N
+- outcomes/event N
+- missingness
+- 2×2 state counts
+- unresolved biases
+
+SECTION C — PROJECT B
+- exact AB/STRIDE cohort
+- every selection variable
+- source/coverage
+- arm distributions
+- SMDs
+- penalized model diagnostics
+- support
+- note-review findings
+- unresolved biases
+
+SECTION D — PROJECT C
+- stop-date logic by regimen
+- cause-classification hierarchy
+- counts
+- independent progression evidence
+- old-vs-new state confusion matrix
+- 2L access
+- unknowns
+- human-review burden
+
+SECTION E — FEASIBILITY
+- Project A mechanical feasibility flag
+- Project B mechanical feasibility flag
+- Project C mechanical feasibility flag
+
+SECTION F — DATA QUALITY FAILURES
+List every:
+- failed assertion
+- implausible count
+- join issue
+- missing source
+- classification uncertainty
+
+SECTION G — TABLES PERSISTED
+table name
+rows
+unique patients
+unit
+
+Do not say "see above."
+
+Print actual values.
+
+# ============================================================
+# PERSIST
+# ============================================================
+
+Persist at minimum:
+
+`hcc_medonc_lockdown_true1l_v1`
+`hcc_medonc_lockdown_albi_landmarks_v1`
+`hcc_medonc_lockdown_afp_landmarks_v1`
+`hcc_medonc_projectA_week6_landmark_v1`
+`hcc_medonc_projectB_ab_stride_selection_v1`
+`hcc_medonc_projectB_selection_variables_v1`
+`hcc_medonc_projectC_stop_dates_v1`
+`hcc_medonc_projectC_failure_causes_v1`
+`hcc_medonc_projectC_2l_access_v1`
+
+Read each back before completion.
+
+STOP.
+
+Do NOT run OS/PFS models.
+Do NOT choose the final project.
