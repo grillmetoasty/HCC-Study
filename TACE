@@ -1,924 +1,1218 @@
+Follow all requirements in `skills.md`.
 
-Step 0 — Canonical TACE Episode Construction
-======================================================================
-STEP 0 — CANONICAL TACE EPISODE CONSTRUCTION
-======================================================================
-
-SOURCE TABLE:      reach_users.xzhao81.hcc_locoregional_validated_v12
-SCHEMA FIELDS:     pat, proc_date, procedure_class, code, proc_name, source, evidence_sources, n_raw_records
-UNIT OF ANALYSIS:  one row per procedure-source combination (NOT clinical episode)
-
-N_ROWS total locoregional:   7027
-N_PATIENTS total:            1443
-
---- Raw TACE procedure rows (before dedup) ---
-N_RAW_TACE_ROWS:    3304
-N_PATIENTS:         1052
-
---- Procedure class breakdown ---
-+--------------------+------+----------+
-|procedure_class     |n_rows|n_patients|
-+--------------------+------+----------+
-|TACE_HIGH_CONFIDENCE|2532  |1050      |
-|TACE_PROBABLE       |772   |423       |
-+--------------------+------+----------+
-
-
---- Deduplicated clinical TACE episodes ---
-N_CLINICAL_TACE_EPISODES:  2549
-N_PATIENTS:                1052
-N_RAW_TACE_ROWS:           3304
-Deduplication ratio:       3304/2549 = 1.30 raw rows per episode
-
-✓ ASSERTION PASSED: N_clinical_TACE_episodes (2549) < N_raw_TACE_rows (3304)
-
---- Gap between consecutive TACE episodes (same patient) ---
-+--------------------------------+---+
-|gap_category                    |n  |
-+--------------------------------+---+
-|0-1 days (same session?)        |20 |
-|2-3 days (possible same session)|7  |
-|31-60 days                      |340|
-|4-7 days                        |34 |
-|61-90 days                      |222|
-|8-30 days                       |187|
-|>90 days                        |687|
-+--------------------------------+---+
-
-
---- After merging ≤2-day consecutive sessions ---
-N_CANONICAL_TACE_EPISODES: 2525
-N_PATIENTS:               1052
-Episodes merged:          24 (from 2549)
-N_dates_merged > 1:       24 N_EPISODES
-
---- Episode confidence ---
-+------------------+----------+----------+
-|episode_confidence|n_episodes|n_patients|
-+------------------+----------+----------+
-|HIGH_CONFIDENCE   |2508      |1050      |
-|PROBABLE          |17        |15        |
-+------------------+----------+----------+
-
---- TACE episodes per patient ---
-+----------+-----+
-|n_episodes|count|
-+----------+-----+
-|         1|  434|
-|         2|  275|
-|         3|  127|
-|         4|   97|
-|         5|   49|
-|         6|   35|
-|         7|   10|
-|         8|   10|
-|         9|    4|
-|        10|    4|
-|        11|    2|
-|        12|    1|
-|        13|    2|
-|        14|    1|
-|        17|    1|
-+----------+-----+
-
-Episodes per patient: median=2.0, IQR=[1.0, 3.0]
-
---- 10 representative rows ---
-+--------------+----------+------------------+-------------+---------------------+--------------+---------+-------+
-|pat           |tace_date |episode_confidence|n_source_rows|n_raw_billing_records|n_dates_merged|n_sources|n_codes|
-+--------------+----------+------------------+-------------+---------------------+--------------+---------+-------+
-|DEI0oiarp7sz8p|2015-08-06|HIGH_CONFIDENCE   |1            |1                    |1             |1        |0      |
-|DEI0mt5zrat35h|2019-02-10|HIGH_CONFIDENCE   |2            |4                    |1             |2        |1      |
-|DEI0sy3f5zrafw|2025-12-03|HIGH_CONFIDENCE   |1            |3                    |1             |1        |1      |
-|DEI03n6wt6zgw9|2016-02-03|HIGH_CONFIDENCE   |1            |2                    |1             |1        |0      |
-|DEI0if6y5zray4|2022-05-17|HIGH_CONFIDENCE   |1            |4                    |1             |1        |1      |
-|DEI0x9w7sz8w4w|2020-06-22|HIGH_CONFIDENCE   |1            |3                    |1             |1        |1      |
-|DEI0n995zra9hk|2017-08-13|HIGH_CONFIDENCE   |2            |3                    |1             |2        |1      |
-|DEI0fogjw7sz8w|2023-01-13|HIGH_CONFIDENCE   |1            |3                    |1             |1        |1      |
-|DEI04f5ey7sz8y|2017-06-18|HIGH_CONFIDENCE   |2            |3                    |1             |2        |1      |
-|DEI0fka35zra35|2022-06-24|HIGH_CONFIDENCE   |1            |3                    |1             |1        |0      |
-+--------------+----------+------------------+-------------+---------------------+--------------+---------+-------+
-
+This is a highly focused forensic/feasibility run.
 
-✓ hcc_tace_episodes_canonical_v12_3 persisted: 2525 N_EPISODES, 1052 N_PATIENTS
-
-FINAL ASSERTION:
-  N_canonical_episodes (2525) < N_raw_rows (3304): True
-  N_canonical_episodes (2525) ≤ N_patient_date_pairs (2549): True
-Step 1 — Index TACE Population Classification
-Step 1 — Index TACE Population Classification
-======================================================================
-STEP 1 — INDEX TACE POPULATION CLASSIFICATION
-======================================================================
-
-SOURCE TABLE:      reach_users.xzhao81.hcc_tace_episodes_canonical_v12_3
-UNIT OF ANALYSIS:  one row per patient (first TACE)
-N_PATIENTS with first TACE: 1052
-
---- Pre-index TACE/embolization (from locoregional table) ---
-Patients with prior embol/TACE rows: 23 N_PATIENTS
-
---- Index TACE Status Classification ---
-+-----------------------------------------+----------+
-|index_tace_status                        |n_patients|
-+-----------------------------------------+----------+
-|DEFINITE_FIRST_TACE                      |603       |
-|PROBABLE_FIRST_TACE                      |219       |
-|UNKNOWN                                  |163       |
-|FIRST_OBSERVED_BUT_PRIOR_OUTSIDE_POSSIBLE|44        |
-|DEFINITE_REPEAT_TACE                     |23        |
-+-----------------------------------------+----------+
-
-Total classified: 1052 N_PATIENTS
-
---- PRIMARY FEASIBILITY COHORT ---
-DEFINITE_FIRST_TACE:                       603 N_PATIENTS
-PROBABLE_FIRST_TACE:                       219 N_PATIENTS
-  Primary cohort (definite+probable):       822 N_PATIENTS
-
---- SENSITIVITY COHORT ---
-FIRST_OBSERVED_PRIOR_OUTSIDE_POSSIBLE:      44 N_PATIENTS
-  Sensitivity cohort (+ first observed):    866 N_PATIENTS
-
---- EXCLUDED ---
-DEFINITE_REPEAT_TACE:                      23 N_PATIENTS
-UNKNOWN:                                   163 N_PATIENTS
-
---- Prior systemic therapy before index TACE ---
-With prior systemic: 69 N_PATIENTS
-
---- Days from HCC diagnosis to first TACE (all patients) ---
-  N with data: 1052, median: 27, IQR: [7, 57]
-
---- 10 representative rows ---
-+--------------+---------------+-------------------+------------------+-------------------+--------------------+----------------+--------------+
-|pat           |index_tace_date|index_tace_status  |episode_confidence|total_tace_episodes|days_contact_to_tace|days_hcc_to_tace|prior_systemic|
-+--------------+---------------+-------------------+------------------+-------------------+--------------------+----------------+--------------+
-|DEI0o0i5zraicu|2016-08-08     |DEFINITE_FIRST_TACE|HIGH_CONFIDENCE   |5                  |2296                |140             |0             |
-|DEI0ft6zgfbj3b|2025-07-21     |DEFINITE_FIRST_TACE|HIGH_CONFIDENCE   |1                  |1352                |465             |1             |
-|DEI0et7j7sz8jj|2016-08-26     |DEFINITE_FIRST_TACE|HIGH_CONFIDENCE   |1                  |1183                |49              |1             |
-|DEI0d6t5zrat1e|2024-02-19     |DEFINITE_FIRST_TACE|HIGH_CONFIDENCE   |1                  |97                  |50              |0             |
-|DEI0day5zrayc3|2018-10-09     |DEFINITE_FIRST_TACE|HIGH_CONFIDENCE   |1                  |95                  |71              |0             |
-|DEI035zra3a1r2|2019-01-17     |PROBABLE_FIRST_TACE|HIGH_CONFIDENCE   |2                  |47                  |27              |0             |
-|DEI0kw9g5zragu|2017-02-18     |DEFINITE_FIRST_TACE|HIGH_CONFIDENCE   |1                  |1801                |70              |0             |
-|DEI073bwm5zram|2018-08-24     |DEFINITE_FIRST_TACE|HIGH_CONFIDENCE   |1                  |97                  |51              |0             |
-|DEI0r7sz8rs6tg|2023-07-17     |DEFINITE_FIRST_TACE|HIGH_CONFIDENCE   |1                  |1640                |1632            |1             |
-|DEI0jq75zra7d9|2018-06-19     |PROBABLE_FIRST_TACE|HIGH_CONFIDENCE   |1                  |42                  |13              |0             |
-+--------------+---------------+-------------------+------------------+-------------------+--------------------+----------------+--------------+
-
-
-✓ hcc_index_tace_v12_3 persisted: 1052 N_PATIENTS
-Step 2 — Robust Modern-Era Cohort
-Step 2 — Robust Modern-Era Cohort
-======================================================================
-STEP 2 — ROBUST MODERN-ERA COHORT
-======================================================================
-
-SOURCE TABLE:      reach_users.xzhao81.hcc_index_tace_v12_3
-UNIT OF ANALYSIS:  one row per patient
-N_ROWS before:     1052
-N_PATIENTS before: 1052
-
---- ERA CLASSIFICATION (ALL 1,052 TACE patients) ---
-+---------------------+----------+
-|era_classification   |n_patients|
-+---------------------+----------+
-|DATE_SHIFT_UNCERTAIN |81        |
-|DEFINITELY_MODERN    |382       |
-|DEFINITELY_PRE_MODERN|589       |
-+---------------------+----------+
-
---- ERA CLASSIFICATION (PRIMARY cohort: definite+probable first TACE) ---
-+---------------------+----------+
-|era_classification   |n_patients|
-+---------------------+----------+
-|DATE_SHIFT_UNCERTAIN |74        |
-|DEFINITELY_MODERN    |350       |
-|DEFINITELY_PRE_MODERN|398       |
-+---------------------+----------+
-
-MODERN PRIMARY COHORT: 350 N_PATIENTS
-MODERN SENSITIVITY (incl uncertain): 424 N_PATIENTS
-ALL-ERA DESCRIPTIVE: 822 N_PATIENTS
-
---- Prior systemic in modern primary ---
-With prior systemic: 49 N_PATIENTS
-
---- Index TACE year distribution (primary cohort) ---
-+---------+---+
-|tace_year|  n|
-+---------+---+
-|     2016|118|
-|     2017|111|
-|     2018| 89|
-|     2019| 87|
-|     2020| 73|
-|     2021| 61|
-|     2022| 75|
-|     2023| 71|
-|     2024| 61|
-|     2025| 49|
-|     2026| 27|
-+---------+---+
-
-
-✓ hcc_index_tace_era_v12_3 persisted: 1052 N_PATIENTS
-Step 3 — Post-TACE Reassessment Imaging
-Step 3 — Post-TACE Reassessment Imaging
-======================================================================
-STEP 3 — POST-TACE REASSESSMENT IMAGING
-======================================================================
-
-SOURCE TABLES:
-  reach_users.xzhao81.hcc_index_tace_era_v12_3 (index TACE dates)
-  deid.derived.image_procedures (imaging studies)
-  deid.derived.radiology_text (report content)
-UNIT OF ANALYSIS:  one row per eligible reassessment study
-
-Primary index TACE patients: 822 N_PATIENTS
-Total liver CT/MRI studies (all HCC): 2699411 N_STUDIES
-Unique patients: 991787 N_PATIENTS
-
---- Reassessment imaging availability (28-120d) ---
-Patients with CT/MRI 28-120d: 718 N_PATIENTS
-Patients with CT/MRI 21-120d: 733 N_PATIENTS (sensitivity)
-
-Index reassessment studies (one per patient): 718 N_STUDIES
-
---- EXCLUSION WATERFALL ---
-Primary index TACE patients:          822 N_PATIENTS
-  - No liver CT/MRI at Hopkins:        4 N_PATIENTS
-  - Only imaging <28d (too early):      66 N_PATIENTS
-  - Only imaging >120d (too late):      12 N_PATIENTS
-  = With reassessment 28-120d:          718 N_PATIENTS
-
---- Index reassessment modality ---
-+--------+---+
-|modality|n  |
-+--------+---+
-|CT      |146|
-|MRI     |572|
-+--------+---+
-
---- Index reassessment contrast likelihood ---
-+---------------+---+
-|contrast_likely|n  |
-+---------------+---+
-|YES            |662|
-|UNKNOWN        |16 |
-|UNLIKELY       |40 |
-+---------------+---+
-
-
-Days post-TACE to reassessment:
-  p10=29, p25=32, median=38, p75=50, p90=76
-
---- 10 representative index reassessments ---
-+--------------+---------------+----------+--------------+--------+---------------+----------------------------------+---------------------+
-|pat           |index_tace_date|study_date|days_post_tace|modality|contrast_likely|proc_name                         |era_classification   |
-+--------------+---------------+----------+--------------+--------+---------------+----------------------------------+---------------------+
-|DEI0bidxa7sz8a|2021-10-06     |2021-11-12|37            |CT      |YES            |CT ABDOMEN W/ IV CONTRAST         |DEFINITELY_MODERN    |
-|DEI0dt6zgdhgi7|2019-03-27     |2019-05-07|41            |CT      |YES            |CT ABDOMEN PELVIS W/WO IV CONTRAST|DEFINITELY_PRE_MODERN|
-|DEI0ysvkt6zgkb|2020-10-15     |2020-12-07|53            |MRI     |YES            |MRI ABDOMEN W/WO CONTRAST         |DATE_SHIFT_UNCERTAIN |
-|DEI0hn77sz872s|2022-08-17     |2022-09-17|31            |MRI     |YES            |MRI ABDOMEN W/WO CONTRAST         |DEFINITELY_MODERN    |
-|DEI050q5zraqmo|2018-05-14     |2018-06-12|29            |CT      |YES            |CT ABDOMEN W/ IV CONTRAST         |DEFINITELY_PRE_MODERN|
-|DEI0s5zrassbno|2024-11-28     |2025-01-02|35            |MRI     |YES            |MRI ABDOMEN W/WO CONTRAST         |DEFINITELY_MODERN    |
-|DEI082brt6zgrq|2016-12-27     |2017-02-17|52            |MRI     |YES            |MRI ABDOMEN W/WO CONTRAST         |DEFINITELY_PRE_MODERN|
-|DEI08x5wt6zgwg|2018-11-11     |2018-12-14|33            |MRI     |YES            |MRI ABDOMEN W/WO CONTRAST         |DEFINITELY_PRE_MODERN|
-|DEI0wf5zrafysv|2017-09-22     |2017-11-23|62            |MRI     |YES            |MRI ABDOMEN W/WO CONTRAST         |DEFINITELY_PRE_MODERN|
-|DEI0ar0t6zg05e|2023-09-25     |2023-11-09|45            |CT      |YES            |CT ABDOMEN W/WO IV CONTRAST       |DEFINITELY_MODERN    |
-+--------------+---------------+----------+--------------+--------+---------------+----------------------------------+---------------------+
-
-
-✓ hcc_tace_reassessment_v12_3 persisted: 718 N_STUDIES
-
-======================================================================
-STEPS 4-5 — TUMOR STATE EXTRACTION + MODEL-ASSISTED AUDIT
-======================================================================
-
-SOURCE TABLES:
-  reach_users.xzhao81.hcc_tace_reassessment_v12_3
-  deid.derived.radiology_text
-UNIT OF ANALYSIS:  one row per patient (index reassessment)
-
-Reassessment studies: 718 N_STUDIES
-With radiology report text: 678 N_STUDIES
-Missing report text: 40 N_STUDIES
-
---- RESPONSE CATEGORY DISTRIBUTION ---
-+----------------------+---+
-|response_category     |n  |
-+----------------------+---+
-|INDETERMINATE         |345|
-|PROGRESSIVE_DISEASE   |202|
-|RESIDUAL_VIABLE_STABLE|127|
-|NO_REPORT             |40 |
-|COMPLETE_RESPONSE     |4  |
-+----------------------+---+
-
---- LR-TR CLASSIFICATION ---
-+---------------+---+
-|lrtr_class     |n  |
-+---------------+---+
-|NOT_REPORTED   |679|
-|LR-TR_VIABLE   |37 |
-|LR-TR_EQUIVOCAL|1  |
-|LR-TR_NONVIABLE|1  |
-+---------------+---+
-
---- VARIABLE COMPLETENESS ---
-  complete_response: {'INDETERMINATE': 1, 'YES': 4, 'NO': 713}
-  residual_viable: {'INDETERMINATE': 526, 'YES': 191, 'NO': 1}
-  new_intrahepatic_lesion: {'YES': 42, 'NO': 676}
-  progression: {'YES': 203, 'NO': 515}
-  mvi_pvtt: {'YES': 58, 'NO': 660}
-  extrahepatic_disease: {'INDETERMINATE': 523, 'YES': 193, 'NO': 2}
-  bilobar: {'INDETERMINATE': 672, 'YES': 32, 'NO': 14}
-  infiltrative: {'YES': 11, 'NO': 707}
-  ascites: {'NOT_REPORTED': 650, 'YES': 32, 'NO': 36}
-
-======================================================================
-STEP 5 — MODEL-ASSISTED RADIOLOGY AUDIT
-======================================================================
-
-MODEL-ASSISTED — HUMAN CONFIRMATION REQUIRED
-All extractions are regex-based; no validation against gold standard.
-
---- COMPLETE_RESPONSE: 4 of 4 cases ---
-
-  Case 1: DEI0je1t6zg1jf
-    TACE: 2016-10-14  Scan: 2016-11-19  Study: MRI ABDOMEN W/WO CONTRAST
-    LR-TR: NOT_REPORTED  CR: YES  Viable: NO
-    Progression: NO  New lesion: NO
-    MVI/PVTT: NO  Extrahepatic: YES
-    Bilobar: INDETERMINATE  Infiltrative: NO  Ascites: NOT_REPORTED
-    Impression: INDICATION: Metastatic urothelial cancer to the liver. Status post chemoembolization. COMPARISON: 9/17/2016. TECHNIQUE: Multiplanar, multisequence MRI imaging of the liver with and without intravenous...
-
-  Case 2: DEI050q5zraqmo
-    TACE: 2018-05-14  Scan: 2018-06-12  Study: CT ABDOMEN W/ IV CONTRAST
-    LR-TR: NOT_REPORTED  CR: YES  Viable: YES
-    Progression: YES  New lesion: YES
-    MVI/PVTT: NO  Extrahepatic: YES
-    Bilobar: INDETERMINATE  Infiltrative: NO  Ascites: NO
-    Impression: CLINICAL STATEMENT: History of hepatocellular carcinoma. CT for follow-up. TECHNIQUE: CT of the abdomen was performed with intravenous contrast administration. Arterial, venous, and delayed phases wer...
-
-  Case 3: DEI085uaft6zgf
-    TACE: 2025-12-13  Scan: 2026-03-13  Study: MRI ABDOMEN W/WO CONTRAST
-    LR-TR: LR-TR_NONVIABLE  CR: YES  Viable: YES
-    Progression: NO  New lesion: NO
-    MVI/PVTT: NO  Extrahepatic: INDETERMINATE
-    Bilobar: INDETERMINATE  Infiltrative: NO  Ascites: NOT_REPORTED
-    Impression: EXAM: MRI ABDOMEN W/WO CONTRAST  INDICATION: <LOCATION>  TECHNIQUE: Multiplanar and multisequence MRI of the abdomen before and after intravenous administration of Gadavist.   COMPARISON: 01/01/2026  ...
-
-  Case 4: DEI087sz881y1o
-    TACE: 2017-06-17  Scan: 2017-07-22  Study: MRI ABDOMEN W/WO CONTRAST
-    LR-TR: NOT_REPORTED  CR: YES  Viable: YES
-    Progression: NO  New lesion: NO
-    MVI/PVTT: NO  Extrahepatic: INDETERMINATE
-    Bilobar: INDETERMINATE  Infiltrative: NO  Ascites: NOT_REPORTED
-    Impression: ******** ADDENDUM #1 ********
-
-IMPRESSION: 1. Complete necrosis of a segment 7/8 lesion. 2. Wedge-shaped area in segment 5 of liver likely treatment-related changes without evidence of nodular enhance...
-
---- RESIDUAL_VIABLE_STABLE: 30 of 127 cases ---
-
-  Case 1: DEI0qisd85zra8
-    TACE: 2019-06-17  Scan: 2019-08-11  Study: MRI ABDOMEN-KIDNEY OR LIVER
-    LR-TR: NOT_REPORTED  CR: NO  Viable: YES
-    Progression: NO  New lesion: NO
-    MVI/PVTT: NO  Extrahepatic: INDETERMINATE
-    Bilobar: INDETERMINATE  Infiltrative: NO  Ascites: NOT_REPORTED
-    Impression: EXAM: MRI ABDOMEN-KIDNEY OR LIVER INDICATION: <LOCATION> follow up after 1st TACE.  Treatment was to caudate lobe  Last treatment date: 6/17/2019    TECHNIQUE: Axial T1 and T2 images. Axial diffusion ...
-
-  Case 2: DEI0c1v7sz8vf1
-    TACE: 2019-06-27  Scan: 2019-07-30  Study: MRI ABDOMEN W/WO CONTRAST
-    LR-TR: NOT_REPORTED  CR: NO  Viable: YES
-    Progression: NO  New lesion: NO
-    MVI/PVTT: NO  Extrahepatic: INDETERMINATE
-    Bilobar: INDETERMINATE  Infiltrative: NO  Ascites: NOT_REPORTED
-    Impression: RESULT: MRI abdomen with and without contrast INDICATION: Four-week follow-up status post first liver TACE for hepatocellular carcinoma in transplant liver. TECHNIQUE: Axial T1 and T2 images. Axial di...
-
-  Case 3: DEI0um7sz8mnwb
-    TACE: 2024-12-31  Scan: 2025-02-28  Study: MRI ABDOMEN W/WO CONTRAST
-    LR-TR: LR-TR_VIABLE  CR: NO  Viable: YES
-    Progression: NO  New lesion: NO
-    MVI/PVTT: NO  Extrahepatic: YES
-    Bilobar: INDETERMINATE  Infiltrative: NO  Ascites: NOT_REPORTED
-    Impression: EXAM: MRI ABDOMEN W/WO CONTRAST  INDICATION: History of biopsy-proven <LOCATION> status post right hepatic Tace #1 and biopsy on 12/31/2024.  TECHNIQUE: Multiplanar multisequence MR of the abdomen was...
-
-  Case 4: DEI0ry7sz8yips
-    TACE: 2024-02-15  Scan: 2024-04-11  Study: MRI ABDOMEN W/WO CONTRAST
-    LR-TR: NOT_REPORTED  CR: NO  Viable: YES
-    Progression: NO  New lesion: NO
-    MVI/PVTT: NO  Extrahepatic: INDETERMINATE
-    Bilobar: INDETERMINATE  Infiltrative: NO  Ascites: NOT_REPORTED
-    Impression: ******** ADDENDUM #1 ********
-
-Addendum:   
-This is an addendum to include the following differential into Impression #2, which should read as follows:
-
-Few new T1 hyperintense foci scattered througho...
-
-  Case 5: DEI0meiy5zray1
-    TACE: 2024-12-07  Scan: 2025-01-26  Study: MRI ABDOMEN W/WO CONTRAST
-    LR-TR: LR-TR_VIABLE  CR: NO  Viable: YES
-    Progression: NO  New lesion: NO
-    MVI/PVTT: NO  Extrahepatic: YES
-    Bilobar: INDETERMINATE  Infiltrative: NO  Ascites: NOT_REPORTED
-    Impression: ** OUTSIDE STUDY INTERPRETATION **  Outside images were presented for second opinion interpretation. - Date reviewed at <LOCATION> for interpretation: 1/27/2025 9:50 AM - Date of original study: EXAM:...
-
---- PROGRESSIVE_DISEASE: 30 of 202 cases ---
-
-  Case 1: DEI0cfrn6t6zg6
-    TACE: 2018-10-01  Scan: 2018-11-13  Study: MRI ABDOMEN W/WO CONTRAST
-    LR-TR: NOT_REPORTED  CR: NO  Viable: YES
-    Progression: YES  New lesion: NO
-    MVI/PVTT: NO  Extrahepatic: INDETERMINATE
-    Bilobar: INDETERMINATE  Infiltrative: NO  Ascites: NOT_REPORTED
-    Impression: EXAM: MRI ABDOMEN W/WO CONTRAST INDICATION: <AGE> female with history of multifocal hepatocellular carcinoma status post right hepatectomy and with disease in the liver remnant status post microwave a...
-
-  Case 2: DEI04u5zrauuxe
-    TACE: 2017-02-04  Scan: 2017-03-05  Study: MRI ABDOMEN W/WO CONTRAST
-    LR-TR: NOT_REPORTED  CR: NO  Viable: INDETERMINATE
-    Progression: YES  New lesion: NO
-    MVI/PVTT: NO  Extrahepatic: INDETERMINATE
-    Bilobar: INDETERMINATE  Infiltrative: NO  Ascites: NOT_REPORTED
-    Impression: EXAM: MRI ABDOMEN W/WO CONTRAST INDICATION: <AGE> male with cirrhosis and hepatocellular carcinoma status post TACE x1 to the right hepatic lobe tumor burden on 2/4/2017.   TECHNIQUE: Axial T1 and T2 ...
-
-  Case 3: DEI0trpt6zgp1b
-    TACE: 2022-03-22  Scan: 2022-04-21  Study: MRI ABDOMEN W/WO CONTRAST
-    LR-TR: NOT_REPORTED  CR: NO  Viable: INDETERMINATE
-    Progression: YES  New lesion: NO
-    MVI/PVTT: NO  Extrahepatic: INDETERMINATE
-    Bilobar: INDETERMINATE  Infiltrative: NO  Ascites: NOT_REPORTED
-    Impression: EXAM: MRI ABDOMEN W/WO CONTRAST INDICATION: <AGE> female status post TACE, undergoing follow-up evaluation..  Treatment was to segment 6  Last treatment date: 3/22/2022    TECHNIQUE: Axial T1 and T2 i...
-
-  Case 4: DEI0qt6zgqd5is
-    TACE: 2017-10-14  Scan: 2018-01-14  Study: MRI ABDOMEN W/WO CONTRAST
-    LR-TR: NOT_REPORTED  CR: NO  Viable: INDETERMINATE
-    Progression: YES  New lesion: YES
-    MVI/PVTT: YES  Extrahepatic: YES
-    Bilobar: INDETERMINATE  Infiltrative: NO  Ascites: NOT_REPORTED
-    Impression: EXAM: MRI ABDOMEN W/WO CONTRAST INDICATION: <AGE> male with hepatocellular carcinoma status post Y 91 embolization to the left hepatic lobe on 11/05/2017 and TACE on 10/14/2017..    TECHNIQUE: Axial T...
-
-  Case 5: DEI0yo5zraoqe4
-    TACE: 2016-08-14  Scan: 2016-09-15  Study: MRI ABDOMEN W/WO CONTRAST
-    LR-TR: NOT_REPORTED  CR: NO  Viable: INDETERMINATE
-    Progression: YES  New lesion: NO
-    MVI/PVTT: NO  Extrahepatic: INDETERMINATE
-    Bilobar: INDETERMINATE  Infiltrative: NO  Ascites: NOT_REPORTED
-    Impression: EXAM: MRI ABDOMEN W/WO CONTRAST LIVER SCREENING, AFTER PRIMARY TUMOR TREATED.  Treatment was to right hepatic lobe  Last treatment date: 8/15/2016    TECHNIQUE: Axial T1 and T2 images. Axial diffusion...
-
---- EQUIVOCAL: 0 cases available ---
-
---- MVI/PVTT flagged: 58 N_PATIENTS (all printed if <=30) ---
-  DEI0fka35zra35 TACE=2022-06-24 Scan=2022-08-22: EXAM: MRI ABDOMEN W/WO CONTRAST INDICATION: met <LOCATION> s/p TACE, restaging.  Treatment was to Left lobe  Last treatment date: 6/24/2022    TECHNIQ
-  DEI0q1awbt6zgb TACE=2017-06-09 Scan=2017-07-21: EXAM: MRI ABDOMEN W/WO CONTRAST INDICATION: <AGE> woman with history of fatty liver and infiltrated right hepatic lobe hepatocellular carcinoma.  Trea
-  DEI076t6zg60ue TACE=2025-10-01 Scan=2025-11-05: ******** ADDENDUM #1 ********  Addendum: This is an addendum to include the originally reported pancreas finding in the impression:     IMPRESSION: 1.
-  DEI0gn7as5zras TACE=2018-06-05 Scan=2018-07-05: INDICATION: Status post TACE COMPARISON: CT 6/7/2018 and MR 6/3/2018 TECHNIQUE:  multiplanar T1 and T2 images were obtained of the liver.  Following t
-  DEI0eiw7sz8w0f TACE=2026-03-14 Scan=2026-04-18: EXAM: MRI ABDOMEN W/WO CONTRAST  INDICATION: F/u Post TACE 3/14/26.  Treatment was to Right lobe  Last treatment date: 3/14/2026    TECHNIQUE: Axial T
-  DEI0tu7sz8ungy TACE=2016-05-04 Scan=2016-06-04: Exam 1:  HCI 6120 - MRI ABDOMEN W/WO CONTRAST   -  Jun 4, 2016  10:20     Acc#:40767103 RESULT:  History: Alcoholic cirrhosis and hepatocellular carci
-  DEI0sctm5zramq TACE=2017-09-28 Scan=2017-11-03: EXAM: MRI ABDOMEN W/WO CONTRAST INDICATION: <AGE> year old Male with hepatocellular carcinoma status post TACE. Baseline study. Treatment was to Left 
-  DEI0adt6zgdus1 TACE=2019-07-27 Scan=2019-09-02: EXAM: MRI ABDOMEN W/WO CONTRAST INDICATION: <LOCATION> status post TACE.  Treatment was to right hepatic lobe  Last treatment date: 7/27/2019    TECHN
-  DEI05t5zrat0br TACE=2021-12-09 Scan=2022-01-06: EXAM: MRI ABDOMEN W/WO CONTRAST INDICATION: <AGE> years old male with <LOCATION>, s/p Y-90 embolization; follow up evaluation TECHNIQUE: Multisequence
-  DEI0qdqqo7sz8o TACE=2016-04-04 Scan=2016-05-28: Exam 1:  HCI 6120 - MRI ABDOMEN W/WO CONTRAST   -  May 28, 2016  14:50     Acc#:40866982 RESULT:  History: Hepatocellular carcinoma.  Follow-up; statu
-  DEI0mij5zrajkq TACE=2019-04-11 Scan=2019-07-25: CLINICAL HISTORY: <AGE> man with history of hepatocellular carcinoma, status post TACE in radiation treatment. COMPARISON: Abdomen CT without contrast
-  DEI0m0y75zra7e TACE=2025-07-25 Scan=2025-10-23: Outside OUTSIDE IMAGES PRESENTED FOR SECOND OPINION INTERPRETATION   Date submitted at <LOCATION>: 10/23/2025 Date of study: 10/15/2025 Performed at: 
-  DEI0ch9ut6zguy TACE=2016-06-08 Scan=2016-08-01: History: History of hepatocellular carcinoma.  follow up; status post TACE  Treatment was to Right lobe  Last treatment date: 6/8/2016    Technique: A
-  DEI0mrwt6zgwq4 TACE=2017-10-07 Scan=2017-11-05: Indication: Postop arterial chemoembolization. Comparison:  October 8, 2017 Findings:  Helical imaging through the abdomen. No contrast administered. 
-  DEI0ou7sz8uanb TACE=2017-06-08 Scan=2017-07-09: EXAM: MRI ABDOMEN WO CONTRAST INDICATION: Alcoholic liver cirrhosis with <LOCATION> status post first Y 90 treatment. Follow-up examination Treatment 
-  DEI0qt6zgqd5is TACE=2017-10-14 Scan=2018-01-14: EXAM: MRI ABDOMEN W/WO CONTRAST INDICATION: <AGE> male with hepatocellular carcinoma status post Y 91 embolization to the left hepatic lobe on 11/05/2
-  DEI01t6zg1vj4n TACE=2019-07-13 Scan=2019-09-17: Exam: CT CHEST/ABDOMEN/PELVIS W/ IV CONTRAST. HISTORY: <AGE> female with advanced stage <LOCATION> status post immunotherapy, restaging. TECHNIQUE: CT
-  DEI0y0em5zramh TACE=2024-08-27 Scan=2024-09-28: EXAM: MRI ABDOMEN W/WO CONTRAST  INDICATION: Biopsy-proven <LOCATION> status post TACE.  TECHNIQUE: Multisequence, multiplanar MR imaging of the abdom
-  DEI0o32mt6zgm4 TACE=2019-03-12 Scan=2019-04-14: OUTSIDE STUDY INTERPRETATION FOR SECOND OPINION. DATE OF STUDY: 4/3/2019. DATE OF REVIEW AT <LOCATION>: 4/17/2019. INDICATION:  <AGE> with hepatocellu
-  DEI05pm9t6zg9x TACE=2023-08-16 Scan=2023-09-20: EXAM: MRI ABDOMEN W/WO CONTRAST
-
-INDICATION: y-90 8/22. 
-Treatment was to the left hepatic lobe 
-Last treatment date: 8/22/2023 
-
-TECHNIQUE: Axial T1 
-  DEI067sz86dx26 TACE=2022-12-03 Scan=2023-01-02: EXAM: MRI ABDOMEN W/WO CONTRAST INDICATION: s/p TACE 12/03- evaluate response to treatment Treatment was to right and left hepatic lobes  Last treatme
-  DEI0nt6zgnp6xr TACE=2018-02-16 Scan=2018-04-08: EXAM: MRI ABDOMEN W/WO CONTRAST INDICATION: Infiltrative <LOCATION>, status post TACE to the right hepatic lobe on 2/16/2018. History of colorectal ca
-  DEI0exg95zra94 TACE=2025-09-20 Scan=2025-10-19: EXAM: MRI ABDOMEN W/WO CONTRAST  INDICATION: Post transarterial chemoembolization 4 weeks ago. Dx: <LOCATION> (hepatocellular carcinoma) [C22.0 (ICD-1
-  DEI0jp5zrap063 TACE=2016-05-04 Scan=2016-08-29: EXAM: CT chest, abdomen and pelvis with contrast. INDICATION: <AGE> male with history of esophageal cancer status post chemoradiation and infiltrative
-  DEI0dgt6zggtf9 TACE=2018-03-09 Scan=2018-04-09: EXAM: MRI ABDOMEN W/WO CONTRAST INDICATION: History of hepatocellular carcinoma, status post TACE. TECHNIQUE: Multiplanar, multisequence MR imaging of
-  DEI0pt6zgpk6v0 TACE=2016-11-21 Scan=2016-12-27: ** Outside film interpretation ** INDICATION: History of hepatocellular carcinoma.  Status post TACE; Treatment was to Right lobe  Last treatment date
-  DEI0nn5t6zg53j TACE=2017-10-04 Scan=2017-11-04: EXAM: MRI ABDOMEN W/WO CONTRAST INDICATION: CIRRHOSIS.  Treatment was to right hepatic lobe.  Last treatment date: 10/4/2017.    TECHNIQUE: Axial T1 a
-  DEI0378g7sz8ga TACE=2016-05-24 Scan=2016-07-04: Exam 1:  HCI 6120 - MRI ABDOMEN W/WO CONTRAST   -  Jul 4, 2016  11:03     Acc#:40670638 RESULT:   History: <LOCATION> status post TACE to the right lo
-  DEI0dxw5zraw83 TACE=2025-08-23 Scan=2025-12-06: EXAM: MRI ABDOMEN W/WO CONTRAST  INDICATION: Hepatocellular carcinoma, status post TACE  TECHNIQUE: Multiplanar multisequence MR of the abdomen was pe
-  DEI0k2te7sz8e5 TACE=2017-02-03 Scan=2017-04-26: EXAM: MRI ABDOMEN W/WO CONTRAST INDICATION: <AGE> male with hepatocellular carcinoma, portal vein thrombosis, and NASH cirrhosis. Patient is status po
-
---- Extrahepatic disease flagged: 193 N_PATIENTS ---
-
-✓ hcc_tace_tumor_state_v12_3 persisted: 718 N_STUDIES
-
-======================================================================
-STEPS 6-8 — ALBI, ECOG, AFP
-======================================================================
-
-SOURCE: hcc_tace_tumor_state_v12_3: 718 N_STUDIES
-
---- STEP 6: ALBI ---
-Pre-built albumin rows: 41671, bilirubin rows: 39667
-Reassessment paired albumin+bilirubin: 565/718 = 78.7%
-mALBI distribution:
-+--------------+-----+
-|reassess_malbi|count|
-+--------------+-----+
-|             1|  241|
-|            2a|   86|
-|            2b|  180|
-|             3|   58|
-+--------------+-----+
-
-
-Pre-TACE paired ALBI: 572/718 = 79.7%
-Paired delta ALBI: 463/718 = 64.5%
-
-ALBI change distribution:
-+-------------+-----+
-|  albi_change|count|
-+-------------+-----+
-|DETERIORATION|  250|
-|  IMPROVEMENT|   95|
-|       STABLE|  118|
-+-------------+-----+
-
-Delta ALBI: median=0.136, IQR=[-0.061, 0.353]
-
---- STEP 7: ECOG ---
-NOTE: Structured ECOG not available in REACH derived tables.
-ECOG extraction from notes would require NLP; marking as UNKNOWN for all.
-This is a data limitation that must be reported.
-ECOG known: 0/718 = 0.0%
-
---- STEP 8: AFP ---
-Pre-built AFP rows: 8910
-Pre-TACE AFP (-30..0d): 544/718 = 75.8%
-Reassessment AFP (±14d): 451/718 = 62.8%
-Paired AFP: 382/718 = 53.2%
-
-AFP response category (paired, baseline AFP>20):
-+----------------+-----+
-|    afp_response|count|
-+----------------+-----+
-|20_49PCT_DECLINE|   27|
-|GE_50PCT_DECLINE|   92|
-|     NONSECRETOR|  191|
-|            RISE|   45|
-|          STABLE|   27|
-+----------------+-----+
-
-
-✓ hcc_tace_labs_v12_3 persisted: 718 N_STUDIES
-
---- DATA COMPLETENESS SUMMARY ---
-  Reassess ALBI: 565/718 = 78.7%
-  Pre-TACE ALBI: 463/718 = 64.5%
-  Delta ALBI: 463/718 = 64.5%
-  Pre-TACE AFP: 382/718 = 53.2%
-  Reassess AFP: 382/718 = 53.2%
-
-======================================================================
-STEPS 9-11 — EQUIPOISE + STRATEGIES + TIMING
-======================================================================
-
---- STEP 9: CLINICAL EQUIPOISE FUNNEL ---
-Starting: 718 N_STUDIES, 718 N_PATIENTS
-
-1. With reassessment imaging 28-120d:  718 N_PATIENTS
-2. With radiology report text:          678 N_PATIENTS (excl 40 no report)
-3. Residual/recurrent/progressive HCC:  677 N_PATIENTS (excl 1 complete response/no report)
-4. No definite extrahepatic disease:    485 N_PATIENTS (excl 192 EHD)
-5. No MVI/PVTT (strict only):           450 N_PATIENTS (excl 35 MVI/PVTT)
-6. Hepatic reserve ok (strict, mALBI<3):418 N_PATIENTS (excl 32 mALBI=3)
-7. No curative pathway (≤120d):          418 N_PATIENTS (excl 0 curative)
-
-### BROAD EQUIPOISE PHENOTYPE:  485 N_PATIENTS
-### STRICT EQUIPOISE PHENOTYPE: 418 N_PATIENTS
-
-======================================================================
-STEP 10 — POST-REASSESSMENT STRATEGIES
-======================================================================
-
---- BROAD EQUIPOISE: Strategy distribution (30d grace) ---
-+--------------------+---+
-|initial_strategy    |n  |
-+--------------------+---+
-|OBSERVATION_OR_OTHER|160|
-|REPEAT_TACE_ONLY    |110|
-|SYSTEMIC_PLUS_TACE  |5  |
-|SYSTEMIC_ONLY       |4  |
-+--------------------+---+
-
---- Strategy by era (DEFINITELY_MODERN only) ---
-+--------------------+---+
-|initial_strategy    |n  |
-+--------------------+---+
-|OBSERVATION_OR_OTHER|53 |
-|REPEAT_TACE_ONLY    |23 |
-|SYSTEMIC_ONLY       |3  |
-|SYSTEMIC_PLUS_TACE  |2  |
-+--------------------+---+
-
---- Systemic regimens (all strategies with systemic) ---
-+-----------+---+
-|sys_regimen|n  |
-+-----------+---+
-|LENVATINIB |3  |
-|STRIDE     |3  |
-|SORAFENIB  |1  |
-|NIVO_MONO  |1  |
-|AB         |1  |
-+-----------+---+
-
-
---- STEP 11: TREATMENT TIMING ---
-
-REPEAT_TACE_ONLY: N=110, median=17d, IQR=[12, 23], p10=6, p90=27
-
-SYSTEMIC_ONLY: N=4, median=18d, IQR=[3, 21], p10=3, p90=23
-
-SYSTEMIC_PLUS_TACE: N=5, median=9d, IQR=[7, 27], p10=7, p90=28
-
-✓ hcc_tace_strategy_v12_3 persisted: 279 N_PATIENTS
-
-======================================================================
-STEPS 12-16 + FINAL FEASIBILITY REPORT
-======================================================================
-
---- STEP 12: TALENTACE-LIKE SUBCOHORT ---
-TALENTACE criteria (where measurable): systemically untreated,
-Child-Pugh A or preserved reserve (ALBI), unresectable, ECOG 0-1
-
-TALENTACE_LIKE_REACH: 297 N_PATIENTS
-
-TALENTACE-like strategy distribution:
-+--------------------+-----+
-|initial_strategy    |count|
-+--------------------+-----+
-|OBSERVATION_OR_OTHER|104  |
-|REPEAT_TACE_ONLY    |69   |
-|SYSTEMIC_ONLY       |4    |
-|SYSTEMIC_PLUS_TACE  |4    |
-+--------------------+-----+
-
-
---- STEP 13: RESPONSE x LIVER RESERVE 2x2 ---
-
-Full 2x2 (with Unknown reserve):
-+----------------------+---------------------+---+
-|tumor_response_stratum|liver_reserve_stratum|n  |
-+----------------------+---------------------+---+
-|FAVORABLE             |DETERIORATED         |32 |
-|FAVORABLE             |PRESERVED            |26 |
-|FAVORABLE             |UNKNOWN              |16 |
-|UNFAVORABLE           |DETERIORATED         |206|
-|UNFAVORABLE           |PRESERVED            |179|
-|UNFAVORABLE           |UNKNOWN              |219|
-+----------------------+---------------------+---+
-
-Strategy by response x liver stratum:
-  FAVORABLE/PRESERVED: N=26  [OBSERVATION_OR_OTHER:10, None:13, REPEAT_TACE_ONLY:2, SYSTEMIC_PLUS_TACE:1]
-  FAVORABLE/DETERIORATED: N=32  [OBSERVATION_OR_OTHER:15, None:13, REPEAT_TACE_ONLY:4]
-  UNFAVORABLE/PRESERVED: N=179  [OBSERVATION_OR_OTHER:43, SYSTEMIC_ONLY:3, None:103, REPEAT_TACE_ONLY:28, SYSTEMIC_PLUS_TACE:2]
-  UNFAVORABLE/DETERIORATED: N=206  [OBSERVATION_OR_OTHER:40, None:128, REPEAT_TACE_ONLY:38]
-
---- STEP 14: COMMON-SUPPORT DIAGNOSTICS ---
-Comparing REPEAT_TACE_ONLY vs SYSTEMIC_ONLY+SYSTEMIC_PLUS_TACE
-NOTE: Systemic arm too small for formal propensity analysis.
-
-Repeat TACE arm: 110 N_PATIENTS
-Systemic arm:    9 N_PATIENTS
-
-Modern repeat TACE: 23 N_PATIENTS
-Modern systemic:    5 N_PATIENTS
-
-Formal propensity score analysis NOT feasible: systemic arm N<20.
-
---- STEP 15: DATE-SHIFT ROBUSTNESS ---
-Within-patient timing is EXACT (same offset).
-Calendar-era classification uses ±6mo buffer around approval dates.
-  DEFINITELY_PRE_MODERN: N=161, repeat TACE=73, systemic=2
-  DATE_SHIFT_UNCERTAIN: N=37, repeat TACE=14, systemic=2
-  DEFINITELY_MODERN: N=81, repeat TACE=23, systemic=5
-
-======================================================================
-STEP 16 — FINAL FEASIBILITY DECISION
-======================================================================
-
-### BROAD EQUIPOISE
-N total:             485
-Repeat TACE:         110
-Modern systemic:     9
-Combination:         5
-
-### STRICT EQUIPOISE
-N total:             418
-(Strict strategy counts require re-filtering - see funnel above)
-
-### TALENTACE-LIKE
-N total:             297
-
-### DATA COMPLETENESS IN BROAD EQUIPOISE
-  ALBI: 382/485 = 78.8%
-  Delta ALBI: 316/485 = 65.2%
-  Pre-TACE AFP: 277/485 = 57.1%
-  Paired AFP: 277/485 = 57.1%
-  ECOG:              0/485 = 0.0% (NOT AVAILABLE)
-  Explicit CP:       0/485 = 0.0% (NOT VALIDATED)
-  Response category: 485/485 = 100.0%
-
-### HUMAN REVIEW BURDEN
-  Radiology confirmation needed: ALL 485 (regex-based extraction)
-  Technical TACE suitability:     ALL repeat-TACE candidates
-  Treatment-intent confirmation:  ALL systemic-escalation patients
-
-### DECISION
-
-DESCRIPTIVE ONLY
-
-Rationale:
-  1. Post-TACE systemic escalation arm in modern era: 5 total (3 DEFINITELY_MODERN)
-  2. This is insufficient for ANY causal inference method.
-  3. Even with 60-day grace period, systemic N would remain <20.
-  4. The post-TACE decision node in REACH is overwhelmingly
-     repeat-TACE-dominant (110/119 = 92% of treated patients).
-  5. ECOG completely unavailable; AFP paired 53%; imaging regex unvalidated.
-  6. Formal propensity/target-trial analysis is NOT feasible.
-  7. A descriptive characterization of the post-TACE decision landscape
-     is the maximum this single-center dataset supports.
-  8. MULTICENTER REQUIRED for a powered post-TACE TACE-vs-systemic comparison.
-
-
-
-======================================================================
-COPY-PASTE REVIEW REPORT
-======================================================================
-
-1. CANONICAL TACE EPISODE CONSTRUCTION
-   Source: reach_users.xzhao81.hcc_locoregional_validated_v12
-   Logic: TACE_HIGH_CONFIDENCE + TACE_PROBABLE rows → collapse same (patient,date) → merge ≤2-day gaps
-   Raw TACE procedure rows:    3,304
-   Patient-date pairs:         2,549  
-   Canonical episodes (≤2d):   2525
-   Unique patients:            1052
-   Assertion: 2525 < 3,304 ✓
-
-2. INDEX-TACE WATERFALL
-   All TACE patients:                      1052
-   DEFINITE_FIRST_TACE:                    603
-   PROBABLE_FIRST_TACE:                    219
-   Primary cohort (definite+probable):     822
-   FIRST_OBSERVED_PRIOR_OUTSIDE_POSSIBLE:  44
-   DEFINITE_REPEAT_TACE:                   23
-   UNKNOWN:                                163
-
-3. MODERN-ERA WATERFALL (primary cohort)
-   DEFINITELY_PRE_MODERN (before 2019-11-29):   398
-   DATE_SHIFT_UNCERTAIN (±6mo of 2020-05-29):   74
-   DEFINITELY_MODERN (after 2020-11-29):         350
-
-4. REASSESSMENT IMAGING WATERFALL
-   Primary index TACE patients:   822
-   No liver CT/MRI at Hopkins:    4
-   Only imaging <28d:             66
-   Only imaging >120d:            12
-   With reassessment 28-120d:     718
-   Modality: CT=146, MRI=572
-   Contrast-enhanced:             662
-   Median days post-TACE:         38, IQR [32, 50]
-
-5. RADIOLOGY VARIABLE COMPLETENESS (N=718)
-   With report text:              678
-   LR-TR reported:                39
-   Complete response:             4
-   Residual viable:               191
-   Progression:                   203
-   New intrahepatic:              42
-   MVI/PVTT flagged:              58
-   Extrahepatic flagged:          193
-   ALL REGEX-BASED — HUMAN CONFIRMATION REQUIRED
-
-6. LIVER-FUNCTION COMPLETENESS (N=718)
-   Reassessment ALBI:    565/718 = 78.7%
-   Pre-TACE ALBI:        572/718 = 79.7%  
-   Paired delta ALBI:    463/718 = 64.5%
-   mALBI at reassessment: grade 1=241, 2a=86, 2b=180, 3=58
-   Delta ALBI: median=0.136, IQR=[-0.061, 0.353]
-   ALBI change: deterioration=250, stable=118, improvement=95
-
-7. AFP COMPLETENESS (N=718)
-   Pre-TACE AFP (-30..0d): 544/718 = 75.8%
-   Reassessment AFP (±14d): 451/718 = 62.8%
-   Paired AFP:              382/718 = 53.2%
-   AFP response (paired, baseline>20): ≥50% decline=92, 20-49% decline=27, stable=27, rise=45
-   Nonsecretor (AFP≤20):   191
-
-8. ECOG/CHILD-PUGH COMPLETENESS
-   Structured ECOG: 0/718 = 0% — NOT AVAILABLE IN REACH DERIVED TABLES
-   Explicit Child-Pugh: 0/718 = 0% — NOT VALIDATED
-   These are critical data gaps.
-
-9. FULL EQUIPOISE WATERFALL
-   Reassessment imaging:         718
-   With report text:             678 (excl 40)
-   Residual/recurrent HCC:       677 (excl 1 CR)
-   No extrahepatic disease:      485 (excl 192) ← BROAD EQUIPOISE
-   No MVI/PVTT:                  450 (excl 35)
-   Hepatic reserve ok (mALBI<3): 418 (excl 32)
-   No curative pathway:          418 (excl 0) ← STRICT EQUIPOISE
-
-10. BROAD STRATEGY COUNTS (30d grace, N=279 of 485 with identified strategy)
-    REPEAT_TACE_ONLY:      110
-    SYSTEMIC_ONLY:         4
-    SYSTEMIC_PLUS_TACE:    5
-    OBSERVATION_OR_OTHER:  160
-    Not classified:        206 (no treatment within 30d)
-
-11. STRICT STRATEGY COUNTS
-    (Subset of broad; strict phenotype N=418)
-    Same strategy proportions expected.
-
-12. EXACT SYSTEMIC REGIMENS (all eras)
-    LENVATINIB: 3
-    STRIDE: 3
-    SORAFENIB: 1
-    NIVO_MONO: 1
-    AB (Atezo/Bev): 1
-    Total systemic: 9 patients
-
-13. TREATMENT TIMING
-    REPEAT_TACE: N=110, median=17d, IQR=[12,23]
-    SYSTEMIC_ONLY: N=4, median=18d, IQR=[3,21]
-    SYSTEMIC_PLUS_TACE: N=5, median=9d, IQR=[7,27]
-
-14. TALENTACE-LIKE COHORT
-    N: 297
-    Criteria: no prior systemic, no EHD, mALBI 1 or 2a
-    (ECOG/six-and-twelve not derivable)
-
-15. RESPONSE x LIVER-FUNCTION 2x2
-    (See cell output for exact counts)
-    Dominant pattern: UNFAVORABLE tumor + DETERIORATED liver
-
-16. SUPPORT/ESS/BALANCE DIAGNOSTICS
-    NOT FEASIBLE: systemic arm N=9 (total), N=5 (modern)
-    Formal propensity analysis impossible with <20 in either arm.
-
-17. HUMAN-REVIEW REQUIREMENTS
-    Radiology confirmation:         ALL 485 broad-equipoise patients
-    Technical TACE suitability:      110 repeat-TACE candidates
-    Treatment-intent confirmation:   9 systemic patients
-    Total human review burden:       ~500 chart reviews
-
-18. UNRESOLVED INCONSISTENCIES
-    a) 206/485 broad-equipoise patients have no treatment within 30d —
-       likely observation, hospice, or lost to follow-up. Requires chart review.
-    b) Extrahepatic disease flagged in 192 patients — regex may over-capture
-       (mentions of "no metastasis" could be misparsed). Needs human review.
-    c) ECOG completely absent. This is a fundamental limitation for
-       equipoise assessment.
-    d) Only 1 definite complete response identified — likely under-detection
-       by regex. LR-TR nonviable in only 1 case.
-    e) AFP paired coverage 53% may underestimate AFP secretors due to
-       timing-window stringency.
-
-19. PERSISTED TABLES AND ROW COUNTS
-    hcc_tace_episodes_canonical_v12_3:  2525 episodes, 1052 patients
-    hcc_index_tace_v12_3:               1052 patients
-    hcc_index_tace_era_v12_3:           1052 patients  
-    hcc_tace_reassessment_v12_3:        718 studies
-    hcc_tace_tumor_state_v12_3:         718 studies
-    hcc_tace_labs_v12_3:                718 studies
-    hcc_tace_strategy_v12_3:            279 patients
-    _tace_albumin_v12_3:                scratch (albumin labs)
-    _tace_bilirubin_v12_3:              scratch (bilirubin labs)
-    _tace_afp_v12_3:                    scratch (AFP labs)
-
-20. IMPLEMENTATION LOGIC SUMMARY
-    Step 0: TACE_HC + TACE_PROBABLE → collapse same (pat,date) → merge ≤2d gaps
-    Step 1: First TACE per patient. Classify by pre-index history, Hopkins contact timing, HCC dx date.
-    Step 2: Atezo/Bev 2020-05-29 ±6mo buffer for date-shift robustness.
-    Step 3: image_procedures CT/MRI abdomen/liver, completed, 28-120d post-index TACE.
-    Step 4: Regex on radiology_text.content for LR-TR, response, progression, MVI, EHD.
-    Step 6: ALBI = log10(bili_mg*17.1)*0.66 + (alb_g*10)*(-0.085). ±7d/14d of scan.
-    Step 8: AFP from _tace_afp_v12_3, ±30d pre-TACE, ±14d reassessment.
-    Step 9: Sequential exclusion: no report, no active HCC, EHD, MVI, mALBI=3, curative.
-    Step 10: 30d grace: TACE vs systemic vs both vs observation vs death.
-
-=== FINAL DETERMINATION ===
-
-DESCRIPTIVE ONLY
-
-The post-TACE systemic escalation arm contains 9 total patients (5 modern era).
-A single-center target-trial emulation of TACE-vs-systemic escalation is NOT feasible.
-REACH can support a descriptive characterization of the post-TACE decision landscape.
-MULTICENTER COLLABORATION REQUIRED for a powered comparative analysis.
-
-=== STOP — NO OUTCOME ESTIMATION ===
-
-
-✓ ANALYSIS COMPLETE. MODEL-ASSISTED — HUMAN CONFIRMATION REQUIRED.
+DO NOT estimate treatment effects.
+DO NOT run survival models.
+DO NOT calculate propensity scores.
+DO NOT rank projects.
+DO NOT create another broad HCC atlas.
+DO NOT trust the previous radiology-response regex.
+DO NOT assume the previous 9 systemic-escalation patients are correct.
 
+The sole scientific objective is:
+
+**Determine, as accurately as possible, how many true HCC patients transition from HCC-directed TACE to systemic HCC therapy after TACE #1, TACE #2, or the first documented evidence that TACE is no longer adequately controlling disease.**
+
+We need to determine whether the Hopkins REACH dataset can support a single-center study of:
+
+continued TACE-dominant management
+
+versus
+
+systemic-treatment escalation
+
+after one or more TACEs.
+
+The previous v12.3 run has several known problems:
+
+1. Some TACE-like procedures may have been performed for NON-HCC liver tumors.
+2. The radiology parser produced clinically contradictory response classifications.
+3. ECOG was incorrectly declared unavailable despite prior successful note extraction.
+4. Only a 30-day treatment window was emphasized.
+5. The analysis focused almost entirely on the first TACE.
+6. The previous "equipoise" cohort depended on unvalidated extrahepatic-disease and response regex.
+7. We therefore do NOT yet know whether the very small systemic arm is real.
+
+This run should resolve those issues without trying to perform the final causal analysis.
+
+# ============================================================
+# GLOBAL EXECUTION RULE: SHOW EXACTLY HOW EVERYTHING IS DONE
+# ============================================================
+
+For EVERY major step print:
+
+SOURCE TABLE(S):
+UNIT OF ANALYSIS:
+KEY COLUMN(S):
+DATE COLUMN(S):
+RAW N_ROWS:
+RAW N_PATIENTS:
+
+Then print the actual SQL/PySpark used for:
+
+- filtering
+- joins
+- window functions
+- deduplication
+- episode construction
+- date calculations
+- phenotype classification.
+
+If full code is extremely long, print the essential executable code block that contains all phenotype-defining logic.
+
+After every join print:
+
+LEFT_ROWS
+LEFT_PATIENTS
+RIGHT_ROWS
+RIGHT_PATIENTS
+MATCHED_LEFT_PATIENTS
+UNMATCHED_LEFT_PATIENTS
+ROWS_AFTER_JOIN
+PATIENTS_AFTER_JOIN
+JOIN_MULTIPLICITY
+
+If an intended one-to-one or many-to-one join increases rows by >10%, print:
+
+`*** JOIN MULTIPLICATION ALERT ***`
+
+and investigate BEFORE proceeding.
+
+For every clinically surprising count print:
+
+`*** CLINICAL PLAUSIBILITY ALERT ***`
+
+and investigate it.
+
+At the end print ONE complete plain-text report containing ALL requested results and implementation logic so the investigator can copy it into ChatGPT.
+
+Do not say "see dataframe" or "see notebook."
+
+# ============================================================
+# PART 0 — LOAD ONLY CANONICAL INPUTS
+# ============================================================
+
+Begin by reading:
+
+`reach_users.xzhao81.hcc_tace_episodes_canonical_v12_3`
+
+Expected:
+approximately 2,525 canonical TACE episodes / 1,052 patients.
+
+Also locate:
+
+- canonical HCC master roster
+- high-confidence HCC phenotype
+- canonical validated systemic lines
+- high-confidence true-1L systemic table
+- med_orders
+- med_admin / med_admin_all
+- treatment_plan
+- treatment_plan_orders
+- oncology/hepatology notes
+- IR/procedure notes
+- radiology_text
+- image_procedures
+- encounter_dx
+- hosp_billing_dx
+- problem_list
+- pathology if useful
+- AFP
+- albumin
+- bilirubin
+- ECOG/Child-Pugh note-extraction outputs from v9.
+
+PRINT THE SCHEMAS of every table that will actually be used.
+
+Do not assume field names.
+
+If a required table/version cannot be found:
+STOP that subsection and report exactly what is missing.
+
+# ============================================================
+# PART 1 — FIRST FIX THE MOST IMPORTANT PROBLEM:
+# IS EACH TACE ACTUALLY FOR HCC?
+# ============================================================
+
+The current TACE phenotype is patient-level HCC + TACE-like procedure.
+
+That is insufficient.
+
+A patient can have HCC AND another malignancy with liver metastases.
+
+We have already observed at least one apparent TACE episode whose follow-up radiology indication referenced metastatic urothelial cancer.
+
+Therefore classify EACH CANONICAL TACE EPISODE by treatment indication.
+
+UNIT:
+one canonical TACE episode.
+
+For each episode gather evidence in the following hierarchy.
+
+------------------------------------------------------------
+1A. HIGH-PRIORITY EPISODE-SPECIFIC EVIDENCE
+------------------------------------------------------------
+
+Search within approximately -14 to +7 days around the TACE date for:
+
+1. IR procedure note
+2. pre-procedure IR H&P
+3. procedure indication
+4. operative/procedure diagnosis
+5. tumor-board note if directly linked
+6. oncology/hepatology note explicitly discussing the planned TACE.
+
+Extract phrases containing:
+
+HCC-supportive:
+- hepatocellular carcinoma
+- HCC
+- C22.0
+- LI-RADS 5 / LR-5 if clearly referring to treated lesion
+- hepatic tumor in a patient explicitly being treated for HCC
+- bridging/downstaging for transplant due to HCC
+- segment/lobe treatment explicitly linked to known HCC.
+
+Competing cancer indicators:
+- colorectal metastasis
+- neuroendocrine metastasis
+- urothelial metastasis
+- breast metastasis
+- melanoma metastasis
+- cholangiocarcinoma
+- intrahepatic cholangiocarcinoma
+- metastatic carcinoma to liver
+- liver metastasis from another named primary
+- other non-HCC hepatic malignancy.
+
+IMPORTANT:
+Do not classify "liver cancer" alone as definite HCC.
+
+------------------------------------------------------------
+1B. SUPPORTING CONTEXT
+------------------------------------------------------------
+
+If direct procedure indication is absent, use:
+
+- active C22.0 diagnoses near procedure
+- HCC oncology/hepatology notes
+- Beacon HCC treatment plan
+- HCC-specific surveillance/follow-up language
+- HCC pathology
+- HCC-directed transplant/downstaging discussion.
+
+But nearby C22.0 alone should NOT override an episode-specific note saying the procedure was for another cancer.
+
+------------------------------------------------------------
+1C. CLASSIFICATION
+------------------------------------------------------------
+
+Create:
+
+`tace_hcc_indication_status`
+
+with EXACTLY:
+
+1. DEFINITE_HCC_DIRECTED
+2. PROBABLE_HCC_DIRECTED
+3. DEFINITE_NON_HCC
+4. PROBABLE_NON_HCC
+5. MIXED_OR_MULTIPLE_MALIGNANCIES_UNCLEAR
+6. INSUFFICIENT_EVIDENCE
+
+Evidence hierarchy:
+
+Episode-specific explicit indication
+>
+procedure/IR note
+>
+contemporaneous oncology note
+>
+supporting diagnosis/context only.
+
+Store:
+
+- pat
+- tace_episode_id
+- tace_date
+- status
+- strongest_evidence_source
+- evidence_text
+- competing_cancer
+- confidence.
+
+DO NOT use a regex without negation/context handling.
+
+Print ALL DEFINITE_NON_HCC and PROBABLE_NON_HCC cases.
+
+Print 50 random DEFINITE_HCC cases.
+
+Print ALL MIXED/UNCLEAR cases if ≤100.
+
+Also print:
+
+ALL CANONICAL TACE EPISODES
+→ DEFINITE HCC
+→ PROBABLE HCC
+→ NON-HCC
+→ MIXED
+→ INSUFFICIENT.
+
+Then patient counts separately.
+
+Persist:
+
+`hcc_tace_hcc_indication_v12_4`
+
+# ============================================================
+# PART 2 — BUILD THE TRUE HCC-DIRECTED TACE SEQUENCE
+# ============================================================
+
+Primary HCC-TACE definition:
+
+DEFINITE_HCC_DIRECTED + PROBABLE_HCC_DIRECTED.
+
+Do NOT include non-HCC, mixed, or insufficient episodes in the primary sequence.
+
+For each patient order HCC-directed TACE episodes chronologically.
+
+Use:
+
+`row_number().over(Window.partitionBy("pat").orderBy("tace_date","tace_episode_id"))`
+
+Create:
+
+- hcc_tace_number = 1, 2, 3...
+- previous_tace_date
+- next_tace_date
+- days_from_previous_tace
+- days_to_next_tace.
+
+Print distribution:
+
+TACE #1
+TACE #2
+TACE #3
+TACE #4+
+by N_PATIENTS and N_EPISODES.
+
+Print how many patients have:
+
+- exactly 1 HCC-directed TACE
+- ≥2
+- ≥3
+- ≥4.
+
+Also print the median/IQR spacing:
+
+TACE1→TACE2
+TACE2→TACE3.
+
+Persist:
+
+`hcc_tace_sequence_hcc_only_v12_4`
+
+# ============================================================
+# PART 3 — TRUE FIRST-TACE ASCERTAINMENT
+# ============================================================
+
+Do NOT assume first observed Hopkins TACE = true first TACE.
+
+For the first HCC-directed TACE episode per patient search all data BEFORE that date for:
+
+- prior TACE
+- chemoembolization
+- embolization for HCC
+- outside TACE
+- "s/p TACE"
+- "prior TACE"
+- "TACE x1/x2/etc."
+- outside IR treatment.
+
+Use notes as well as procedures.
+
+Create:
+
+1. DEFINITE_TRUE_FIRST_HCC_TACE
+2. PROBABLE_TRUE_FIRST_HCC_TACE
+3. FIRST_OBSERVED_PRIOR_OUTSIDE_TACE_POSSIBLE
+4. DEFINITE_PRIOR_TACE
+5. UNKNOWN.
+
+Do not use an arbitrary Hopkins lookback alone when notes explicitly document prior outside treatment.
+
+Print exact counts.
+
+For each category print 20 representative evidence examples.
+
+Persist updated index table:
+
+`hcc_index_tace_hcc_validated_v12_4`
+
+# ============================================================
+# PART 4 — REASSESSMENT IMAGING:
+# DO NOT ATTEMPT FULL RESPONSE CLASSIFICATION YET
+# ============================================================
+
+The previous response regex was unreliable.
+
+For THIS RUN, use imaging primarily to locate clinical decision points.
+
+For TACE #1 and TACE #2 separately identify:
+
+the first clinically appropriate contrast-enhanced liver CT/MRI between:
+
+PRIMARY:
+28–120 days
+
+SENSITIVITY:
+21–120 days.
+
+Use one unique radiology study per patient/TACE episode.
+
+Do not use:
+- billing components
+- duplicated reports
+- individual phases
+as separate scans.
+
+Preferred study identifier:
+accession / order / report ID.
+
+Fallback:
+patient + date + modality + procedure.
+
+Require contrast-enhanced study where possible.
+
+Create:
+
+`hcc_post_tace_reassessment_v12_4`
+
+with:
+
+- pat
+- tace_number
+- tace_date
+- scan_date
+- days_post_tace
+- modality
+- study_id
+- procedure_name
+- report_available.
+
+Print reassessment coverage separately after:
+
+TACE #1
+TACE #2.
+
+# ============================================================
+# PART 5 — CONSERVATIVE "INADEQUATE RESPONSE" PHENOTYPE
+# ============================================================
+
+Do NOT attempt comprehensive mRECIST from regex.
+
+Instead build a HIGH-SPECIFICITY evidence phenotype for explicit inadequate disease control.
+
+Search the post-TACE imaging report AND oncology/IR/hepatology notes within:
+
+scan date ±14 days
+
+for explicit language.
+
+------------------------------------------------------------
+5A. STRONG EVIDENCE OF INADEQUATE CONTROL
+------------------------------------------------------------
+
+Examples:
+
+- residual viable tumor
+- residual enhancing tumor
+- viable disease
+- LR-TR viable
+- incomplete response
+- persistent viable HCC
+- progressive disease
+- progression
+- increased size of viable tumor
+- new HCC lesion
+- new LR-5 lesion
+- multifocal progression
+- recurrent HCC
+- residual disease requiring additional treatment
+- "needs repeat TACE"
+- "recommend systemic therapy"
+- "TACE refractory"
+- "TACE failure"
+- "poor response to TACE"
+- "not responding to TACE."
+
+------------------------------------------------------------
+5B. STRONG EVIDENCE OF GOOD CONTROL
+------------------------------------------------------------
+
+Examples:
+
+- LR-TR nonviable
+- no viable tumor
+- complete necrosis
+- complete response
+- no residual enhancement
+- treated lesion nonviable.
+
+------------------------------------------------------------
+5C. NEGATION-AWARE LOGIC
+------------------------------------------------------------
+
+The parser MUST distinguish:
+
+"no evidence of viable tumor"
+
+from
+
+"viable tumor."
+
+It MUST distinguish:
+
+"no progression"
+
+from
+
+"progression."
+
+It MUST distinguish historical phrases from current assessment where possible.
+
+Use explicit negation-window logic or sufficiently constrained phrases.
+
+Do not count a phrase in an indication/history section as a current response unless the impression/assessment supports it.
+
+------------------------------------------------------------
+5D. CLASSIFICATION
+------------------------------------------------------------
+
+Create:
+
+- EXPLICIT_INADEQUATE_CONTROL
+- EXPLICIT_GOOD_CONTROL
+- MIXED/CONTRADICTORY
+- INDETERMINATE.
+
+Store evidence phrase and source.
+
+If LR-TR exists, prioritize explicit LR-TR over generic regex.
+
+Do NOT map INDETERMINATE to inadequate.
+
+Print:
+- counts
+- 50 inadequate examples
+- 50 good-control examples
+- ALL contradictory examples.
+
+Persist:
+
+`hcc_post_tace_control_status_v12_4`
+
+# ============================================================
+# PART 6 — USE NOTES TO IDENTIFY THE ACTUAL CLINICAL DECISION
+# ============================================================
+
+This is essential.
+
+For each post-TACE reassessment after TACE #1 and #2 search:
+
+- oncology notes
+- hepatology notes
+- IR notes
+- tumor-board notes if available
+
+from:
+
+scan date -7 days
+through
+scan date +45 days.
+
+Extract explicit management plans.
+
+Candidate phrases/concepts:
+
+REPEAT_TACE_PLAN
+SYSTEMIC_THERAPY_PLAN
+Y90_PLAN
+ABLATION_PLAN
+RESECTION_PLAN
+TRANSPLANT_PLAN
+OBSERVE_PLAN
+NO_FURTHER_CANCER_THERAPY
+UNCLEAR.
+
+Examples:
+
+"recommend repeat TACE"
+"plan for another TACE"
+"refer back to IR"
+"start atezolizumab/bevacizumab"
+"start durvalumab/tremelimumab"
+"start systemic therapy"
+"consider systemic therapy"
+"switch to systemic therapy"
+"no further TACE"
+"TACE refractory"
+"continue observation"
+"repeat MRI in 3 months."
+
+IMPORTANT:
+Distinguish:
+
+DECIDED PLAN
+from
+POSSIBLE OPTION DISCUSSED.
+
+Create confidence:
+
+DEFINITE_PLAN
+PROBABLE_PLAN
+OPTION_ONLY
+UNKNOWN.
+
+Store evidence text.
+
+Print every patient with a systemic-treatment plan if N≤100.
+
+# ============================================================
+# PART 7 — RECOVER ECOG / CHILD-PUGH CORRECTLY
+# ============================================================
+
+Do NOT report ECOG as unavailable.
+
+Reuse/adapt the successful v9 note extraction methodology.
+
+We previously recovered ECOG from oncology/hepatology/GI notes with substantial coverage.
+
+For every post-TACE decision point search note text from:
+
+-30 to +7 days around the reassessment scan.
+
+Extract explicit:
+
+ECOG:
+- 0
+- 1
+- 2
+- 3
+- 4
+- ranges/ambiguous values separately.
+
+Child-Pugh:
+- explicit class A/B/C
+- explicit numerical score.
+
+Do NOT reconstruct Child-Pugh from diagnosis-code absence.
+
+Do NOT infer CP from ALBI.
+
+For ambiguous phrases such as:
+"ECOG 2-3"
+store:
+ECOG_AMBIGUOUS_2_3
+
+rather than forcing one value.
+
+Print:
+- candidate text coverage
+- successful parse coverage
+- value distributions.
+
+Print 30 random examples for ECOG.
+Print 30 random examples for CP.
+Print all ambiguous examples up to 100.
+
+Persist:
+
+`hcc_post_tace_clinical_status_v12_4`
+
+# ============================================================
+# PART 8 — BUILD THE SYSTEMIC-TREATMENT START TABLE FROM SCRATCH
+# ============================================================
+
+We need a trustworthy treatment-switch date.
+
+Use the current canonical systemic-line table as the primary source.
+
+Also cross-check raw:
+- med_orders
+- med_admin
+- Beacon treatment plans/orders.
+
+For each validated HCC systemic regimen derive:
+
+- pat
+- systemic_start_date
+- regimen
+- line
+- exposure_confidence
+- HCC indication confidence
+- research status.
+
+Regimens should include at minimum:
+
+- Atezo/Bev
+- STRIDE
+- Nivo/Ipi
+- Nivolumab
+- Pembrolizumab
+- Durvalumab
+- Lenvatinib
+- Sorafenib
+- Cabozantinib
+- Regorafenib
+- Ramucirumab
+- other true HCC systemic regimens.
+
+Do NOT require administration records for oral TKIs.
+
+For oral TKIs:
+an appropriately validated active order/start can establish systemic START even if end date is uncertain.
+
+For IV therapy:
+use first actual administration where reliable;
+if Beacon/orders are the validated exposure source, document exactly why.
+
+Do not count:
+- TACE-associated doxorubicin
+- procedural chemotherapy
+as systemic therapy.
+
+Persist:
+
+`hcc_systemic_starts_for_tace_v12_4`
+
+# ============================================================
+# PART 9 — FIRST SYSTEMIC TREATMENT AFTER EACH TACE
+# ============================================================
+
+For EVERY HCC-directed TACE episode find the first validated systemic HCC therapy after that TACE.
+
+Do this WITHOUT radiology filtering first.
+
+For each TACE #1 and TACE #2 calculate:
+
+days_from_tace_to_systemic =
+systemic_start_date - tace_date.
+
+Print cumulative transition counts:
+
+SYSTEMIC START ≤30d
+≤45d
+≤60d
+≤90d
+≤120d
+≤180d
+≤365d
+EVER after TACE.
+
+Print separately for:
+
+TACE #1
+TACE #2
+
+and:
+
+ALL ERA
+DEFINITELY MODERN
+DATE-SHIFT UNCERTAIN
+DEFINITELY PRE-MODERN.
+
+IMPORTANT:
+Within-patient intervals are valid despite date shifting.
+
+Then print exact regimen distribution for each window.
+
+# ============================================================
+# PART 10 — SYSTEMIC SWITCH AFTER REASSESSMENT
+# ============================================================
+
+Repeat the analysis using the reassessment SCAN as time zero.
+
+For every patient with a reassessment scan calculate:
+
+days_scan_to_systemic =
+systemic_start_date - scan_date.
+
+Print cumulative counts:
+
+≤30d
+≤45d
+≤60d
+≤90d
+≤120d
+≤180d
+≤365d
+EVER.
+
+Do NOT apply:
+- extrahepatic disease filtering
+- response regex filtering
+- ALBI filtering
+- ECOG filtering
+
+in this first descriptive count.
+
+We need the raw empirical transition frequency first.
+
+Print:
+
+N_SYSTEMIC
+N_REPEAT_TACE
+N_BOTH
+N_NEITHER
+
+at each horizon.
+
+For BOTH:
+print which happened first.
+
+# ============================================================
+# PART 11 — SYSTEMIC SWITCH AFTER EXPLICIT INADEQUATE CONTROL
+# ============================================================
+
+Now restrict to:
+
+EXPLICIT_INADEQUATE_CONTROL
+
+after TACE #1 or #2.
+
+Define time zero as the date of the evidence establishing inadequate control:
+
+- reassessment scan date
+OR
+- clinical note date if inadequacy is first explicitly documented later.
+
+For each patient find:
+
+- next TACE
+- next systemic start
+- Y90
+- ablation
+- surgery
+- transplant
+- death
+- no active treatment.
+
+Print cumulative systemic starts after inadequate-control decision:
+
+≤30
+≤45
+≤60
+≤90
+≤120
+≤180
+≤365 days.
+
+Print repeat-TACE counts in same windows.
+
+This is one of the most important outputs.
+
+# ============================================================
+# PART 12 — FIRST "TACE INADEQUACY" DECISION POINT
+# ============================================================
+
+For each patient identify the FIRST episode after TACE #1 or TACE #2 where there is explicit evidence of inadequate control.
+
+Call this:
+
+`first_tace_inadequacy_date`
+
+and record:
+
+- whether after TACE1 or TACE2
+- evidence type
+- imaging vs note
+- evidence phrase
+- TACE number
+- ALBI at decision
+- delta ALBI from pre-TACE
+- AFP if available
+- ECOG if available
+- explicit CP if available.
+
+Then classify the first active treatment strategy after this date:
+
+1. REPEAT_TACE
+2. MODERN_SYSTEMIC
+3. HISTORICAL_TKI
+4. SYSTEMIC_PLUS_TACE
+5. Y90
+6. ABLATION
+7. RESECTION
+8. TRANSPLANT
+9. OBSERVATION
+10. SUPPORTIVE/HOSPICE
+11. DEATH_BEFORE_TREATMENT
+12. UNKNOWN.
+
+Use multiple treatment windows:
+
+30
+45
+60
+90
+120 days.
+
+Do NOT choose one yet.
+
+Print the full distribution for every window.
+
+# ============================================================
+# PART 13 — REPEAT-TACE VERSUS SYSTEMIC CANDIDATE ARM SIZES
+# ============================================================
+
+Build increasingly strict candidate populations.
+
+------------------------------------------------------------
+COHORT A — PURELY DESCRIPTIVE
+------------------------------------------------------------
+
+HCC-directed TACE
++
+first explicit inadequate-control decision.
+
+No further exclusions.
+
+Print arms.
+
+------------------------------------------------------------
+COHORT B — LIVER-CONFINED SUPPORT
+------------------------------------------------------------
+
+Require no DEFINITE evidence of extrahepatic disease.
+
+IMPORTANT:
+Do NOT classify absence unless evidence genuinely supports it.
+
+Allowed:
+NO / NO_EVIDENCE_ON_STAGING / explicit liver-confined.
+
+Exclude:
+DEFINITE extrahepatic.
+
+Keep unknown separately.
+
+------------------------------------------------------------
+COHORT C — PRESERVED TREATMENT FITNESS
+------------------------------------------------------------
+
+Additionally require:
+
+- no mALBI grade 3
+- no major recent decompensation
+- ECOG 0-1 when known.
+
+Do NOT exclude unknown ECOG automatically.
+Instead print known versus unknown.
+
+------------------------------------------------------------
+COHORT D — STRICT HUMAN-REVIEW CANDIDATE
+------------------------------------------------------------
+
+Potentially plausible for BOTH:
+repeat TACE and systemic therapy.
+
+This MUST NOT be declared automatically from code.
+
+Flag candidates for later IR/human adjudication.
+
+For each cohort print at 30/60/90/120d:
+
+REPEAT_TACE
+MODERN_SYSTEMIC
+SYSTEMIC+TACE
+OTHER
+NO_TREATMENT.
+
+The key feasibility number is:
+
+N modern systemic after first TACE-inadequacy decision.
+
+# ============================================================
+# PART 14 — MODERN ERA DEFINITIONS
+# ============================================================
+
+Use date-shift-safe approval boundaries.
+
+Atezo/Bev FDA:
+2020-05-29.
+
+Therefore:
+
+DEFINITELY_PRE_MODERN:
+observed decision date < 2019-11-29
+
+DATE_SHIFT_UNCERTAIN:
+2019-11-29 through 2020-11-29
+
+DEFINITELY_MODERN:
+observed decision date > 2020-11-29.
+
+For STRIDE and Nivo/Ipi, preserve regimen-specific robust approval status separately.
+
+Do not claim a regimen was routine-care available merely because its shifted date appears after the exact FDA date.
+
+# ============================================================
+# PART 15 — AUDIT EVERY SYSTEMIC SWITCH
+# ============================================================
+
+If the total number of post-TACE systemic-switch patients is ≤100:
+
+PRINT EVERY PATIENT.
+
+For each print:
+
+PATIENT
+HCC_TACE_NUMBER
+TACE_DATE
+HCC_INDICATION_STATUS
+REASSESSMENT_DATE
+INADEQUATE_CONTROL_STATUS
+INADEQUATE_CONTROL_EVIDENCE
+ECOG
+CHILD_PUGH
+ALBI
+DELTA_ALBI
+AFP
+NEXT_TACE_DATE
+SYSTEMIC_START_DATE
+DAYS_FROM_TACE_TO_SYSTEMIC
+DAYS_FROM_SCAN_TO_SYSTEMIC
+DAYS_FROM_INADEQUACY_TO_SYSTEMIC
+SYSTEMIC_REGIMEN
+SYSTEMIC_EXPOSURE_SOURCE
+RESEARCH_STATUS
+ANY_TACE_BETWEEN_DECISION_AND_SYSTEMIC
+DATE_SHIFT_ERA
+DEATH_DATE
+LAST_CONTACT.
+
+Also print relevant note excerpts describing WHY systemic therapy was chosen when available.
+
+This section is mandatory.
+
+# ============================================================
+# PART 16 — AUDIT REPEAT-TACE PATIENTS
+# ============================================================
+
+Random sample with fixed seed:
+
+30 after TACE #1
+30 after TACE #2
+30 after explicit inadequate-control phenotype if applicable.
+
+For each print:
+
+- previous TACE
+- reassessment
+- explicit response/control evidence
+- decision note
+- next TACE
+- days to next TACE
+- ALBI
+- delta ALBI
+- AFP
+- ECOG/CP if available.
+
+Purpose:
+verify that "repeat TACE" reflects a clinical decision rather than duplicate episode coding.
+
+# ============================================================
+# PART 17 — SPECIFIC SANITY CHECKS
+# ============================================================
+
+Run all of these:
+
+1.
+No HCC-TACE episode may be DEFINITE_HCC if its strongest episode-specific indication explicitly names another primary malignancy with liver metastasis and does not mention HCC.
+
+2.
+TACE #2 date > TACE #1 date.
+
+3.
+Systemic start after a decision must be > decision date.
+
+4.
+Do not count existing systemic therapy that started BEFORE the TACE as "systemic escalation."
+
+5.
+If a patient is already on systemic therapy when TACE occurs, classify separately:
+
+`TACE_DURING_EXISTING_SYSTEMIC`
+
+not systemic switch.
+
+6.
+Do not count TACE-associated doxorubicin as systemic treatment.
+
+7.
+Systemic regimen must be HCC-indication validated.
+
+8.
+Inadequate-control evidence must not rely exclusively on negated language.
+
+9.
+LR-TR nonviable must not simultaneously equal viable unless there are multiple lesions with explicitly different states; if so classify at PATIENT level carefully.
+
+10.
+Complete response cannot automatically coexist with overall progressive disease unless clearly due to a different/new lesion; print those cases.
+
+11.
+No patient can have first inadequate-control date before the relevant TACE.
+
+12.
+A TACE decision after TACE #2 must use the correct reassessment after TACE #2, not a prior scan.
+
+13.
+All cumulative counts must be monotonic:
+
+N≤30 ≤ N≤45 ≤ N≤60 ≤ N≤90 ≤ N≤120 ≤ N≤180 ≤ N≤365 ≤ EVER.
+
+Assert this in code.
+
+14.
+Print patient IDs responsible for any violation.
+
+# ============================================================
+# PART 18 — THE DECISIVE FEASIBILITY TABLE
+# ============================================================
+
+Print this exact table:
+
+DECISION POINT | ERA | N_ELIGIBLE | REPEAT_TACE_30 | SYS_30 | REPEAT_TACE_60 | SYS_60 | REPEAT_TACE_90 | SYS_90 | REPEAT_TACE_120 | SYS_120 | SYS_EVER
+
+Rows:
+
+- after TACE #1 reassessment
+- after TACE #2 reassessment
+- after explicit inadequate control following TACE #1
+- after explicit inadequate control following TACE #2
+- first inadequate-control decision after either TACE #1/#2
+
+For each show:
+
+ALL ERA
+DEFINITELY MODERN.
+
+Then a second table for MODERN systemic regimens only:
+
+DECISION POINT
+AB
+STRIDE
+NIVO_IPI
+OTHER MODERN ICI
+TKI
+TOTAL.
+
+# ============================================================
+# PART 19 — FEASIBILITY INTERPRETATION
+# ============================================================
+
+Do NOT perform causal inference.
+
+Based only on arm size and phenotype quality, assign one of:
+
+A. SINGLE-CENTER COMPARATIVE STUDY PLAUSIBLE
+B. SINGLE-CENTER POSSIBLE BUT SMALL
+C. DESCRIPTIVE SINGLE-CENTER ONLY
+D. MULTICENTER REQUIRED
+
+Use transparent thresholds rather than arbitrary optimism.
+
+At minimum discuss:
+
+- systemic-arm N
+- modern systemic-arm N
+- repeat-TACE N
+- data completeness
+- HCC-indication certainty
+- ECOG coverage
+- CP coverage
+- ALBI coverage
+- decision-note coverage
+- number requiring human review.
+
+Do not call target-trial emulation feasible merely because one arm has a large N.
+
+# ============================================================
+# PART 20 — REQUIRED FINAL COPY-PASTE REPORT
+# ============================================================
+
+Print ONE plain-text block beginning:
+
+============================================================
+HCC TACE → SYSTEMIC TRANSITION AUDIT v12.4
+============================================================
+
+It must contain:
+
+A. canonical TACE starting counts
+B. HCC-directed TACE-indication classification
+C. non-HCC contamination counts and examples
+D. true/probable first-TACE counts
+E. HCC-directed TACE-number distribution
+F. reassessment coverage after TACE1 and TACE2
+G. explicit adequate/inadequate-control phenotype counts
+H. ECOG note-extraction coverage
+I. Child-Pugh note-extraction coverage
+J. systemic-treatment start validation
+K. cumulative systemic-switch counts after TACE1
+L. cumulative systemic-switch counts after TACE2
+M. cumulative switch counts after reassessment
+N. cumulative switch counts after explicit inadequate control
+O. first TACE-inadequacy strategy distribution
+P. exact modern systemic regimens
+Q. all systemic-switch patient timelines
+R. repeat-TACE audit summary
+S. decisive feasibility table
+T. all failed sanity checks
+U. unresolved uncertainties
+V. persisted table names / rows / patients
+W. IMPLEMENTATION LOGIC for every major phenotype.
+
+Print actual numeric results.
+
+Do not omit sections because they are inconvenient.
+
+Do not summarize "no issue" without printing the underlying N.
+
+# ============================================================
+# PERSIST
+# ============================================================
+
+Persist at minimum:
+
+- hcc_tace_hcc_indication_v12_4
+- hcc_tace_sequence_hcc_only_v12_4
+- hcc_index_tace_hcc_validated_v12_4
+- hcc_post_tace_reassessment_v12_4
+- hcc_post_tace_control_status_v12_4
+- hcc_post_tace_clinical_status_v12_4
+- hcc_systemic_starts_for_tace_v12_4
+- hcc_tace_to_systemic_transitions_v12_4
+- hcc_first_tace_inadequacy_v12_4
+- hcc_tace_strategy_candidates_v12_4
+- hcc_tace_feasibility_summary_v12_4
+
+Read each table back after persisting.
+
+Print:
+
+TABLE
+ROWS
+UNIQUE PATIENTS
+UNIT OF ANALYSIS
+PRIMARY KEY / UNIQUE KEY.
+
+STOP after this.
+
+NO OUTCOME MODEL.
+NO SURVIVAL ANALYSIS.
+NO PROPENSITY MODEL.
+NO PROJECT RANKING.
