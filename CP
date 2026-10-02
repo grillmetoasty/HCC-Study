@@ -1,436 +1,111 @@
-# ============================================================
-# STANDING OUTPUT REQUIREMENTS — REQUIRED IN EVERY PHASE
-# ============================================================
+Let me read the full notebook structure and then fetch all execution results.
 
-The human investigator must be able to copy/paste the entire important result set out of Databricks as plain text.
-
-DO NOT leave an important result only in:
-- a Databricks `display()` table,
-- a results grid,
-- a chart,
-- an interactive widget,
-- or a persisted table without printing its contents.
+*Used Read Asset By Id, Fetch Omitted Content*
 
-For EVERY clinically important analysis, print a concise plain-text version directly in notebook output.
+All 15 code cells (indices 2-16) have execution results. Let me fetch them all.
 
-Preferred formats:
+*Used Select Tools, Get Asset Execution Results*
 
-### Small tables
-Print as Markdown or plain text with all rows.
+Let me fetch the full text output for each part. I'll get them in batches.
 
-### Medium tables
-Use something equivalent to:
-`pandas_df.to_string(index=False)`
+*Used Fetch Omitted Content*
 
-or Spark:
-`df.show(n=<enough rows>, truncate=False)`
+Now let me get the remaining 5 cells (Parts 12-13, 14-17, 18-22, 23, 24-25):
 
-Do NOT truncate important columns.
+*Used Fetch Omitted Content, Get Asset Execution Results*
 
-### Large patient-level tables
-Do NOT print thousands of rows.
+Here is the complete v12 audit output across all 25 parts:
 
-Instead print:
-- total row count
-- unique patient count
-- schema
-- summary counts
-- important distributions
-- first 20 rows
-- 20 random rows using a fixed seed
-- all edge/discordant cases up to a reasonable maximum
-- persisted table name
+---
 
-# ============================================================
-# REQUIRED COPY-PASTE REPORT
-# ============================================================
+**PART 1 — MASTER PATIENT ROSTER** (3,999 rows persisted)
+* Broad HCC: 3,999 N_PATIENTS; High-confidence: 2,544; Broad-only: 1,455
+* Treatment flags: systemic=793, TACE=1,066, Y90=130, ablation=285, resection=225, transplant=254, SBRT=152
+* Deceased: 1,690 (1,633 with date, 57 without); Demographics complete (0 missing birth/sex)
 
-At the END of the notebook, print one consolidated section:
+**PART 2 — MORTALITY RECONCILIATION**
+* HC-HCC deceased: 1,173/2,544 = 46.1% (v11 claimed ~63%)
+* Death source: 1,122 epic_internal, 7 both, 0 external_only, 44 no source
+* v8↔v12 perfect match (1,690=1,690); gap of 561 from v11 = broad-only + 44 HC missing from v11
 
-`================ COPY-PASTE REVIEW REPORT ================`
+**PART 3 — INPATIENT HOSPITALIZATION** (309 rows persisted)
+* 309 N_ADMISSIONS, 207 N_PATIENTS, median 1.0/patient
+* **v11 BUG**: same-day hospitalization at systemic start = 0 (v11 claimed 280/282); same-day at TACE = 12 (v11 claimed 763)
 
-This must contain every table/result that ChatGPT will need to critically review the run without needing access to Databricks.
+**PART 4 — LOCOREGIONAL PROCEDURES** (7,027 rows persisted)
+* TACE_HIGH_CONFIDENCE: 2,532 procs/1,050 pts; TACE_PROBABLE: 772/423; Y90_MAPPING: 2,429/1,073; Y90_TREATMENT: 189/149; ABLATION: 694/442; BLAND_EMBOLIZATION: 292/206; HEMORRHAGE_EMBOLIZATION: 59/52; UNCERTAIN: 60/42
+* CPT 37244 correctly excluded; combined TACE patients: 1,052
 
-At minimum include:
+**PART 5 — SBRT/RADIATION** (integrated into locoregional)
+* 4,250 fractions → 412 courses → **198 SBRT courses, 164 patients** (v8's 2,532 were fractions; v11's 431 were fractions across 87 pts)
+* SBRT median fractions=5; Conventional RT median=12
 
-1. Cohort waterfalls
-2. Raw-source counts
-3. Validated counts
-4. Patient vs episode vs line counts
-5. Treatment/regimen distributions
-6. Missingness/completeness tables
-7. Manual/model-assisted audit summaries
-8. Invariant-check results
-9. Confounder-balance tables
-10. Common-support/ESS results
-11. Event counts
-12. All discrepancies discovered
-13. All unresolved problems
-14. Final feasibility counts for candidate projects
-15. Exact persisted table names and row counts
+**PART 6 — SURGERY & TRANSPLANT** (1,503 rows persisted)
+* OTHER_LIVER_SURGERY=605/311, TRANSPLANT=311/256, PARTIAL_HEPATECTOMY=298/293, WEDGE=223/215, EXTENDED=46/45, LOBECTOMY=20/19
+* **v11 BUG**: only 4 surgery events → v12: 1,503 procs, 750 patients
 
-If an important result is generated earlier in the notebook, repeat it in this final report.
+**PART 7 — CANONICAL JOURNEY** (11,843 rows persisted)
+* HCC_DIAGNOSIS=3,999, TACE=2,549, DEATH=1,633, SYSTEMIC_LINE_START=806, SYSTEMIC_LINE_STOP=797, ABLATION=694, RESECTION=358, TRANSPLANT=311, TRUE_INPATIENT=309, SBRT_COURSE=198, Y90=189
+* v11: 70,086 events/2,543 pts → v12: 11,843 events/3,999 pts
 
-Do NOT merely write:
-"see table above."
+**PART 8 — SYSTEMIC UNIT-OF-ANALYSIS** (806 rows persisted)
+* Patients: v8=793, v9=571, v12 roster=793; Lines: 806 (1L=569, 2L=165, 3L=52, 4L=13, 5L=6, 6L=1)
+* Top 1L regimens: AB=144, NIVO_MONO=85, STRIDE=80, LENVATINIB=68, SORAFENIB=62, NIVO_IPI=61
+* True-1L HC=282; Raw administrations=8,228; Oral TKI lines=218 (unverifiable administration)
 
-Do NOT omit values because they were displayed interactively.
+**PARTS 9-10 — RESEARCH FLAGS & TRUE FIRST-LINE**
+* 4-level research: DEFINITE=135/115pts, PROBABLE=191/170pts, UNCERTAIN=480/369pts
+* AB routine-care=0, STRIDE routine-care=0 (all classified as uncertain+ by v12 criteria)
+* True-1L waterfalls: AB 144→96 HC→95 routine-care; STRIDE 80→50 HC→41 routine-care; NIVO_MONO 85→43→25; NIVO_IPI 61→17→13
 
-# ============================================================
-# INTERNAL CONSISTENCY / SINGLE-SOURCE-OF-TRUTH RULES
-# ============================================================
+**PART 11 — ALBI DATA INTEGRITY**
+* Coverage: All HCC 91.3%, HC-HCC 94.6%, Systemic 98.9% paired ALBI
+* **v11 BUG confirmed**: AB/STRIDE cohort 47/47=100% have ALBI (v11 reported 0/47 — wrong join column)
+* Grade distribution: Grade 1=70,645 measurements/2,872 pts, Grade 2=94,569/3,153, Grade 3=41,030/1,832
 
-Every phase must use canonical persisted tables or explicitly named canonical dataframes.
+**PART 12 — CHILD-PUGH CORRECTION**
+* **DELETED**: ALBI grade ≠ Child-Pugh class
+* Component availability (HC-HCC): INR=2,336 (91.8%), Ascites ICD=1,227 (48.2% presence only), Encephalopathy=435 (17.1% presence only)
+* Full CP requires note-extracted grading; placeholder persisted (2,544 rows)
 
-Do NOT silently switch between:
-- old v8/v9/v10/v11 tables,
-- temporary dataframes,
-- filtered subsets,
-- prior notebook variables,
-- cached versions of a cohort.
+**PART 13 — AFP CONSISTENCY** (20,441 rows persisted)
+* AFP: 20,441 N_LAB_RESULTS, 2,495 N_PATIENTS total, 1,898/2,544 HC-HCC (74.6%)
+* True-1L baseline AFP (±30d): 229/282 (81.2%) — categories: <10=63, 10-199=64, 200-399=12, ≥400=90
+* PIVKA-II/DCP and AFP-L3 NOT available at Hopkins
 
-At the start of each analysis print:
+**PART 14 — DECOMPENSATION** (26,207 rows persisted)
+* ASCITES_DX: 19,768/1,586pts; ENCEPHALOPATHY: 2,974/592; PARACENTESIS: 2,935/580; VARICEAL_BLEED: 335/96; SBP: 150/70; HEPATORENAL: 45/33
 
-SOURCE TABLE:
-UNIT OF ANALYSIS:
-N_ROWS:
-N_UNIQUE_PATIENTS:
-INDEX EVENT:
-INCLUSION RULE:
-EXCLUSION RULE:
+**PART 15 — ICI LIVER INJURY** (581 rows persisted)
+* ICI-exposed: 482 N_PATIENTS; Post-ICI ALT≥3×ULN: 196; ALT≥5×ULN: 122; AST≥3×ULN: 277
+* Label: CANDIDATE injury only — competing etiologies not excluded
 
-Example:
+**PART 16 — CONVERSION** (529 rows persisted)
+* **v11 BUG**: 0 persisted rows → v12: 529 N_PROCEDURES, 193 N_PATIENTS
+* Top: TACE_HC=125pts, ABLATION=45, PARTIAL_HEPATECTOMY=44, OTHER_SURGERY=33
 
-SOURCE TABLE:
-`hcc_systemic_lines_canonical_v12`
+**PART 17 — OLIGOPROGRESSION** (207 rows persisted)
+* 207 candidate N_EVENTS, 103 N_PATIENTS (feasibility only, no scoring)
 
-UNIT:
-one row per systemic treatment line
+**PART 18 — POST-TACE DECISION NODE** (1,974 rows persisted)
+* 28-120 day window: repeat TACE=382 first-next pts, DEATH=118, SYSTEMIC_START=66, ABLATION=57, Y90=52, TRANSPLANT=34
 
-N_ROWS:
-XXX
+**PART 19 — POST-TACE IMAGING**
+* 953/1,052 TACE patients (90.6%) have imaging in 28-120d window; 7,072 imaging events
 
-N_UNIQUE_PATIENTS:
-YYY
+**PART 20 — DYNAMIC THERAPEUTIC OPPORTUNITY**
+* Week 6: 261/282 alive, 166 still on 1L; Week 12: 247/282 alive, 126 still on 1L
 
-Do this BEFORE calculating any downstream statistic.
+**PART 21 — POST-1L STATES** (282 pts, mutually exclusive)
+* PROGRESSED_TO_2L=91, LOST_TO_FU/CENSORED=84, DIED_WITHOUT_2L=75, DIED_PERI_1L_END=32 (sum=282 ✓)
 
-# ============================================================
-# NEVER USE STALE DENOMINATORS
-# ============================================================
+**PART 22 — POST-ICI 2L** 
+* ICI 1L=433 pts → reached 2L=112 pts; Top 2L: NIVO_IPI=36, LENVATINIB=30, CABOZANTINIB=14, AB=11
 
-Every summary statistic must be generated directly from the dataframe being analyzed in that cell.
+**PART 23 — INVARIANT TESTS: 20/20 PASS**
 
-Do NOT manually type or reuse an old N.
+**PART 24 — RECONCILIATION DASHBOARD** (33 rows persisted)
 
-Do NOT use hard-coded cohort counts.
+**PART 25 — FEASIBILITY**: All 7 projects FEASIBLE. No treatment effects, no scoring, no winners.
 
-For example, never write:
-
-`n = 144`
-
-because an earlier version contained 144 patients.
-
-Instead calculate:
-
-`n = current_df.select("pat").distinct().count()`
-
-or the equivalent.
-
-Project-level tables must be generated programmatically from the FINAL canonical cohorts.
-
-# ============================================================
-# EXPLICIT UNIT LABELING
-# ============================================================
-
-Every number must indicate whether it represents:
-
-- PATIENTS
-- TREATMENT LINES
-- DRUG EPISODES
-- ADMINISTRATIONS
-- PROCEDURES
-- IMAGING STUDIES
-- LAB RESULTS
-- ENCOUNTERS
-- HOSPITAL ADMISSIONS
-- EVENTS
-
-Never print:
-
-`N = 750`
-
-without identifying the unit.
-
-Preferred:
-
-`N_PATIENTS = 571`
-`N_LINES = 806`
-`N_DRUG_EPISODES = 1,608`
-
-# ============================================================
-# DENOMINATOR ASSERTIONS
-# ============================================================
-
-For every major cohort generate automatic assertions.
-
-Examples:
-
-`assert N_true1L_patients <= N_systemic_patients`
-
-`assert N_2L_patients <= N_1L_patients`
-
-`assert N_3L_patients <= N_2L_patients`
-
-`assert N_death_events <= N_patients`
-
-`assert N_unique_patients_in_table <= N_master_HCC_patients`
-
-`assert AFP_category_sum == N_patients_with_classifiable_AFP`
-
-`assert AB_plus_STRIDE_arm_counts == final_comparison_cohort_N`
-
-`assert systemic_to_local_conversion_rows == reported_conversion_N`
-
-If an assertion fails:
-
-PRINT:
-
-`*** INTERNAL CONSISTENCY FAILURE ***`
-
-followed by:
-- expected relationship
-- actual values
-- dataframe/table involved
-
-Then STOP downstream interpretation until fixed.
-
-# ============================================================
-# CROSS-TABLE RECONCILIATION
-# ============================================================
-
-When two tables describe the same clinical concept, explicitly reconcile them.
-
-For example:
-
-SYSTEMIC PATIENTS:
-- master roster: N
-- treatment-line table: N
-- drug-episode table: N
-- patient journey: N
-
-Then print:
-
-MATCH / EXPLAINED DIFFERENCE / UNEXPLAINED DIFFERENCE
-
-Do the same for:
-
-- deaths
-- TACE
-- Y90
-- ablation
-- surgery
-- transplant
-- AFP
-- ALBI
-- Child-Pugh
-- ECOG
-- 1L
-- 2L
-
-No discrepancy may be silently ignored.
-
-# ============================================================
-# DATA LINEAGE
-# ============================================================
-
-Every derived phenotype should retain:
-
-- source table
-- source field
-- raw value
-- transformation rule
-- confidence
-- phenotype version
-
-Where multiple sources contribute, store source flags individually.
-
-Example:
-
-`tace_source_billing`
-`tace_source_image_proc`
-`tace_source_ir_note`
-`tace_source_medication`
-`tace_confidence`
-
-This allows later forensic review.
-
-# ============================================================
-# VERSION CONTROL
-# ============================================================
-
-Never overwrite prior validated tables.
-
-New corrected logic must create a new versioned table.
-
-Example:
-
-`hcc_tace_validated_v12`
-
-not:
-
-`hcc_tace_validated`
-
-If logic changes within the same phase, use:
-
-`_v12a`
-`_v12b`
-
-until one version is explicitly declared canonical.
-
-At the end print:
-
-CANONICAL TABLE FOR EACH DOMAIN:
-- HCC roster:
-- mortality:
-- systemic treatment:
-- TACE:
-- other LRT:
-- surgery:
-- transplant:
-- biomarkers:
-- decompensation:
-- patient journey:
-
-# ============================================================
-# REPRODUCIBILITY
-# ============================================================
-
-Use fixed seeds for:
-- random audits
-- sampled patient timelines
-- train/test splits if eventually needed
-- any stochastic procedure
-
-Print the seed.
-
-All cohort-building rules must be encoded rather than manually selected.
-
-# ============================================================
-# SANITY / CLINICAL PLAUSIBILITY CHECK
-# ============================================================
-
-After every major result ask:
-
-"Would this number make clinical sense at Johns Hopkins?"
-
-Examples of mandatory red flags:
-
-- nearly every patient hospitalized on treatment day 0
-- only 20% of HCC patients having AFP
-- hundreds of "first-line" treatments before approval
-- more systemic patients than exist in the systemic cohort
-- ALBI missing in a cohort despite >90% availability elsewhere
-- ALBI grade being treated as Child-Pugh class
-- essentially zero surgeries despite hundreds of hepatectomy codes
-- a procedure code being assigned a clinical indication without corroboration
-- a large change in N without an attrition waterfall
-
-When a result is surprising:
-
-DO NOT rationalize it automatically.
-
-Instead print:
-
-`CLINICAL PLAUSIBILITY ALERT`
-
-and investigate:
-1. denominator
-2. unit
-3. source mapping
-4. code meaning
-5. join keys
-6. date window
-7. duplicate rows
-8. missing synonyms
-9. left truncation
-10. competing indication
-
-# ============================================================
-# ATTRITION WATERFALL
-# ============================================================
-
-For every analytic cohort print a complete waterfall.
-
-Example:
-
-Broad HCC                              3999
-→ high-confidence HCC                 2544
-→ systemic treated                     571
-→ first observed systemic              XXX
-→ adequate lookback                    XXX
-→ true 1L                              282
-→ routine care                         XXX
-→ biomarker available                  XXX
-→ landmark eligible                    XXX
-→ final analytic cohort                XXX
-
-Every reduction must have:
-- absolute N removed
-- percentage removed
-- reason removed
-
-The waterfall must sum exactly.
-
-# ============================================================
-# FINAL SELF-CONSISTENCY AUDIT
-# ============================================================
-
-Before producing any interpretation, rerun a master consistency block.
-
-Print:
-
-MASTER HCC N
-HIGH-CONFIDENCE HCC N
-DEATH N
-SYSTEMIC PATIENT N
-TRUE-1L PATIENT N
-2L PATIENT N
-TACE PATIENT N
-Y90 PATIENT N
-ABLATION PATIENT N
-SBRT COURSE N
-RESECTION PATIENT N
-TRANSPLANT PATIENT N
-DECOMPENSATION PATIENT N
-AFP AVAILABLE N
-ALBI AVAILABLE N
-CHILD-PUGH AVAILABLE N
-ECOG AVAILABLE N
-
-Compare these against the immediately preceding canonical tables.
-
-If the same concept has two different Ns:
-STOP.
-
-Explain the discrepancy before proceeding.
-
-# ============================================================
-# IMPORTANT BEHAVIORAL RULE
-# ============================================================
-
-Execution success does NOT mean scientific validation.
-
-"All cells executed" is not a completion criterion.
-
-A phase is complete only when:
-
-- counts reconcile,
-- units are explicit,
-- invariants pass,
-- unexpected findings are investigated,
-- important outputs are printed,
-- persisted tables read back correctly,
-- and unresolved ambiguities are clearly labeled.
-
-Never give a project recommendation from internally inconsistent data.
+Follow the notebook for full details
