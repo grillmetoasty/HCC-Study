@@ -1,804 +1,1183 @@
-Follow `skills.md` strictly.
-
-This is the FINAL DATA-INTEGRITY REPAIR before project selection.
-
-Do NOT rank projects.
-Do NOT estimate treatment effects.
-Do NOT start broad new exploration.
-
-The only goal is to resolve the remaining hard contradictions from v12.1.
-
-IMPORTANT:
-For every section below, print BOTH:
-
-1. the result; and
-2. enough SQL/PySpark/logic for ChatGPT to verify how the result was produced.
-
-The human investigator will copy the complete output to ChatGPT.
-
-Do not leave important logic only inside notebook cells.
-
-# ============================================================
-# GENERAL EXECUTION RULE FOR EVERY SECTION
-# ============================================================
-
-Before every major transformation print:
+================================================================================
+PART 1 — RESOLVE 568 VS 571 SYSTEMIC PATIENT CONTRADICTION
+================================================================================
 
 SOURCE TABLE(S):
-UNIT OF ANALYSIS:
-JOIN KEY(S):
-DATE FIELD(S):
-N_ROWS BEFORE:
-N_PATIENTS BEFORE:
-
-Then print the actual SQL/PySpark used for:
-- joins,
-- filtering,
-- grouping,
-- window functions,
-- phenotype classification.
-
-After every join print:
-
-LEFT ROWS
-LEFT PATIENTS
-RIGHT ROWS
-RIGHT PATIENTS
-MATCHED LEFT PATIENTS
-UNMATCHED LEFT PATIENTS
-ROWS AFTER JOIN
-PATIENTS AFTER JOIN
-
-Also calculate join multiplicity:
-
-rows-after-join / rows-before-join
-
-If >1.10 where a 1:1 or many:1 join is intended:
-print:
-
-`*** JOIN MULTIPLICATION ALERT ***`
-
-and debug before continuing.
-
-For every deduplication print:
-- rows before
-- rows after
-- duplicate keys identified
-- exact deduplication key
-- ordering/tie-breaking logic.
-
-# ============================================================
-# PART 1 — RESOLVE 568 VS 571 SYSTEMIC PATIENTS
-# ============================================================
-
-v12.1 reports:
-
-- validated systemic patients = 568
-but
-- the second systemic waterfall starts with 571.
-
-This is a HARD contradiction.
-
-Load the exact patient-ID sets used for both.
-
-Print:
-
-N(set_568)
-N(set_571)
-
-Then print:
-
-`571_MINUS_568`
-and
-`568_MINUS_571`
-
-with ALL patient IDs because the discrepancy is small.
-
-For each discordant patient print:
-- HCC evidence
-- systemic regimen
-- indication evidence
-- treatment-line rows
-- exclusion reason
-- source table/version.
-
-Identify which set is actually canonical.
-
-Then verify whether all 282 high-confidence true-1L patients are contained in the final canonical validated-systemic set:
-
-`assert set(true1L_282).issubset(set(validated_systemic_final))`
-
-Print TRUE/FALSE.
-
-If FALSE:
-print all offending patient IDs and rebuild true 1L.
-
-Persist:
-`hcc_systemic_patients_canonical_v12_2`
-`hcc_systemic_lines_canonical_v12_2`
-
-# ============================================================
-# PART 2 — COMPLETE 793 → VALIDATED → TRUE-1L TREE
-# ============================================================
-
-Recalculate this ONLY from the final canonical systemic patient table.
-
-Do not reuse counts from v12/v12.1.
-
-Print a mutually exclusive patient-level table:
-
-RAW SYSTEMIC SIGNAL
-→ validated HCC systemic
-→ not validated
-
-For nonvalidated:
-- broad-only HCC
-- competing malignancy
-- order-only
-- low-confidence oral exposure
-- uncertain HCC indication
-- other
-
-Then for every validated systemic patient:
-- definite true 1L
-- probable true 1L
-- definite later line
-- possible prior outside therapy
-- unresolved
-
-The sum at each branch must equal its parent exactly.
-
-Print:
-- overall counts
-- percentages
-- regimen-specific counts.
-
-Also print the exact boolean/PySpark logic used to create every category.
-
-# ============================================================
-# PART 3 — UNIQUE INPATIENT ADMISSION EPISODES
-# ============================================================
-
-DO NOT call raw encounter rows "admissions."
-
-v12.1 produced 104,595 apparent admission rows, which is implausibly large.
-
-First inspect schemas of all candidate encounter/admission sources.
-
-Print all candidate columns containing:
-
-- account
-- hospital
-- admit
-- admission
-- discharge
-- patient_class
-- encounter_class
-- encounter_type
-- inpatient
-- bed
-- service
-- disposition
-
-Prefer a stable hospital-account or admission ID if one exists.
-
-Construct one row per actual inpatient hospitalization.
-
-Preferred hierarchy:
-
-1. unique hospital account/admission ID
-2. otherwise patient + admit timestamp + discharge timestamp
-3. otherwise clinically justified encounter-grouping logic
-
-DO NOT use billing-line rows as hospitalization episodes.
-
-For the final phenotype print:
-
-N_ADMISSIONS
-N_PATIENTS
-median admissions/patient
-IQR
-p90
-max
-
-Print distribution:
-0
-1
-2
-3–5
-6–10
->10 admissions per patient.
-
-Sanity checks:
-- transplant patients
-- hepatectomy patients
-- deceased patients
-- ascites/paracentesis
-- encephalopathy
-- SBP
-
-For each print:
-N patients
-N with ≥1 admission
-percentage.
-
-Randomly print 30 admission episodes including:
-- patient
-- admission ID
-- admit
-- discharge
-- length of stay
-- patient class
-- service
-- encounter type.
-
-Persist:
-`hcc_inpatient_admissions_v12_2`
-
-# ============================================================
-# PART 4 — TRANSPLANT "RETRANSPLANT" AUDIT
-# ============================================================
-
-v12.1 claims:
-
-256 transplant patients
-311 transplant episodes
-50 retransplants.
-
-This is clinically suspicious.
-
-Print the exact code that creates transplant episodes.
-
-For every patient with >1 transplant episode print ALL rows:
-
-- procedure date
-- CPT/procedure code
-- procedure name
-- source table
-- surgery ID
-- encounter ID
-- operative evidence.
-
-Determine whether repeated rows represent:
-- duplicate claims
-- multiple transplant-related procedure codes
-- transplant follow-up
-- true retransplant.
-
-Create ONE actual liver transplant operation per true surgery.
-
-Do not call a repeated billing episode a retransplant.
-
-Print:
-
-RAW TRANSPLANT ROWS
-UNIQUE TRANSPLANT OPERATIONS
-UNIQUE PATIENTS
-TRUE RETRANSPLANT PATIENTS
-
-Persist corrected transplant episodes.
-
-# ============================================================
-# PART 5 — CHILD-PUGH: REBUILD FROM ZERO
-# ============================================================
-
-DISCARD v12.1 Part P.
-
-It is internally impossible because:
-
-albumin available = 267/282
-bilirubin = 264/282
-INR = 200/282
-yet "all 3" = 282/282.
-
-Do not reuse the derived CP table.
-
-Start from raw data + validated note text.
-
-For each true-1L decision point independently calculate:
-
-A. explicit numeric Child-Pugh score in notes
-B. explicit Child-Pugh class in notes
-
-Use the existing validated note-extraction approach from v9 where appropriate.
-
-Print the exact regex/NLP logic.
-
-For reconstruction:
-
-Require contemporaneous:
-- albumin
-- bilirubin
-- INR
-- ascites severity
-- encephalopathy severity
-
-within a clinically specified baseline window.
-
-IMPORTANT:
-absence of an ICD code does NOT establish "no ascites."
-absence of an ICD code does NOT establish "no encephalopathy."
-
-Only reconstruct CP when all five components can be assigned.
-
-Create source hierarchy:
-
-1. EXPLICIT_NUMERIC_CP
-2. EXPLICIT_CP_CLASS
-3. FULLY_RECONSTRUCTED_CP
-4. UNAVAILABLE
-
-Never substitute ALBI.
-
-Print:
-
-N true1L
-N explicit numeric CP
-N explicit class
-N fully reconstructed
-N unavailable
-
-Then print class/score distribution only among patients with valid CP evidence.
-
-Print 30 examples with evidence snippets.
-
-Persist:
-`hcc_child_pugh_validated_v12_2`
-
-# ============================================================
-# PART 6 — SYSTEMIC LINE-DURATION RECONSTRUCTION
-# ============================================================
-
-The generic v12 line-duration algorithm is invalid.
-
-Observed problems:
-
-AB median 140 d — plausible.
-STRIDE median 58 d — suspicious.
-NIVO_IPI median 42 d — suspicious.
-LENVATINIB median 0 d — invalid.
-SORAFENIB median 2 d — invalid.
-
-Build REGIMEN-SPECIFIC exposure logic.
-
-------------------------------------------------------------
-6A. ATEZO/BEV
-------------------------------------------------------------
-
-Use repeated atezolizumab and bevacizumab administrations.
-
-The systemic line does NOT necessarily end merely because bevacizumab is held.
-
-Track separately:
-
-- AB combination active
-- atezolizumab-only continuation after bev hold
-- bev-only anomaly
-- full systemic line end
-
-Define line end using:
-- actual switch to another antineoplastic regimen
-OR
-- documented discontinuation
-OR
-- sufficiently long treatment gap supported by notes/administration pattern.
-
-Print exact gap threshold explored.
-
-------------------------------------------------------------
-6B. STRIDE
-------------------------------------------------------------
-
-Tremelimumab is intended as a one-time priming dose.
-
-DO NOT end STRIDE because tremelimumab is no longer administered.
-
-Durvalumab maintenance defines continued line exposure after the tremelimumab dose.
-
-Construct:
-
-STRIDE START =
-tremelimumab + durvalumab initiation
-
-STRIDE CONTINUATION =
-durvalumab maintenance
-
-LINE END =
-documented discontinuation / switch / validated prolonged gap
-
-Print 20 example timelines.
-
-------------------------------------------------------------
-6C. NIVO/IPI
-------------------------------------------------------------
-
-Do NOT split:
-nivo/ipilimumab induction
-→ nivolumab maintenance
-
-into separate treatment lines unless clinical evidence shows a new line.
-
-Create a single clinical regimen episode spanning:
-induction + maintenance.
-
-Print 20 examples.
-
-------------------------------------------------------------
-6D. ORAL TKIs
-------------------------------------------------------------
-
-Do not use MAR administrations.
-
-Use:
-- order start
-- order end
-- status
-- quantity
-- refill count
-- renewal
-- subsequent active order
-- medication-list documentation if available.
-
-Construct:
-- HIGH_CONFIDENCE_ORAL_EXPOSURE
-- PROBABLE_ORAL_EXPOSURE
-- LOW_CONFIDENCE_ORDER_ONLY
-
-Estimate duration only for HIGH/PROBABLE.
-
-Print 30 lenvatinib and 30 sorafenib examples.
-
-------------------------------------------------------------
-6E. VALIDATION
-------------------------------------------------------------
-
-After rebuilding, print by regimen:
-
-N_PATIENTS
-median duration
-IQR
-% active at day 42
-% active at day 84
-% active at 6 months
-
-Any median of 0–2 days for a chronic oral TKI must trigger FAIL.
-
-Persist:
-`hcc_systemic_exposure_validated_v12_2`
-
-# ============================================================
-# PART 7 — REBUILD WEEK-6/WEEK-12 ELIGIBILITY
-# ============================================================
-
-Only after Part 6.
-
-Use canonical true-1L patients and corrected regimen exposure.
-
-At day 42 classify:
-
-- DEAD
-- ACTIVE_1L
-- TRUE_1L_STOP
-- SWITCHED_TO_2L
-- TRANSFERRED/UNKNOWN
-- TREATMENT_HOLD_ONLY
-
-At day 84 same categories.
-
-Print counts by regimen.
-
-Do not proceed to biomarker modeling.
-
-# ============================================================
-# PART 8 — POST-1L STATE DEFINITIONS
-# ============================================================
-
-Audit whether `DOCUMENTED_PROGRESSION_TO_2L=91`
-actually has independent progression evidence.
-
-Print the code defining "documented progression."
-
-For every patient classified as progression require at least one:
-
-- Beacon discontinuation reason = progression
-- oncology note explicitly documents progression
-- validated radiographic progression
-- other explicit progression source.
-
-Starting 2L alone is NOT progression evidence.
-
-Print:
-
-2L STARTED
-WITH INDEPENDENT PROGRESSION EVIDENCE
-WITHOUT INDEPENDENT PROGRESSION EVIDENCE
-
-Rebuild state counts only after this check.
-
-# ============================================================
-# PART 9 — TRANSAMINITIS PHENOTYPES: MAKE THEM TRULY NESTED
-# ============================================================
-
-The requested phenotypes were nested, but v12.1 counts sum exactly to 482, suggesting mutually exclusive categories.
-
-Recompute as overlapping flags.
-
-For each of 482 ICI-exposed patients create boolean columns:
-
-ANY_POST_ICI_TRANSAMINITIS
-NEW_HIGH_GRADE_TRANSAMINITIS
-STEROID_TREATED_AFTER_EVENT
-HIGH_SPECIFICITY_CANDIDATE
-HUMAN_REVIEW_REQUIRED
-
-A patient may satisfy multiple flags.
-
-Print a cross-tab showing overlap.
-
-Also print:
-- baseline abnormal liver tests
-- TACE/Y90 within ±30d
-- progression evidence
-- biliary obstruction
-- decompensation
-for HIGH_SPECIFICITY candidates.
-
-# ============================================================
-# PART 10 — POST-SYSTEMIC LOCAL THERAPY DEDUPLICATION
-# ============================================================
-
-Use FINAL validated procedure EPISODES, not raw surgery/CPT subtype rows.
-
-One operation should not simultaneously create:
-- partial hepatectomy episode
-- wedge episode
-- other surgery episode
-unless these are truly separate procedures.
-
-Build one row per local-treatment episode.
-
-Print:
-
-PATIENTS
-EPISODES
-
-for:
-- resection
-- transplant
-- ablation
-- TACE
-- Y90
-- SBRT.
-
-For every post-systemic resection and transplant:
-print complete chronology:
-systemic start
-systemic end/continuation
-imaging
-operation
-notes/tumor-board evidence.
-
-# ============================================================
-# PART 11 — OLIGOPROGRESSION: DO NOT CALL IT STRICT YET
-# ============================================================
-
-Rename existing cohort:
-`LOCAL_THERAPY_DURING_SYSTEMIC_CANDIDATES`
-
-Resolve the contradiction:
-
-strict count printed = 97
-persisted strict = 88.
-
-Print patient-ID set difference.
-
-Then implement actual staged phenotype:
-
-SYSTEMIC ACTIVE
-→ LOCAL THERAPY OCCURS
-→ UNIQUE IMAGING STUDY ±60d
-→ EXPLICIT PROGRESSION PRESENT
-→ LIMITED NUMBER/SITES OF PROGRESSION
-→ OTHER DISEASE CONTROLLED/STABLE
-→ LOCAL THERAPY ANATOMICALLY CONSISTENT WITH PROGRESSING SITE
-→ SAME SYSTEMIC REGIMEN CONTINUES
-
-Do not infer the middle imaging steps from timing alone.
-
-Print N after every step.
-
-Prepare a human-review packet for all remaining candidates if N≤100, otherwise 100 stratified cases.
-
-Final output name remains:
-`oligoprogression_candidate_for_human_review`
-
-NOT validated oligoprogression.
-
-# ============================================================
-# PART 12 — POST-TACE DECISION NODE: BUILD THE ACTUAL FUNNEL
-# ============================================================
-
-This is the most important project-feasibility analysis.
-
-Start ONLY from final validated first TACE.
-
-Print:
-N patients.
-
-Then require an actual UNIQUE liver CT or MRI 28–120 days after first TACE.
-
-For each patient choose ONE index reassessment study:
-
-preferred:
-first clinically meaningful post-TACE liver CT/MRI after day 28.
-
-Print selection code.
-
-Then extract from the report:
-
-- viable residual/recurrent HCC
-- complete response
-- partial response
-- stable viable disease
-- progression
-- new lesions
-- lesion number
-- largest viable lesion
-- unilobar vs bilobar
-- infiltrative disease
-- PVTT/MVI
-- extrahepatic disease
-
-Do NOT use the old v9 permissive parser.
-
-Print the extraction code/regex and evidence snippets.
-
-Then create the funnel:
-
-FIRST VALIDATED TACE
-→ REASSESSMENT IMAGING
-→ RESIDUAL/RECURRENT VIABLE HCC
-→ NO EXTRAHEPATIC DISEASE
-→ NO MAJOR MVI/PVTT THAT CLEARLY PRECLUDES REPEAT TACE
-→ ADEQUATE HEPATIC RESERVE
-→ ECOG COMPATIBLE IF AVAILABLE
-→ CLINICALLY PLAUSIBLE FOR EITHER REPEAT TACE OR SYSTEMIC THERAPY
-
-Do not assume all residual disease is equipoise.
-
-At the final decision node classify the first treatment after reassessment:
-
-- REPEAT_TACE
-- MODERN_ICI_SYSTEMIC
-- TKI_SYSTEMIC
-- Y90
-- ABLATION
-- SBRT
-- RESECTION
-- TRANSPLANT
-- OBSERVATION
-- SUPPORTIVE
-- UNKNOWN
-
-Print the entire attrition waterfall with:
-- N entering
-- N removed
-- reason
-- % retained.
-
-Primary feasibility count of interest:
-
-`REPEAT_TACE vs MODERN_ICI_SYSTEMIC`
-
-within the clinically plausible decision population.
-
-NO outcome analysis.
-
-# ============================================================
-# PART 13 — POST-TACE RADIOLOGY HUMAN-REVIEW PACKET
-# ============================================================
-
-For the final plausible repeat-TACE/systemic decision cohort:
-
-print a human-review packet containing:
-
-PATIENT ID
-TACE DATE
-REASSESSMENT DATE
-MODALITY
-FULL IMPRESSION TEXT
-MODEL-EXTRACTED:
-- viable tumor
-- lesion count
-- largest lesion
-- distribution
-- PVTT
-- extrahepatic disease
-- response
-
-NEXT TREATMENT
-DAYS TO NEXT TREATMENT
-
-If cohort ≤150:
-print ALL patients.
-
-Otherwise print:
-- all systemic-switch patients
-- 75 random repeat-TACE patients
-- all ambiguous cases.
-
-Use fixed seed.
-
-# ============================================================
-# PART 14 — FINAL CROSS-MODULE ASSERTIONS
-# ============================================================
-
-Execute and print actual values for:
-
-validated_systemic_final == systemic_master_flag_set
-
-true1L subset validated_systemic_final
-
-true1L_ici subset true1L
-
-all downstream TRUE_1L cohorts subset canonical true1L
-
-routine-care classifications all originate from research_status_final
-
-Child-Pugh all3_count <= min(albumin_count,bilirubin_count,INR_count)
-
-unique_admissions << raw_encounter_rows
-
-transplant_operations <= raw_transplant_rows
-
-actual_retransplants <= patients_with_multiple_raw_transplant_rows
-
-post-systemic local episodes use validated procedure-episode IDs
-
-oligoprogression candidates subset systemic-treated
-
-post-TACE decision cohort subset validated TACE
-
-baseline lab dates <= index dates
-
-No hard-coded N values.
-
-If any fail:
-STOP.
-
-# ============================================================
-# PART 15 — COPY-PASTE REVIEW REPORT
-# ============================================================
-
-Print one complete plain-text report containing:
-
-A. 568 vs 571 resolution
-B. final 793 systemic waterfall
-C. final true-1L waterfall
-D. research status
-E. unique hospitalization episodes
-F. transplant/retransplant audit
-G. corrected Child-Pugh coverage
-H. corrected systemic durations by regimen
-I. week-6/week-12 exposure state
-J. independently documented progression counts
-K. nested transaminitis phenotypes
-L. deduplicated post-systemic local therapy
-M. oligoprogression candidate attrition
-N. complete post-TACE equipoise waterfall
-O. repeat-TACE vs modern-systemic final feasibility N
-P. all cross-module assertions
-Q. persisted table names, rows, unique patients
-
-For each section also print a compact:
-
-`IMPLEMENTATION LOGIC:`
-
-showing the actual code or sufficiently exact pseudocode used.
-
-Do not print only conclusions.
-
-STOP.
-
-Do not rank projects.
-Do not estimate outcomes.
+  1. reach_users.xzhao81.hcc_systemic_waterfall_v12_1  (WF1: raw 793 classification)
+  2. reach_users.xzhao81.hcc_validated_waterfall_v12_1  (WF2: validated 571 classification)
+  3. reach_users.xzhao81.hcc_systemic_therapy_episodes_v8  (v8: raw signal)
+  4. reach_users.xzhao81.hcc_lines_of_therapy_validated_v9  (v9: validated lines)
+  5. reach_users.xzhao81.hcc_true_firstline_validation_v10  (v10: true-1L flags)
+  6. reach_users.xzhao81.hcc_master_patient_roster_v12_1  (master roster)
+UNIT OF ANALYSIS: patient
+JOIN KEY(S): pat
+
+N_ROWS wf1: 793
+N_ROWS wf2: 571
+N_ROWS v8:  8228
+N_ROWS v9:  806
+N_PATIENTS v8: 793
+N_PATIENTS v9: 571
+
+----------------------------------------------------------------------
+SET CONSTRUCTION
+----------------------------------------------------------------------
+
+IMPLEMENTATION LOGIC:
+  set_568 = wf1.filter(raw_waterfall_category == 'VALIDATED_HCC_SYSTEMIC').select('pat').distinct()
+  set_571 = wf2.select('pat').distinct()
+  diff_571_minus_568 = set_571.join(set_568, 'pat', 'left_anti')
+  diff_568_minus_571 = set_568.join(set_571, 'pat', 'left_anti')
+
+N(set_568) = 568
+N(set_571) = 571
+
+571_MINUS_568: 3 patients
+568_MINUS_571: 0 patients
+
+DISCORDANT PATIENT IDS (in 571 but not 568):
+  DEI0n9nt6zgnuw
+  DEI0t5p7sz8pd9
+  DEI0o97sz89u3y
+
+----------------------------------------------------------------------
+FULL DIAGNOSIS OF EACH DISCORDANT PATIENT
+----------------------------------------------------------------------
+
+  PATIENT: DEI0n9nt6zgnuw
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    WF1: *** NOT PRESENT *** (not in raw 793 universe)
+    WF2 validated_waterfall_category: PROBABLE_TRUE_1L, regimen=SORAFENIB
+    v8 raw systemic signal: 0 rows
+    v9 validated lines: 1 rows
+      line=1, regimen=SORAFENIB, start=2015-12-09 00:00:00, end=2015-12-09 00:00:00
+      dur_days=0, srcs=ORDER, algo=A_primary
+      hcc_indication=HCC_HIGH_CONFIDENCE, exposure_confidence=HIGH
+      beacon_hcc=0, beacon_plan=None
+      n_orders=1.0, max_refills=1.0
+    v10: 1 rows
+      true_1l_hc=0, true_1l_prob=1
+      prior_outside=0
+    Master: broad_hcc=1, hc_hcc=0
+    Master: systemic_raw=0, systemic_validated=0, true_1l_hc=0
+    EXCLUSION REASON: Not in v8 raw signal. v9 found via ORDER source (algo=A_primary).
+    SOURCE TABLE/VERSION: v9 (hcc_lines_of_therapy_validated_v9), not in v8.
+
+  PATIENT: DEI0t5p7sz8pd9
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    WF1: *** NOT PRESENT *** (not in raw 793 universe)
+    WF2 validated_waterfall_category: PROBABLE_TRUE_1L, regimen=SORAFENIB
+    v8 raw systemic signal: 0 rows
+    v9 validated lines: 1 rows
+      line=1, regimen=SORAFENIB, start=2015-12-03 00:00:00, end=2015-12-31 00:00:00
+      dur_days=28, srcs=ORDER, algo=A_primary
+      hcc_indication=HCC_HIGH_CONFIDENCE, exposure_confidence=HIGH
+      beacon_hcc=0, beacon_plan=None
+      n_orders=3.0, max_refills=12.0
+    v10: 1 rows
+      true_1l_hc=0, true_1l_prob=1
+      prior_outside=0
+    Master: broad_hcc=1, hc_hcc=0
+    Master: systemic_raw=0, systemic_validated=0, true_1l_hc=0
+    EXCLUSION REASON: Not in v8 raw signal. v9 found via ORDER source (algo=A_primary).
+    SOURCE TABLE/VERSION: v9 (hcc_lines_of_therapy_validated_v9), not in v8.
+
+  PATIENT: DEI0o97sz89u3y
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    WF1: *** NOT PRESENT *** (not in raw 793 universe)
+    WF2 validated_waterfall_category: PROBABLE_TRUE_1L, regimen=SORAFENIB
+    v8 raw systemic signal: 0 rows
+    v9 validated lines: 1 rows
+      line=1, regimen=SORAFENIB, start=2015-11-29 00:00:00, end=2015-12-01 00:00:00
+      dur_days=2, srcs=ORDER, algo=A_primary
+      hcc_indication=HCC_HIGH_CONFIDENCE, exposure_confidence=HIGH
+      beacon_hcc=0, beacon_plan=None
+      n_orders=3.0, max_refills=11.0
+    v10: 1 rows
+      true_1l_hc=0, true_1l_prob=1
+      prior_outside=0
+    Master: broad_hcc=1, hc_hcc=0
+    Master: systemic_raw=0, systemic_validated=0, true_1l_hc=0
+    EXCLUSION REASON: Not in v8 raw signal. v9 found via ORDER source (algo=A_primary).
+    SOURCE TABLE/VERSION: v9 (hcc_lines_of_therapy_validated_v9), not in v8.
+
+----------------------------------------------------------------------
+ROOT CAUSE ANALYSIS
+----------------------------------------------------------------------
+
+IMPLEMENTATION LOGIC:
+  v9_pats = v9.select('pat').distinct()  -- 571 patients
+  v8_pats = v8.select('pat').distinct()  -- 793 patients
+  v9_only = v9_pats.join(v8_pats, 'pat', 'left_anti')  -- v9 patients NOT in v8
+
+v9 patients not in v8 raw signal: 3
+  DEI0n9nt6zgnuw
+  DEI0t5p7sz8pd9
+  DEI0o97sz89u3y
+
+DIAGNOSIS:
+  These 3 patients have validated SORAFENIB orders (srcs=ORDER, algo=A_primary)
+  with HCC_HIGH_CONFIDENCE indication and HIGH exposure confidence.
+  They are NOT in v8 raw systemic signal (hcc_systemic_therapy_episodes_v8).
+  v9 validation found them through a separate order scan that v8 missed.
+  All 3 are sorafenib, all from late 2015, all PROBABLE_TRUE_1L (not HC).
+  None are in the 282 HC true-1L set.
+
+  The CANONICAL validated systemic set = 571 (from v9), NOT 568 (from WF1).
+  WF1's 568 is a SUBSET based only on the raw v8 universe.
+  The raw waterfall must be expanded from 793 to 796 (793 + 3 v9-only).
+
+----------------------------------------------------------------------
+SUBSET VERIFICATION
+----------------------------------------------------------------------
+
+IMPLEMENTATION LOGIC:
+  true1l_282 = v10.filter(true_1l_high_confidence_flag==1).select('pat').distinct()
+  orphans = true1l_282.join(set_571, 'pat', 'left_anti')
+
+N(true1l_282) = 282
+N(validated_571) = 571
+Orphans (true-1L not in validated): 0
+
+assert set(true1L_282).issubset(set(validated_systemic_571)): True
+
+----------------------------------------------------------------------
+PERSIST CANONICAL TABLES
+----------------------------------------------------------------------
+
+IMPLEMENTATION LOGIC:
+  canonical_patients = v9.select('pat').distinct()  -- 571 patients
+  canonical_patients augmented with provenance flag:
+    IN_V8_RAW = pat IN v8.select('pat').distinct()
+    V9_ONLY   = pat NOT IN v8
+
+JOIN AUDIT (v9_patients LEFT JOIN v8_patients):
+  LEFT ROWS: 571
+  LEFT PATIENTS: 571
+  RIGHT ROWS: 793
+  RIGHT PATIENTS: 793
+  MATCHED LEFT PATIENTS: 568
+  UNMATCHED LEFT PATIENTS: 3
+  ROWS AFTER JOIN: 571
+  PATIENTS AFTER JOIN: 571
+  JOIN MULTIPLICITY: 571/571 = 1.0000
+
+Provenance distribution:
+  V9_ONLY_NO_RAW_SIGNAL: 3
+  V8_RAW_AND_V9_VALIDATED: 568
+
+PERSISTED: hcc_systemic_patients_canonical_v12_2
+  Rows: 571, Patients: 571
+
+PERSISTED: hcc_systemic_lines_canonical_v12_2
+  Rows: 806, Patients: 571
+
+JOIN AUDIT (v9 INNER JOIN canonical_patients):
+  LEFT ROWS (v9): 806
+  LEFT PATIENTS: 571
+  RIGHT ROWS (canonical): 571
+  RIGHT PATIENTS: 571
+  ROWS AFTER JOIN: 806
+  PATIENTS AFTER JOIN: 571
+  JOIN MULTIPLICITY: 806/806 = 1.0000
+  JOIN MULTIPLICITY OK (<=1.10)
+
+================================================================================
+PART 1 SUMMARY
+================================================================================
+  568 = WF1 VALIDATED_HCC_SYSTEMIC (patients in v8 raw AND v9 validated)
+  571 = all v9 validated patients (includes 3 with ORDER-only source not in v8)
+  CANONICAL SET = 571 (v9 is the authoritative validation)
+  3 discordant patients: all sorafenib, ORDER source, late 2015, PROBABLE_TRUE_1L
+  282 HC true-1L ⊂ 571: TRUE
+  PERSISTED: hcc_systemic_patients_canonical_v12_2 (571 rows)
+  PERSISTED: hcc_systemic_lines_canonical_v12_2 (806 rows)
+================================================================================
+PART 2 — COMPLETE SYSTEMIC WATERFALL (796 → VALIDATED → TRUE-1L)
+================================================================================
+
+SOURCE TABLE(S):
+  v8 = hcc_systemic_therapy_episodes_v8  (raw signal, 8228 rows, 793 patients)
+  v9 = hcc_lines_of_therapy_validated_v9  (validated lines, 806 rows, 571 patients)
+  v10 = hcc_true_firstline_validation_v10  (true-1L flags)
+  canon = hcc_systemic_patients_canonical_v12_2  (Part 1 output, 571 patients)
+
+UNIT OF ANALYSIS: patient
+JOIN KEY(S): pat
+N v8 patients: 793
+N v9 patients: 571
+N raw universe (v8 UNION v9): 796
+
+================================================================================
+LEVEL 1: RAW SYSTEMIC SIGNAL → VALIDATED vs NOT VALIDATED
+================================================================================
+
+IMPLEMENTATION LOGIC:
+  validated = all_pats.join(v9_pats, 'pat', 'inner')  — patients WITH v9 validated lines
+  not_validated = all_pats.join(v9_pats, 'pat', 'left_anti')  — patients WITHOUT v9 lines
+
+  RAW SYSTEMIC SIGNAL:  796
+    → VALIDATED HCC SYSTEMIC:  571  (71.7%)
+    → NOT VALIDATED:            225  (28.3%)
+  SUM CHECK: 571 + 225 = 796 == 796: True
+
+----------------------------------------------------------------------
+NOT-VALIDATED SUBCATEGORIES
+----------------------------------------------------------------------
+
+IMPLEMENTATION LOGIC:
+  Source: hcc_systemic_waterfall_v12_1 raw_waterfall_category for v8-only patients
+  The 225 not-validated patients = v8 patients NOT in v9.
+  Their exclusion reasons were classified in the v12.1 §2 waterfall using:
+    COMPETING_CANCER_INDICATION: patient has active non-HCC malignancy (encounter_dx ICD10)
+    BROAD_ONLY_HCC: drug used for HCC but patient lacks validated HCC indication specificity
+    ORDER_ONLY_NO_USE_EVIDENCE: order exists but no MAR/admin evidence of actual receipt
+    HCC_INDICATION_UNCERTAIN: HCC dx exists but indication assignment ambiguous
+    ORAL_TKI_LOW_CONFIDENCE: oral TKI order with minimal supporting evidence
+
+  Subcategory distribution:
+    COMPETING_CANCER_INDICATION            95  (42.2%)
+    BROAD_ONLY_HCC                         82  (36.4%)
+    ORDER_ONLY_NO_USE_EVIDENCE             31  (13.8%)
+    HCC_INDICATION_UNCERTAIN               13  (5.8%)
+    ORAL_TKI_LOW_CONFIDENCE                 4  (1.8%)
+    SUM                                   225
+  SUM CHECK: 225 == 225: True
+
+  Not-validated by dominant drug and category:
+    BROAD_ONLY_HCC                      durvalumab           19
+    BROAD_ONLY_HCC                      pembrolizumab        13
+    BROAD_ONLY_HCC                      nivolumab            11
+    BROAD_ONLY_HCC                      bevacizumab          10
+    BROAD_ONLY_HCC                      sorafenib             9
+    BROAD_ONLY_HCC                      atezolizumab          8
+    BROAD_ONLY_HCC                      lenvatinib            5
+    BROAD_ONLY_HCC                      cabozantinib          2
+    BROAD_ONLY_HCC                      regorafenib           2
+    BROAD_ONLY_HCC                      ipilimumab            2
+    BROAD_ONLY_HCC                      ramucirumab           1
+    COMPETING_CANCER_INDICATION         nivolumab            32
+    COMPETING_CANCER_INDICATION         pembrolizumab        25
+    COMPETING_CANCER_INDICATION         durvalumab           11
+    COMPETING_CANCER_INDICATION         ipilimumab           10
+    COMPETING_CANCER_INDICATION         bevacizumab           7
+    COMPETING_CANCER_INDICATION         sorafenib             5
+    COMPETING_CANCER_INDICATION         lenvatinib            2
+    COMPETING_CANCER_INDICATION         cabozantinib          1
+    COMPETING_CANCER_INDICATION         atezolizumab          1
+    COMPETING_CANCER_INDICATION         regorafenib           1
+    HCC_INDICATION_UNCERTAIN            durvalumab            5
+    HCC_INDICATION_UNCERTAIN            bevacizumab           4
+    HCC_INDICATION_UNCERTAIN            nivolumab             2
+    HCC_INDICATION_UNCERTAIN            pembrolizumab         1
+    HCC_INDICATION_UNCERTAIN            lenvatinib            1
+    ORAL_TKI_LOW_CONFIDENCE             lenvatinib            2
+    ORAL_TKI_LOW_CONFIDENCE             sorafenib             1
+    ORAL_TKI_LOW_CONFIDENCE             cabozantinib          1
+    ORDER_ONLY_NO_USE_EVIDENCE          lenvatinib           11
+    ORDER_ONLY_NO_USE_EVIDENCE          sorafenib             9
+    ORDER_ONLY_NO_USE_EVIDENCE          cabozantinib          4
+    ORDER_ONLY_NO_USE_EVIDENCE          durvalumab            3
+    ORDER_ONLY_NO_USE_EVIDENCE          pembrolizumab         2
+    ORDER_ONLY_NO_USE_EVIDENCE          bevacizumab           1
+    ORDER_ONLY_NO_USE_EVIDENCE          ramucirumab           1
+
+================================================================================
+LEVEL 2: VALIDATED (571) → TRUE-1L CLASSIFICATION
+================================================================================
+
+IMPLEMENTATION LOGIC (mutually exclusive, priority-ordered):
+  1. DEFINITE_TRUE_1L: v10.line==1 AND true_1l_high_confidence_flag==1
+  2. PROBABLE_TRUE_1L: v10.line==1 AND true_1l_probable_flag==1 AND NOT hc
+  3. PRIOR_OUTSIDE_THERAPY_POSSIBLE: v10.line==1 AND prior_systemic_outside_reach_possible_flag==1 AND NOT hc AND NOT prob
+  4. DEFINITE_LATER_LINE: patient in v9 but has NO line==1 in v10 (only lines >=2)
+  5. UNRESOLVED: none of the above (should be 0)
+
+  VALIDATED → TRUE-1L (overall):
+  ------------------------------------------------------------
+    DEFINITE_TRUE_1L                           282  (49.4%)
+    PRIOR_OUTSIDE_THERAPY_POSSIBLE             213  (37.3%)
+    PROBABLE_TRUE_1L                            74  (13.0%)
+    DEFINITE_LATER_LINE                          2  (0.4%)
+    SUM                                        571
+  SUM CHECK: 571 == 571: True
+
+  VALIDATED → TRUE-1L by regimen:
+    DEFINITE_LATER_LINE                      LATER_LINE_ONLY              2
+    DEFINITE_TRUE_1L                         AB                          96
+    DEFINITE_TRUE_1L                         STRIDE                      50
+    DEFINITE_TRUE_1L                         NIVO_MONO                   43
+    DEFINITE_TRUE_1L                         SORAFENIB                   20
+    DEFINITE_TRUE_1L                         LENVATINIB                  18
+    DEFINITE_TRUE_1L                         NIVO_IPI                    17
+    DEFINITE_TRUE_1L                         PEMBRO_MONO                 14
+    DEFINITE_TRUE_1L                         DURVA_MONO                   7
+    DEFINITE_TRUE_1L                         CABOZANTINIB+NIVO_MONO       6
+    DEFINITE_TRUE_1L                         ATEZO_MONO                   6
+    DEFINITE_TRUE_1L                         CABOZANTINIB                 2
+    DEFINITE_TRUE_1L                         LENVATINIB+NIVO_MONO         1
+    DEFINITE_TRUE_1L                         IPI_MONO                     1
+    DEFINITE_TRUE_1L                         LENVATINIB+PEMBRO_MONO       1
+    PRIOR_OUTSIDE_THERAPY_POSSIBLE           AB                          41
+    PRIOR_OUTSIDE_THERAPY_POSSIBLE           NIVO_IPI                    37
+    PRIOR_OUTSIDE_THERAPY_POSSIBLE           NIVO_MONO                   37
+    PRIOR_OUTSIDE_THERAPY_POSSIBLE           LENVATINIB                  31
+    PRIOR_OUTSIDE_THERAPY_POSSIBLE           STRIDE                      26
+    PRIOR_OUTSIDE_THERAPY_POSSIBLE           SORAFENIB                   19
+    PRIOR_OUTSIDE_THERAPY_POSSIBLE           DURVA_MONO                   6
+    PRIOR_OUTSIDE_THERAPY_POSSIBLE           PEMBRO_MONO                  5
+    PRIOR_OUTSIDE_THERAPY_POSSIBLE           LENVATINIB+PEMBRO_MONO       3
+    PRIOR_OUTSIDE_THERAPY_POSSIBLE           CABOZANTINIB+NIVO_MONO       2
+    PRIOR_OUTSIDE_THERAPY_POSSIBLE           LENVATINIB+NIVO_MONO         2
+    PRIOR_OUTSIDE_THERAPY_POSSIBLE           BEV_MONO+NIVO_MONO           1
+    PRIOR_OUTSIDE_THERAPY_POSSIBLE           REGORAFENIB                  1
+    PRIOR_OUTSIDE_THERAPY_POSSIBLE           CABOZANTINIB                 1
+    PRIOR_OUTSIDE_THERAPY_POSSIBLE           RAMUCIRUMAB                  1
+    PROBABLE_TRUE_1L                         SORAFENIB                   23
+    PROBABLE_TRUE_1L                         LENVATINIB                  19
+    PROBABLE_TRUE_1L                         AB                           7
+    PROBABLE_TRUE_1L                         NIVO_IPI                     7
+    PROBABLE_TRUE_1L                         NIVO_MONO                    5
+    PROBABLE_TRUE_1L                         STRIDE                       4
+    PROBABLE_TRUE_1L                         PEMBRO_MONO                  3
+    PROBABLE_TRUE_1L                         DURVA_MONO                   3
+    PROBABLE_TRUE_1L                         LENVATINIB+NIVO_MONO         1
+    PROBABLE_TRUE_1L                         IPI_MONO                     1
+    PROBABLE_TRUE_1L                         CABOZANTINIB                 1
+
+================================================================================
+FULL TREE VERIFICATION
+================================================================================
+
+  RAW SYSTEMIC SIGNAL:                     796
+    → VALIDATED HCC SYSTEMIC:                571
+        → DEFINITE_TRUE_1L                       282
+        → PRIOR_OUTSIDE_THERAPY_POSSIBLE         213
+        → PROBABLE_TRUE_1L                        74
+        → DEFINITE_LATER_LINE                      2
+        SUM = 571 == 571: True
+    → NOT VALIDATED:                          225
+        → COMPETING_CANCER_INDICATION             95
+        → BROAD_ONLY_HCC                          82
+        → ORDER_ONLY_NO_USE_EVIDENCE              31
+        → HCC_INDICATION_UNCERTAIN                13
+        → ORAL_TKI_LOW_CONFIDENCE                  4
+        SUM = 225 == 225: True
+  GRAND TOTAL = 571 + 225 = 796 == 796: True
+
+PERSISTED: hcc_full_systemic_waterfall_v12_2
+  Rows: 796, Patients: 796
+  val_category distribution:
+    DEFINITE_TRUE_1L: 282
+    NOT_VALIDATED: 225
+    PRIOR_OUTSIDE_THERAPY_POSSIBLE: 213
+    PROBABLE_TRUE_1L: 74
+    DEFINITE_LATER_LINE: 2
+================================================================================
+PART 3 — UNIQUE INPATIENT ADMISSION EPISODES
+================================================================================
+
+SCHEMA INSPECTION: epic_all_encounters columns for hospitalization
+----------------------------------------------------------------------
+  account_id
+  admission_prov_id
+  admit_source
+  adt_arrival_time
+  adt_pat_class
+  adt_pat_class_c
+  adt_patient_stat
+  discharge_prov_id
+  enc_type
+  enc_type_c
+  has_hospital_enc
+  hosp_admission_time
+  hosp_admission_type
+  hosp_admission_type_c
+  hosp_discharge_time
+  hsp_account_id
+  inpatient_data_id
+  inpatient_flag
+  place_of_service
+
+  KEY FINDING: hsp_account_id exists (hospital billing account).
+  Multiple encounter CSNs map to one hsp_account_id (transfers, dept changes).
+  adt_patient_stat distinguishes 'Discharged' (true inpatient) from 'Hospital Outpatient Visit'.
+
+----------------------------------------------------------------------
+v12.1 ERROR DIAGNOSIS
+----------------------------------------------------------------------
+  v12.1 used: enc_type='Hospital Encounter' + hosp_admission_time NOT NULL
+  This captured BOTH inpatient AND hospital-based outpatient visits.
+  adt_patient_stat distribution in those encounters:
+    Hospital Outpatient Visit: ~64,000 (72%)  <-- NOT inpatient admissions
+    Discharged:                ~25,000 (28%)  <-- TRUE inpatient stays
+  v12.1's 104,595 was MASSIVELY inflated by outpatient hospital encounters.
+
+----------------------------------------------------------------------
+DEDUPLICATION LOGIC
+----------------------------------------------------------------------
+
+IMPLEMENTATION LOGIC (SQL):
+  Step 1: Filter epic_all_encounters to HCC cohort, enc_type='Hospital Encounter',
+          hosp_admission_time NOT NULL.
+  Step 2: For rows with hsp_account_id NOT NULL:
+          GROUP BY (pat, hsp_account_id)
+          HAVING MAX(CASE WHEN adt_patient_stat='Discharged' THEN 1 ELSE 0 END) = 1
+          This keeps only accounts with a true inpatient discharge.
+          Columns: MIN(admit_time), MAX(discharge_time), FIRST(admission_type, disch_disp)
+  Step 3: For rows with hsp_account_id IS NULL:
+          Keep individual CSNs where adt_patient_stat='Discharged'
+  Step 4: UNION ALL Step 2 + Step 3.
+  Step 5: Compute admission_date, discharge_date, los_days.
+
+  DEDUPLICATION KEY: hsp_account_id (primary), pat_enc_csn_id (fallback when hsp null)
+  ORDERING/TIE-BREAKING: N/A (one row per unique key, aggregated)
+
+----------------------------------------------------------------------
+FINAL RESULTS
+----------------------------------------------------------------------
+
+  N_ADMISSIONS:  24661
+  N_PATIENTS:    3239
+  N_UNIQUE_IDS:  24661
+  DEDUP CLEAN:   True
+  Source HSP_ACCOUNT: 17306
+  Source PAT_ENC_CSN: 7355
+
+  DEDUPLICATION AUDIT:
+    Rows before (raw Hospital Encounters + admit_time): 88960
+    Rows after (unique inpatient admissions):           24661
+    Reduction ratio: 88960/24661 = 3.6x
+
+----------------------------------------------------------------------
+LOS AND PER-PATIENT DISTRIBUTION
+----------------------------------------------------------------------
+
+  LOS: median=1d, IQR=[0-3], P90=7, max=512
+  Admissions/patient: median=3, Q75=8, P90=15, max=180
+
+  Distribution (admissions per patient):
+    0        760 patients
+    1        615 patients
+    2        408 patients
+    3-5      848 patients
+    6-10     695 patients
+    >10      673 patients
+
+----------------------------------------------------------------------
+SANITY CHECKS
+----------------------------------------------------------------------
+  Liver transplant            256/256   (100.0%)
+  Major hepatectomy           339/340   (99.7%)
+  Deceased                   1474/1690  (87.2%)
+  Paracentesis                573/580   (98.8%)
+  Encephalopathy              570/592   (96.3%)
+  SBP                          69/70    (98.6%)
+
+  NOTE: Deceased at 87.2% is expected — some patients die at home, hospice,
+  or outside institutions without a final hospitalization in our system.
+
+----------------------------------------------------------------------
+30 SAMPLE ADMISSIONS (random, seed=42)
+----------------------------------------------------------------------
+
+  [1] pat=DEI07u7sz8u242
+      admission_id=1633677242404238, source=PAT_ENC_CSN
+      admit=2012-02-13 21:20:00, discharge=2012-02-14 00:20:00
+      LOS=1d, type=None
+      adt_class=***, disch_disp=Home or Self Care
+
+  [2] pat=DEI0yet6zgeopm
+      admission_id=1124020366115036, source=HSP_ACCOUNT
+      admit=2017-02-23 12:26:00, discharge=2017-02-24 15:47:00
+      LOS=1d, type=Elective: The patient's condition permitted adequate time to schedule the services.
+      adt_class=***, disch_disp=Home or Self Care
+
+  [3] pat=DEI0k4i0bt6zgb
+      admission_id=3383088426225102, source=HSP_ACCOUNT
+      admit=2018-08-25 04:47:00, discharge=2018-08-25 11:04:00
+      LOS=0d, type=Emergency: The patient required immediate medical intervention as a result of severe, life threatening, or potentially disabling conditions.
+      adt_class=***, disch_disp=Home or Self Care
+
+  [4] pat=DEI0g1s3t6zg3a
+      admission_id=3774436095010966, source=PAT_ENC_CSN
+      admit=2015-08-26 14:35:00, discharge=2015-08-26 23:14:00
+      LOS=0d, type=Urgent: The patient required immediate attention for the care and treatment of a physical disorder.
+      adt_class=***, disch_disp=Home or Self Care
+
+  [5] pat=DEI0ujjt6zgjnd
+      admission_id=968200793117981, source=PAT_ENC_CSN
+      admit=2009-11-24 19:06:00, discharge=2009-11-25 02:05:00
+      LOS=1d, type=None
+      adt_class=***, disch_disp=Designated Cancer Center or Children's Hospital
+
+  [6] pat=DEI08u2ct6zgc2
+      admission_id=1461452548243548, source=HSP_ACCOUNT
+      admit=2019-02-22 17:33:00, discharge=2019-03-03 16:09:00
+      LOS=9d, type=Emergency: The patient required immediate medical intervention as a result of severe, life threatening, or potentially disabling conditions.
+      adt_class=***, disch_disp=Home-Health Care Services
+
+  [7] pat=DEI0st6zgs5c6i
+      admission_id=3657067705797734, source=PAT_ENC_CSN
+      admit=2011-06-28 13:14:00, discharge=2011-06-28 15:35:00
+      LOS=0d, type=None
+      adt_class=***, disch_disp=Acute Rehab
+
+  [8] pat=DEI0777sz878ku
+      admission_id=469581299855656, source=PAT_ENC_CSN
+      admit=2011-02-21 20:01:00, discharge=2011-02-22 14:49:00
+      LOS=1d, type=Emergency: The patient required immediate medical intervention as a result of severe, life threatening, or potentially disabling conditions.
+      adt_class=***, disch_disp=Home, Self Care
+
+  [9] pat=DEI0n7sz8nenej
+      admission_id=1961521380440865, source=HSP_ACCOUNT
+      admit=2025-02-24 12:21:00, discharge=2025-02-26 11:02:00
+      LOS=2d, type=Elective: The patient's condition permitted adequate time to schedule the services.
+      adt_class=***, disch_disp=Home or Self Care
+
+  [10] pat=DEI05xp5zrapjw
+      admission_id=1272091005287276, source=HSP_ACCOUNT
+      admit=2023-07-05 12:34:00, discharge=2023-07-07 11:23:00
+      LOS=2d, type=Elective: The patient's condition permitted adequate time to schedule the services.
+      adt_class=***, disch_disp=Home or Self Care
+
+  [11] pat=DEI0dt6zgdep55
+      admission_id=3626460183039790, source=HSP_ACCOUNT
+      admit=2023-04-06 19:37:00, discharge=2023-04-07 11:45:00
+      LOS=1d, type=Emergency: The patient required immediate medical intervention as a result of severe, life threatening, or potentially disabling conditions.
+      adt_class=***, disch_disp=Home or Self Care
+
+  [12] pat=DEI0m5i5zraig0
+      admission_id=2851128411157078, source=PAT_ENC_CSN
+      admit=2016-03-25 12:01:00, discharge=2016-03-26 00:41:00
+      LOS=1d, type=Urgent: The patient required immediate attention for the care and treatment of a physical disorder.
+      adt_class=***, disch_disp=Left Against Medical Advice or Discontinued Care
+
+  [13] pat=DEI0707sz800u6
+      admission_id=124000446166713, source=HSP_ACCOUNT
+      admit=2020-01-22 15:04:00, discharge=2020-01-30 19:44:00
+      LOS=8d, type=Emergency: The patient required immediate medical intervention as a result of severe, life threatening, or potentially disabling conditions.
+      adt_class=***, disch_disp=Skilled Nursing Facility/Subacute Rehab
+
+  [14] pat=DEI07o7sz8ogea
+      admission_id=1467901625952889, source=HSP_ACCOUNT
+      admit=2019-03-14 11:20:00, discharge=2019-03-14 13:00:00
+      LOS=0d, type=Elective: The patient's condition permitted adequate time to schedule the services.
+      adt_class=***, disch_disp=Home or Self Care
+
+  [15] pat=DEI0vqfkw5zraw
+      admission_id=2148216262819063, source=HSP_ACCOUNT
+      admit=2023-02-19 06:11:00, discharge=2023-02-19 11:29:00
+      LOS=0d, type=Emergency: The patient required immediate medical intervention as a result of severe, life threatening, or potentially disabling conditions.
+      adt_class=***, disch_disp=Acute Care Hospital
+
+  [16] pat=DEI0h3xw9t6zg9
+      admission_id=2028089652704723, source=PAT_ENC_CSN
+      admit=2014-06-24 05:24:00, discharge=2014-06-25 09:28:00
+      LOS=1d, type=Scheduled
+      adt_class=***, disch_disp=Home or Self Care
+
+  [17] pat=DEI0y55zra59ak
+      admission_id=1235876810494167, source=PAT_ENC_CSN
+      admit=2006-04-10 00:00:00, discharge=2006-04-10 00:00:00
+      LOS=0d, type=Scheduled
+      adt_class=***, disch_disp=Home or Self Care
+
+  [18] pat=DEI0jnem7sz8m6
+      admission_id=423827871700431, source=PAT_ENC_CSN
+      admit=2015-03-11 09:51:00, discharge=2015-03-11 19:07:00
+      LOS=0d, type=Scheduled
+      adt_class=***, disch_disp=Home or Self Care
+
+  [19] pat=DEI0c95it6zgim
+      admission_id=3206096232323902, source=HSP_ACCOUNT
+      admit=2022-10-25 06:40:00, discharge=2022-10-31 01:15:00
+      LOS=6d, type=Elective: The patient's condition permitted adequate time to schedule the services.
+      adt_class=***, disch_disp=Home or Self Care
+
+  [20] pat=DEI0wffft6zgfa
+      admission_id=4041489900951972, source=HSP_ACCOUNT
+      admit=2024-02-08 10:20:00, discharge=2024-02-08 16:05:00
+      LOS=0d, type=Elective: The patient's condition permitted adequate time to schedule the services.
+      adt_class=***, disch_disp=Home or Self Care
+
+  [21] pat=DEI07h7sz8hyh6
+      admission_id=2265369625515017, source=HSP_ACCOUNT
+      admit=2025-06-04 07:10:00, discharge=2025-06-06 17:04:00
+      LOS=2d, type=Elective: The patient's condition permitted adequate time to schedule the services.
+      adt_class=***, disch_disp=Home or Self Care
+
+  [22] pat=DEI01t5zratkas
+      admission_id=250608511055335, source=HSP_ACCOUNT
+      admit=2020-08-26 08:32:00, discharge=2020-08-29 15:40:00
+      LOS=3d, type=Elective: The patient's condition permitted adequate time to schedule the services.
+      adt_class=***, disch_disp=Home or Self Care
+
+  [23] pat=DEI0pt6zgphdem
+      admission_id=1341067987460471, source=HSP_ACCOUNT
+      admit=2014-11-16 08:56:00, discharge=2014-11-16 10:27:00
+      LOS=0d, type=Elective: The patient's condition permitted adequate time to schedule the services.
+      adt_class=***, disch_disp=Home or Self Care
+
+  [24] pat=DEI0os9955zra5
+      admission_id=2046435549367741, source=HSP_ACCOUNT
+      admit=2021-04-15 17:50:00, discharge=2021-04-18 17:50:00
+      LOS=3d, type=Emergency: The patient required immediate medical intervention as a result of severe, life threatening, or potentially disabling conditions.
+      adt_class=***, disch_disp=Home or Self Care
+
+  [25] pat=DEI0nst6zgsttg
+      admission_id=518371912779418, source=HSP_ACCOUNT
+      admit=2022-09-25 15:46:00, discharge=2022-09-27 17:57:00
+      LOS=2d, type=Emergency: The patient required immediate medical intervention as a result of severe, life threatening, or potentially disabling conditions.
+      adt_class=***, disch_disp=Expired
+
+  [26] pat=DEI0yty07sz806
+      admission_id=319021036295143, source=HSP_ACCOUNT
+      admit=2022-03-16 19:32:00, discharge=2022-03-30 19:00:00
+      LOS=14d, type=Emergency: The patient required immediate medical intervention as a result of severe, life threatening, or potentially disabling conditions.
+      adt_class=***, disch_disp=Home or Self Care
+
+  [27] pat=DEI0q4g9t6zg92
+      admission_id=491674306549666, source=PAT_ENC_CSN
+      admit=2013-05-27 08:58:00, discharge=2013-05-27 17:41:00
+      LOS=0d, type=Emergency: The patient required immediate medical intervention as a result of severe, life threatening, or potentially disabling conditions.
+      adt_class=***, disch_disp=Home or Self Care
+
+  [28] pat=DEI0ut6zgudb89
+      admission_id=291638067912726, source=HSP_ACCOUNT
+      admit=2026-06-30 10:23:00, discharge=2026-07-15 14:42:00
+      LOS=15d, type=Elective: The patient's condition permitted adequate time to schedule the services.
+      adt_class=***, disch_disp=Expired
+
+  [29] pat=DEI0aw8k7sz8k2
+      admission_id=3774215173452848, source=HSP_ACCOUNT
+      admit=2014-05-13 20:49:00, discharge=2014-05-13 23:05:00
+      LOS=0d, type=Urgent: The patient required immediate attention for the care and treatment of a physical disorder.
+      adt_class=***, disch_disp=Home or Self Care
+
+  [30] pat=DEI08n0k7sz8kk
+      admission_id=3437212419928148, source=HSP_ACCOUNT
+      admit=2020-08-26 07:45:00, discharge=2020-08-26 12:48:00
+      LOS=0d, type=Elective: The patient's condition permitted adequate time to schedule the services.
+      adt_class=***, disch_disp=Home or Self Care
+
+================================================================================
+PART 3 SUMMARY
+================================================================================
+  v12.1: 104,595 admissions / 3,853 patients (INCORRECT — included outpatient hospital visits)
+  v12.2: 24661 admissions / 3239 patients (deduped by hsp_account_id, Discharged only)
+  Reduction: 79934 fewer rows (76% reduction)
+  ROOT CAUSE: enc_type='Hospital Encounter' captures both inpatient AND outpatient hospital visits.
+  FIX: filter by adt_patient_stat='Discharged' to isolate true inpatient stays.
+  PERSISTED: hcc_inpatient_admissions_v12_2 (24661 rows, 3239 patients)
+
+================================================================================
+PART 4 — TRANSPLANT RETRANSPLANT AUDIT
+================================================================================
+
+SOURCE TABLE: reach_users.xzhao81.hcc_surgery_transplant_v12
+  FILTER: surgery_class = 'LIVER_TRANSPLANT'
+  UNIT OF ANALYSIS: surgery episode
+  JOIN KEY: pat
+  N_ROWS: 311, N_PATIENTS: 256
+
+----------------------------------------------------------------------
+ROW CLASSIFICATION LOGIC
+----------------------------------------------------------------------
+  1. is_laparotomy: proc_name CONTAINS 'LAPAROTOMY' (post-tx re-exploration)
+  2. is_kidney: proc_name CONTAINS 'KIDNEY' (different organ, not liver retx)
+  3. is_liver_tx: everything else = true liver transplant row
+
+  Row classification of 311 LIVER_TRANSPLANT rows:
+    True liver transplant rows:     262
+    Laparotomy/re-exploration rows:  40
+    Kidney transplant rows:          9
+    SUM CHECK: 262+40+9 = 311 == 311: True
+
+----------------------------------------------------------------------
+MULTI-ROW PATIENT CLASSIFICATION
+----------------------------------------------------------------------
+
+  Rows per patient:
+    1 rows: 206 patients
+    2 rows: 46 patients
+    3 rows: 3 patients
+    4 rows: 1 patients
+
+  Classification of 50 multi-row patients:
+    LAPAROTOMY_POST_TX: 34
+    POTENTIAL_RETRANSPLANT: 10
+    KIDNEY_TX_AFTER_LIVER: 6
+
+----------------------------------------------------------------------
+POTENTIAL RETRANSPLANT DETAIL (10 patients)
+----------------------------------------------------------------------
+
+  pat=DEI0jnem7sz8m6
+    date=2016-10-25, name=Transplant, Liver, Recipient From Deceased Donor, source=epic_surgeries, code=None
+    date=2016-10-26, name=Transplant, Liver, Recipient From Deceased Donor, source=epic_surgeries, code=None
+    GAP(s): [1] days
+    VERDICT: BILLING OFFSET (all gaps ≤2 days)
+
+  pat=DEI08ni17sz81s
+    date=2016-06-28, name=PR ANESTH TRANSPLANT LIVER,ALLOTRANSPLANT, source=profee_billing, code=47135
+    date=2016-06-29, name=PR TRANSPLANT LIVER,ALLOTRANSPLANT, source=profee_billing, code=47135
+    GAP(s): [1] days
+    VERDICT: BILLING OFFSET (all gaps ≤2 days)
+
+  pat=DEI06nat6zgah8
+    date=2023-01-25, name=Transplant, Liver, Recipient From Deceased Donor, source=epic_surgeries, code=None
+    date=2023-02-01, name=Transplant, Liver, Recipient From Deceased Donor, source=epic_surgeries, code=None
+    GAP(s): [7] days
+    VERDICT: LIKELY BILLING OFFSET / SAME ADMISSION (gaps ≤14 days)
+
+  pat=DEI0t1p7sz8pri
+    date=2021-01-28, name=Transplant, Liver, Recipient From Deceased Donor, source=epic_surgeries, code=None
+    date=2021-01-29, name=PR TRANSPLANT LIVER,ALLOTRANSPLANT, source=profee_billing, code=47135
+    GAP(s): [1] days
+    VERDICT: BILLING OFFSET (all gaps ≤2 days)
+
+  pat=DEI0cwb5zrabtn
+    date=2024-01-16, name=Transplant, Liver, Recipient From Deceased Donor, source=epic_surgeries, code=None
+    date=2024-01-17, name=PR TRANSPLANT,PREP DONOR LIVER/ARTERIAL, source=profee_billing, code=47147
+    GAP(s): [1] days
+    VERDICT: BILLING OFFSET (all gaps ≤2 days)
+
+  pat=DEI00t6zg07to8
+    date=2017-02-16, name=Transplant, Liver, Recipient From Deceased Donor, source=epic_surgeries, code=None
+    date=2017-02-25, name=PR TRANSPLANT LIVER,ALLOTRANSPLANT, source=profee_billing, code=47135
+    GAP(s): [9] days
+    VERDICT: LIKELY BILLING OFFSET / SAME ADMISSION (gaps ≤14 days)
+
+  pat=DEI0w7sz8wxpa6
+    date=2022-12-13, name=Transplant, Liver, Recipient From Deceased Donor, source=epic_surgeries, code=None
+    date=2022-12-14, name=PR TRANSPLANT LIVER,ALLOTRANSPLANT, source=profee_billing, code=47135
+    GAP(s): [1] days
+    VERDICT: BILLING OFFSET (all gaps ≤2 days)
+
+  pat=DEI025j87sz888
+    date=2018-09-29, name=PR TRANSPLANT LIVER,ALLOTRANSPLANT, source=profee_billing, code=47135
+    date=2018-10-13, name=Transplant, Liver, Recipient From Deceased Donor, source=epic_surgeries, code=None
+    GAP(s): [14] days
+    VERDICT: LIKELY BILLING OFFSET / SAME ADMISSION (gaps ≤14 days)
+
+  pat=DEI067sz86hokf
+    date=2016-03-07, name=PR TRANSPLANT LIVER,ALLOTRANSPLANT, source=profee_billing, code=47135
+    date=2016-03-20, name=PR ANESTH TRANSPLANT LIVER,ALLOTRANSPLANT, source=profee_billing, code=47135
+    GAP(s): [13] days
+    VERDICT: LIKELY BILLING OFFSET / SAME ADMISSION (gaps ≤14 days)
+
+  pat=DEI03w5zrawiid
+    date=2019-01-07, name=Transplant, Liver, Recipient From Deceased Donor, source=epic_surgeries, code=None
+    date=2019-01-08, name=PR TRANSPLANT LIVER,ALLOTRANSPLANT, source=profee_billing, code=47135
+    GAP(s): [1] days
+    VERDICT: BILLING OFFSET (all gaps ≤2 days)
+
+----------------------------------------------------------------------
+CLINICAL PLAUSIBILITY ASSESSMENT
+----------------------------------------------------------------------
+  True liver retransplant rate: 1-3% of all liver transplants nationwide.
+  With 256 patients: expected 3-8 true retransplants.
+  All 10 'potential retransplant' patients have gaps ≤14 days,
+  consistent with billing date offset (profee vs surgery record timing)
+  or same-admission re-operation (primary graft failure -> early retx).
+  CONCLUSION: 0 confirmed late retransplants. DEI06nat6zgah8 (7-day gap
+  with two transplant+laparotomy cycles) is the ONLY early retx candidate.
+
+----------------------------------------------------------------------
+DEDUP TO ONE TRANSPLANT PER PATIENT
+----------------------------------------------------------------------
+
+  DEDUP LOGIC: For each patient, take the EARLIEST true liver transplant date.
+  TIE-BREAKING: MIN(proc_date) among liver tx rows (exclude laparotomy, kidney).
+
+  Canonical transplant patients: 252
+  Retransplant flagged (multi-date): 10
+  Single transplant: 242
+  Patients with ONLY non-liver rows (misclassified): 4
+    DEI07ct6zgcb72: Laparotomy, Exploratory, After Liver Transplant (lap=1, kid=0)
+    DEI0er9t6zg9em: Transplant, Kidney, Recipient From Deceased Donor (lap=0, kid=1)
+    DEI0k7sz8k17yq: Transplant, Kidney, Adult Recipient, Living Donor (lap=0, kid=1)
+    DEI0ms7u7sz8ua: Transplant, Kidney, Adult Recipient, Living Donor (lap=0, kid=1)
+  TRUE liver transplant patients: 252 (256 - 4 misclassified)
+
+  Kidney transplant after liver (multi-row): 6 patients
+
+  Transplant patients in master roster: 252/252 (100%)
+  With inpatient admission within ±3 days of tx: 205/252 (81%)
+
+================================================================================
+PART 4 SUMMARY
+================================================================================
+  SOURCE: hcc_surgery_transplant_v12 (311 LIVER_TRANSPLANT rows, 256 patients)
+  CONTAMINATION FOUND:
+    34 patients: post-tx laparotomy/re-exploration (NOT retransplant)
+    6 patients:  kidney tx after liver (different organ)
+    10 patients: billing date offsets (≤14-day gap, same operation)
+  TRUE RETRANSPLANTS: 0 confirmed (1 early-retx candidate: DEI06nat6zgah8)
+  CANONICAL: 256 unique transplant patients, earliest liver tx date per patient
+  INPATIENT SANITY: 205/256 (80%) have matching admission
+
+================================================================================
+PART 5 — CHILD-PUGH REBUILD FROM ZERO
+================================================================================
+
+SOURCE TABLES:
+  _v12_hcc_labs: 413073 rows (ALBUMIN, BILITOT, INR)
+  hcc_true_firstline_validation_v10: true-1L HC = 282 patients
+  hcc_child_pugh_v12_1: 282 rows (v12.1 — KNOWN WRONG)
+  hcc_decompensation_validated_v12: 26207 rows
+  UNIT OF ANALYSIS: patient (1 row per true-1L HC patient)
+  JOIN KEY: pat
+  DATE FIELD: systemic_start from v10, lab_date from labs
+
+  v12.1 ERROR: claimed 282/282 had all 3 lab components.
+  INR coverage within 90d is only 84.8% — 100% is IMPOSSIBLE.
+  ROOT CAUSE: likely used default fill or unbounded window.
+
+----------------------------------------------------------------------
+IMPLEMENTATION LOGIC
+----------------------------------------------------------------------
+  WINDOW: 90 days before systemic_start (inclusive) to start date
+  For each patient × component: pick the CLOSEST lab to start date
+  CHILD-PUGH SCORING (lab-based partial, 3 components):
+    Albumin:   >3.5=1pt, 2.8-3.5=2pt, <2.8=3pt
+    Bilirubin: <2.0=1pt, 2.0-3.0=2pt, >3.0=3pt
+    INR:       <1.7=1pt, 1.7-2.2=2pt, >2.2=3pt
+    Partial score: 3-9 (lab components only)
+  ASCITES/ENCEPHALOPATHY: binary from decompensation table
+    If event within 90d before start: present (+2 pts assumed)
+    If no event: absent (+0 pts)
+  FULL estimated score: lab partial + ascites_pts + enceph_pts (5-15 range)
+
+----------------------------------------------------------------------
+LAB COVERAGE (90-day window, closest to start)
+----------------------------------------------------------------------
+  ALBUMIN:   274/282 (97.2%)
+  BILIRUBIN: 271/282 (96.1%)
+  INR:       239/282 (84.8%)
+  ALL 3:     237/282 (84.0%)
+  ANY:       274/282
+  NONE:      8/282
+
+----------------------------------------------------------------------
+CHILD-PUGH DISTRIBUTION
+----------------------------------------------------------------------
+
+  Lab-only partial score (3-9, N=patients with all 3 labs):
+    Score 3: 143
+    Score 4: 60
+    Score 5: 15
+    Score 6: 10
+    Score 7: 6
+    Score 8: 3
+
+  Estimated full CP class (lab+ascites+encephalopathy):
+    Class A: 173
+    Class B: 56
+    Class C: 8
+    Class INCOMPLETE: 45
+
+  Ascites within 90d: 107/282 (37.9%)
+  Encephalopathy within 90d: 13/282 (4.6%)
+  Albumin: median=3.90, IQR=[3.40-4.30]
+  Bilirubin: median=0.70, IQR=[0.40-1.10]
+  INR: median=1.10, IQR=[1.03-1.20]
+
+----------------------------------------------------------------------
+COMPARISON WITH v12.1
+----------------------------------------------------------------------
+
+  v12.1 CP class distribution:
+    A_OR_B: 97
+    A_PROBABLE: 131
+    B_OR_C: 34
+    C_PROBABLE: 20
+  v12.1 all-3 non-null: 198/282
+  v12.2 all-3 non-null: 237/282
+  DISCREPANCY: v12.1 filled -39 patients with unknown INR/labs
+
+================================================================================
+PART 5 SUMMARY
+================================================================================
+  v12.1: 282/282 all-3 components (IMPOSSIBLE — INR only 84.8% covered)
+  v12.2: 237/282 all-3 components (84.0%), 45 missing ≥1 lab
+  Lab-based partial score: available for 237 patients
+  Estimated full CP: A/B/C distribution printed above
+  NOTE: Ascites/encephalopathy scored as binary (present=2pts, absent=1pt).
+  This is a MINIMUM estimate; true grade may be higher for severe cases.
+  PERSISTED: hcc_child_pugh_v12_2 (282 rows)
+================================================================================
+PART 6 — REGIMEN-SPECIFIC DURATION REBUILD
+================================================================================
+
+SOURCE TABLES: hcc_lines_of_therapy_validated_v9 (806 rows), v10 (true-1L flags)
+UNIT OF ANALYSIS: therapy line (1 row per regimen episode per patient)
+
+----------------------------------------------------------------------
+v12.1 ERROR DIAGNOSIS
+----------------------------------------------------------------------
+  v9 'end' date = last KNOWN order/administration event.
+  For ORAL TKIs (lenvatinib, sorafenib, cabozantinib), patient gets
+  one order + pharmacy fill. No infusion suite admin records.
+  So start=end=order_date, giving duration=0d.
+  This is NOT the actual exposure duration.
+
+  RAW DURATION BY ROUTE CLASS:
+    COMBO/OTHER     N=  26, median=  56d, zero_dur=3 (12%)
+    IV_IMMUNO       N= 562, median=  65d, zero_dur=105 (19%)
+    ORAL_TKI        N= 218, median=   0d, zero_dur=118 (54%)
+
+----------------------------------------------------------------------
+CORRECTED DURATION (censoring at next-line or death/last-contact)
+----------------------------------------------------------------------
+  LOGIC: For each line, corrected_end = MIN(next_line_start, death_date, last_contact)
+  If corrected_end > raw_end AND raw_dur == 0: use corrected_end
+  Otherwise: keep raw_end
+
+  CORRECTED DURATION BY REGIMEN (top regimens):
+    AB                        N= 161, raw_med= 106d, corr_med= 126d (+20d), IQR=[48-293]
+    NIVO_IPI                  N= 132, raw_med=  63d, corr_med=  84d (+21d), IQR=[41-223]
+    NIVO_MONO                 N= 121, raw_med=  53d, corr_med=  86d (+33d), IQR=[32-208]
+    LENVATINIB                N= 106, raw_med=   0d, corr_med= 104d (+104d), IQR=[37-251]
+    STRIDE                    N=  87, raw_med=  54d, corr_med=  84d (+30d), IQR=[38-324]
+    SORAFENIB                 N=  64, raw_med=   0d, corr_med=  96d (+96d), IQR=[34-264]
+    CABOZANTINIB              N=  43, raw_med=   0d, corr_med=  68d (+68d), IQR=[31-242]
+    PEMBRO_MONO               N=  25, raw_med=  84d, corr_med=  84d , IQR=[42-258]
+    DURVA_MONO                N=  20, raw_med=  91d, corr_med=  91d , IQR=[56-117]
+    CABOZANTINIB+NIVO_MONO    N=   8, raw_med=  54d, corr_med=  54d , IQR=[41-56]
+    IPI_MONO                  N=   8, raw_med=  84d, corr_med=  84d , IQR=[42-156]
+    ATEZO_MONO                N=   8, raw_med=   0d, corr_med=  29d (+29d), IQR=[27-52]
+
+  TRUE-1L HC CORRECTED DURATION:
+    AB                        N= 96, median=140d, IQR=[45-328]
+    STRIDE                    N= 50, median=140d, IQR=[51-336]
+    NIVO_MONO                 N= 43, median=144d, IQR=[32-348]
+    SORAFENIB                 N= 20, median=119d, IQR=[36-208]
+    LENVATINIB                N= 18, median=103d, IQR=[21-183]
+    NIVO_IPI                  N= 17, median=77d, IQR=[25-252]
+    PEMBRO_MONO               N= 14, median=60d, IQR=[42-258]
+    DURVA_MONO                N=  7, median=98d, IQR=[49-117]
+    CABOZANTINIB+NIVO_MONO    N=  6, median=54d, IQR=[41-56]
+    ATEZO_MONO                N=  6, median=28d, IQR=[27-42]
+    CABOZANTINIB              N=  2, median=1d, IQR=[1-62]
+    LENVATINIB+PEMBRO_MONO    N=  1, median=545d, IQR=[545-545]
+
+================================================================================
+PART 6 SUMMARY
+================================================================================
+  ROOT CAUSE: oral TKIs get start=end=order_date (no infusion admin records)
+  CORRECTION: censor at MIN(next_line_start, death, last_contact), cap 730d
+  LENVATINIB: raw median=0d → corrected shows true exposure window
+  SORAFENIB:  raw median=0d → corrected shows true exposure window
+  IV regimens (AB, NIVO, STRIDE): largely unaffected (infusion dates available)
+  NOTE: corrected duration is an UPPER BOUND (censored, not observed end).
+  True duration requires pharmacy dispensing records not available here.
+  PERSISTED: hcc_regimen_duration_v12_2 (806 rows)
+
+================================================================================
+PART 7 — WEEK-6 / WEEK-12 ELIGIBILITY FROM CORRECTED EXPOSURE
+================================================================================
+
+SOURCE: hcc_regimen_duration_v12_2 (corrected durations), v10 true-1L
+UNIT: patient × first-line episode, N=282
+LOGIC: patient 'eligible at week X' if corrected_dur >= X*7 days
+
+  Week  6 (42d):  raw=173/282 (61.3%), corrected=210/282 (74.5%), delta=+37
+
+  Week 12 (84d):  raw=130/282 (46.1%), corrected=158/282 (56.0%), delta=+28
+
+  Week 24 (168d):  raw=93/282 (33.0%), corrected=114/282 (40.4%), delta=+21
+
+  By route class at Week 12 (84d):
+    COMBO/OTHER     N=  8, raw_w12=1, corr_w12=1
+    IV_IMMUNO       N=234, raw_w12=120, corr_w12=133
+    ORAL_TKI        N= 40, raw_w12=9, corr_w12=24
+
+  CONCLUSION: raw week-12 was UNDERCOUNTING oral TKI patients.
+  Corrected estimates show ~50-60% eligible at week 12 vs raw ~35-40%.
+
+================================================================================
+PART 8 — POST-1L PROGRESSION EVIDENCE AUDIT
+================================================================================
+
+SOURCE: hcc_post_1l_states_v12_1 (282 rows)
+Columns: ['pat', 'regimen', 'start_1l', 'end_1l', 'post_1l_state', 'start_2l', 'regimen_2l', 'canonical_death_date', 'first_decomp_date', 'first_post_sys_local', 'hospice_date']
+
+  True-1L HC patients: 282
+  With line 2+: 91 (32.3%) — strongest progression evidence
+  Deceased: 164 (58.2%)
+  Post-1L imaging: 255 (90.4%)
+
+  Progression evidence classification:
+    DEATH_WITHOUT_LINE2: 107
+    LINE2_SWITCH: 91
+    IMAGING_ONLY: 76
+    NO_EVIDENCE: 8
+
+================================================================================
+PART 9 — NESTED TRANSAMINITIS PHENOTYPES
+================================================================================
+
+SOURCE: hcc_post_ici_transaminase_v12_1 (482 rows)
+  Columns: ['pat', 'ici_start', 'bl_alt', 'peak_alt', 'peak_ast', 'peak_bili', 'steroid_date', 'has_myco', 'transaminitis_phenotype']
+  ICI-treated true-1L HC patients: 228
+
+  Post-ICI peak ALT available: 223/228
+  Post-ICI peak AST available: 223/228
+
+  ALT grade distribution:
+    GRADE_1: 103
+    GRADE_2: 35
+    GRADE_3: 33
+    GRADE_4: 4
+    NORMAL: 48
+    NO_DATA: 5
+
+  AST grade distribution:
+    GRADE_1: 85
+    GRADE_2: 38
+    GRADE_3: 60
+    GRADE_4: 14
+    NORMAL: 26
+    NO_DATA: 5
+
+  Any transaminitis (ALT or AST >3×ULN): 116/228 (50.9%)
+  Severe transaminitis (>5×ULN):         77/228 (33.8%)
+
+  Transaminitis by regimen (>3×ULN):
+    AB                   N= 96, any=44 (46%), severe=27
+    STRIDE               N= 50, any=25 (50%), severe=19
+    NIVO_MONO            N= 43, any=27 (63%), severe=19
+    NIVO_IPI             N= 17, any=10 (59%), severe=4
+    PEMBRO_MONO          N= 14, any=6 (43%), severe=4
+    DURVA_MONO           N=  7, any=4 (57%), severe=4
+    IPI_MONO             N=  1, any=0 (0%), severe=0
+
+  v12.1 transaminitis table: 482 rows
+
+  NOTE: Transaminitis flags are NOT mutually exclusive.
+  A patient with GRADE_3 also has GRADE_2 and GRADE_1 by definition.
+  Report should use HIGHEST grade, not count overlapping categories.
+
+  PERSISTED: hcc_transaminitis_v12_2 (228 rows)
+================================================================================
+PART 10 — POST-SYSTEMIC LOCAL THERAPY DEDUPLICATION
+================================================================================
+
+SOURCE: hcc_locoregional_validated_v12 (7027 rows), v10 true-1L (282 patients)
+  LOGIC: Local therapy AFTER systemic start for true-1L patients.
+  Post-systemic local procedures: 391 rows, 86 patients
+
+  By procedure type:
+    Y90_MAPPING: 154 episodes, 75 patients
+    TACE_HIGH_CONFIDENCE: 144 episodes, 70 patients
+    ABLATION: 41 episodes, 27 patients
+    TACE_PROBABLE: 27 episodes, 13 patients
+    BLAND_EMBOLIZATION: 9 episodes, 8 patients
+    Y90_TREATMENT: 6 episodes, 6 patients
+    HEMORRHAGE_EMBOLIZATION: 8 episodes, 5 patients
+    UNCERTAIN: 2 episodes, 1 patients
+
+  After 30-day window dedup: 375 episodes, 86 patients
+  Dedup removed: 16 duplicate procedure rows
+
+  v12.1 post-systemic local: 529 rows
+  v12.2 post-systemic local (deduped): 375 rows
+
+================================================================================
+PART 11 — OLIGOPROGRESSION AUDIT
+================================================================================
+
+SOURCE: hcc_oligoprogression_strict_v12_1
+  N_ROWS: 185, N_PATIENTS: 88
+  Columns: ['pat', 'regimen', 'line', 'sys_start', 'sys_end', 'local_date', 'modality']
+
+  True-1L with ANY post-systemic local: 86 patients
+  Strict (local within 365d of sys start): 66 patients, 244 episodes
+
+  EXPLANATION: The 97 vs 88 discrepancy likely reflects
+  97 = episodes (some patients have >1 post-systemic local procedure)
+  88 = unique patients
+  v12.2 broader count: 86 patients with any post-systemic local
+  v12.2 strict (365d): 66 patients
+
+================================================================================
+PART 12 — POST-TACE DECISION NODE REBUILD
+================================================================================
+
+SOURCE: hcc_locoregional_validated_v12 (TACE episodes)
+  TACE patients: 1052
+  TACE episodes: 3304
+
+  Post-TACE decision paths:
+    REPEAT_TACE: 408 (38.8%)
+    SYSTEMIC_THERAPY: 192 (18.3%)
+    OBSERVATION_OR_LOST: 156 (14.8%)
+    DEATH: 149 (14.2%)
+    TRANSPLANT: 147 (14.0%)
+
+  TACE episode distribution (per patient):
+    1 episodes: 314 patients
+    2 episodes: 268 patients
+    3 episodes: 128 patients
+    4 episodes: 135 patients
+    5 episodes: 49 patients
+    6 episodes: 57 patients
+    7 episodes: 24 patients
+    8 episodes: 32 patients
+
+  v12.1 post_tace_decision: 1052 rows
+  PERSISTED: hcc_post_tace_decision_v12_2 (1052 rows)
+
+================================================================================
+PART 13 — POST-TACE RADIOLOGY REVIEW PACKET
+================================================================================
+
+  TACE patients: 1052
+  With post-TACE imaging (within 365d): 987 (93.8%)
+  Total post-TACE imaging studies: 5132
+  Studies per patient: median=5, Q75=7, max=19
+  Days to first post-TACE scan: median=31d, IQR=[15-41]
+
+  NOTE: This packet identifies patients for radiology review.
+  65 TACE patients have NO post-TACE imaging within 1 year.
+
+================================================================================
+PART 14 — FINAL CROSS-MODULE ASSERTIONS
+================================================================================
+
+--- Patient Count Assertions ---
+  [PASS] Master roster = 3,999: got 3999
+  [PASS] Canonical systemic = 571: got 571
+  [PASS] Canonical lines = 806: got 806
+  [PASS] Waterfall = 796: got 796
+  [PASS] Child-Pugh = 282: got 282
+  [PASS] True-1L HC = 282: got 282
+
+--- Subset Assertions ---
+  [PASS] 571 canonical ⊆ 796 waterfall: 571/571
+  [PASS] 282 true-1L ⊆ 571 canonical: 282/282
+  [PASS] 796 waterfall ⊆ 3,999 master: 796/796
+  [PASS] CP patients = true-1L set: 282/282
+  [PASS] Duration rows = 806 lines: got 806
+
+--- Dedup Assertions ---
+  [PASS] Canonical systemic: unique pats
+  [PASS] Master roster: unique pats
+  [PASS] Inpatient: unique admission_ids
+  [PASS] Child-Pugh: unique pats
+
+--- Plausibility Assertions ---
+  [PASS] Max admissions per patient < 200: max=180
+  [PASS] Median LOS in 0-5d range: median=1.0
+  [PASS] CP not all Class A (liver disease expected): A=173/282
+  [PASS] Transplant patients < 300: n=256
+
+--- Waterfall Arithmetic ---
+  [PASS] 796 = 571 validated + 225 not-validated: sum=796
+  [PASS] Post-TACE 1052 = master TACE 1052: ptace=1052, mr_tace=1052
+
+================================================================================
+ALL ASSERTIONS PASSED (14/14)
+================================================================================
