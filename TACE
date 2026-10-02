@@ -1,0 +1,515 @@
+
+Step 0 — Canonical TACE Episode Construction
+======================================================================
+STEP 0 — CANONICAL TACE EPISODE CONSTRUCTION
+======================================================================
+
+SOURCE TABLE:      reach_users.xzhao81.hcc_locoregional_validated_v12
+SCHEMA FIELDS:     pat, proc_date, procedure_class, code, proc_name, source, evidence_sources, n_raw_records
+UNIT OF ANALYSIS:  one row per procedure-source combination (NOT clinical episode)
+
+N_ROWS total locoregional:   7027
+N_PATIENTS total:            1443
+
+--- Raw TACE procedure rows (before dedup) ---
+N_RAW_TACE_ROWS:    3304
+N_PATIENTS:         1052
+
+--- Procedure class breakdown ---
++--------------------+------+----------+
+|procedure_class     |n_rows|n_patients|
++--------------------+------+----------+
+|TACE_HIGH_CONFIDENCE|2532  |1050      |
+|TACE_PROBABLE       |772   |423       |
++--------------------+------+----------+
+
+
+--- Deduplicated clinical TACE episodes ---
+N_CLINICAL_TACE_EPISODES:  2549
+N_PATIENTS:                1052
+N_RAW_TACE_ROWS:           3304
+Deduplication ratio:       3304/2549 = 1.30 raw rows per episode
+
+✓ ASSERTION PASSED: N_clinical_TACE_episodes (2549) < N_raw_TACE_rows (3304)
+
+--- Gap between consecutive TACE episodes (same patient) ---
++--------------------------------+---+
+|gap_category                    |n  |
++--------------------------------+---+
+|0-1 days (same session?)        |20 |
+|2-3 days (possible same session)|7  |
+|31-60 days                      |340|
+|4-7 days                        |34 |
+|61-90 days                      |222|
+|8-30 days                       |187|
+|>90 days                        |687|
++--------------------------------+---+
+
+
+--- After merging ≤2-day consecutive sessions ---
+N_CANONICAL_TACE_EPISODES: 2525
+N_PATIENTS:               1052
+Episodes merged:          24 (from 2549)
+N_dates_merged > 1:       24 N_EPISODES
+
+--- Episode confidence ---
++------------------+----------+----------+
+|episode_confidence|n_episodes|n_patients|
++------------------+----------+----------+
+|HIGH_CONFIDENCE   |2508      |1050      |
+|PROBABLE          |17        |15        |
++------------------+----------+----------+
+
+--- TACE episodes per patient ---
++----------+-----+
+|n_episodes|count|
++----------+-----+
+|         1|  434|
+|         2|  275|
+|         3|  127|
+|         4|   97|
+|         5|   49|
+|         6|   35|
+|         7|   10|
+|         8|   10|
+|         9|    4|
+|        10|    4|
+|        11|    2|
+|        12|    1|
+|        13|    2|
+|        14|    1|
+|        17|    1|
++----------+-----+
+
+Episodes per patient: median=2.0, IQR=[1.0, 3.0]
+
+--- 10 representative rows ---
++--------------+----------+------------------+-------------+---------------------+--------------+---------+-------+
+|pat           |tace_date |episode_confidence|n_source_rows|n_raw_billing_records|n_dates_merged|n_sources|n_codes|
++--------------+----------+------------------+-------------+---------------------+--------------+---------+-------+
+|DEI0oiarp7sz8p|2015-08-06|HIGH_CONFIDENCE   |1            |1                    |1             |1        |0      |
+|DEI0mt5zrat35h|2019-02-10|HIGH_CONFIDENCE   |2            |4                    |1             |2        |1      |
+|DEI0sy3f5zrafw|2025-12-03|HIGH_CONFIDENCE   |1            |3                    |1             |1        |1      |
+|DEI03n6wt6zgw9|2016-02-03|HIGH_CONFIDENCE   |1            |2                    |1             |1        |0      |
+|DEI0if6y5zray4|2022-05-17|HIGH_CONFIDENCE   |1            |4                    |1             |1        |1      |
+|DEI0x9w7sz8w4w|2020-06-22|HIGH_CONFIDENCE   |1            |3                    |1             |1        |1      |
+|DEI0n995zra9hk|2017-08-13|HIGH_CONFIDENCE   |2            |3                    |1             |2        |1      |
+|DEI0fogjw7sz8w|2023-01-13|HIGH_CONFIDENCE   |1            |3                    |1             |1        |1      |
+|DEI04f5ey7sz8y|2017-06-18|HIGH_CONFIDENCE   |2            |3                    |1             |2        |1      |
+|DEI0fka35zra35|2022-06-24|HIGH_CONFIDENCE   |1            |3                    |1             |1        |0      |
++--------------+----------+------------------+-------------+---------------------+--------------+---------+-------+
+
+
+✓ hcc_tace_episodes_canonical_v12_3 persisted: 2525 N_EPISODES, 1052 N_PATIENTS
+
+FINAL ASSERTION:
+  N_canonical_episodes (2525) < N_raw_rows (3304): True
+  N_canonical_episodes (2525) ≤ N_patient_date_pairs (2549): True
+Step 1 — Index TACE Population Classification
+Step 1 — Index TACE Population Classification
+======================================================================
+STEP 1 — INDEX TACE POPULATION CLASSIFICATION
+======================================================================
+
+SOURCE TABLE:      reach_users.xzhao81.hcc_tace_episodes_canonical_v12_3
+UNIT OF ANALYSIS:  one row per patient (first TACE)
+N_PATIENTS with first TACE: 1052
+
+--- Pre-index TACE/embolization (from locoregional table) ---
+Patients with prior embol/TACE rows: 23 N_PATIENTS
+
+--- Index TACE Status Classification ---
++-----------------------------------------+----------+
+|index_tace_status                        |n_patients|
++-----------------------------------------+----------+
+|DEFINITE_FIRST_TACE                      |603       |
+|PROBABLE_FIRST_TACE                      |219       |
+|UNKNOWN                                  |163       |
+|FIRST_OBSERVED_BUT_PRIOR_OUTSIDE_POSSIBLE|44        |
+|DEFINITE_REPEAT_TACE                     |23        |
++-----------------------------------------+----------+
+
+Total classified: 1052 N_PATIENTS
+
+--- PRIMARY FEASIBILITY COHORT ---
+DEFINITE_FIRST_TACE:                       603 N_PATIENTS
+PROBABLE_FIRST_TACE:                       219 N_PATIENTS
+  Primary cohort (definite+probable):       822 N_PATIENTS
+
+--- SENSITIVITY COHORT ---
+FIRST_OBSERVED_PRIOR_OUTSIDE_POSSIBLE:      44 N_PATIENTS
+  Sensitivity cohort (+ first observed):    866 N_PATIENTS
+
+--- EXCLUDED ---
+DEFINITE_REPEAT_TACE:                      23 N_PATIENTS
+UNKNOWN:                                   163 N_PATIENTS
+
+--- Prior systemic therapy before index TACE ---
+With prior systemic: 69 N_PATIENTS
+
+--- Days from HCC diagnosis to first TACE (all patients) ---
+  N with data: 1052, median: 27, IQR: [7, 57]
+
+--- 10 representative rows ---
++--------------+---------------+-------------------+------------------+-------------------+--------------------+----------------+--------------+
+|pat           |index_tace_date|index_tace_status  |episode_confidence|total_tace_episodes|days_contact_to_tace|days_hcc_to_tace|prior_systemic|
++--------------+---------------+-------------------+------------------+-------------------+--------------------+----------------+--------------+
+|DEI0o0i5zraicu|2016-08-08     |DEFINITE_FIRST_TACE|HIGH_CONFIDENCE   |5                  |2296                |140             |0             |
+|DEI0ft6zgfbj3b|2025-07-21     |DEFINITE_FIRST_TACE|HIGH_CONFIDENCE   |1                  |1352                |465             |1             |
+|DEI0et7j7sz8jj|2016-08-26     |DEFINITE_FIRST_TACE|HIGH_CONFIDENCE   |1                  |1183                |49              |1             |
+|DEI0d6t5zrat1e|2024-02-19     |DEFINITE_FIRST_TACE|HIGH_CONFIDENCE   |1                  |97                  |50              |0             |
+|DEI0day5zrayc3|2018-10-09     |DEFINITE_FIRST_TACE|HIGH_CONFIDENCE   |1                  |95                  |71              |0             |
+|DEI035zra3a1r2|2019-01-17     |PROBABLE_FIRST_TACE|HIGH_CONFIDENCE   |2                  |47                  |27              |0             |
+|DEI0kw9g5zragu|2017-02-18     |DEFINITE_FIRST_TACE|HIGH_CONFIDENCE   |1                  |1801                |70              |0             |
+|DEI073bwm5zram|2018-08-24     |DEFINITE_FIRST_TACE|HIGH_CONFIDENCE   |1                  |97                  |51              |0             |
+|DEI0r7sz8rs6tg|2023-07-17     |DEFINITE_FIRST_TACE|HIGH_CONFIDENCE   |1                  |1640                |1632            |1             |
+|DEI0jq75zra7d9|2018-06-19     |PROBABLE_FIRST_TACE|HIGH_CONFIDENCE   |1                  |42                  |13              |0             |
++--------------+---------------+-------------------+------------------+-------------------+--------------------+----------------+--------------+
+
+
+✓ hcc_index_tace_v12_3 persisted: 1052 N_PATIENTS
+Step 2 — Robust Modern-Era Cohort
+Step 2 — Robust Modern-Era Cohort
+======================================================================
+STEP 2 — ROBUST MODERN-ERA COHORT
+======================================================================
+
+SOURCE TABLE:      reach_users.xzhao81.hcc_index_tace_v12_3
+UNIT OF ANALYSIS:  one row per patient
+N_ROWS before:     1052
+N_PATIENTS before: 1052
+
+--- ERA CLASSIFICATION (ALL 1,052 TACE patients) ---
++---------------------+----------+
+|era_classification   |n_patients|
++---------------------+----------+
+|DATE_SHIFT_UNCERTAIN |81        |
+|DEFINITELY_MODERN    |382       |
+|DEFINITELY_PRE_MODERN|589       |
++---------------------+----------+
+
+--- ERA CLASSIFICATION (PRIMARY cohort: definite+probable first TACE) ---
++---------------------+----------+
+|era_classification   |n_patients|
++---------------------+----------+
+|DATE_SHIFT_UNCERTAIN |74        |
+|DEFINITELY_MODERN    |350       |
+|DEFINITELY_PRE_MODERN|398       |
++---------------------+----------+
+
+MODERN PRIMARY COHORT: 350 N_PATIENTS
+MODERN SENSITIVITY (incl uncertain): 424 N_PATIENTS
+ALL-ERA DESCRIPTIVE: 822 N_PATIENTS
+
+--- Prior systemic in modern primary ---
+With prior systemic: 49 N_PATIENTS
+
+--- Index TACE year distribution (primary cohort) ---
++---------+---+
+|tace_year|  n|
++---------+---+
+|     2016|118|
+|     2017|111|
+|     2018| 89|
+|     2019| 87|
+|     2020| 73|
+|     2021| 61|
+|     2022| 75|
+|     2023| 71|
+|     2024| 61|
+|     2025| 49|
+|     2026| 27|
++---------+---+
+
+
+✓ hcc_index_tace_era_v12_3 persisted: 1052 N_PATIENTS
+Step 3 — Post-TACE Reassessment Imaging
+Step 3 — Post-TACE Reassessment Imaging
+======================================================================
+STEP 3 — POST-TACE REASSESSMENT IMAGING
+======================================================================
+
+SOURCE TABLES:
+  reach_users.xzhao81.hcc_index_tace_era_v12_3 (index TACE dates)
+  deid.derived.image_procedures (imaging studies)
+  deid.derived.radiology_text (report content)
+UNIT OF ANALYSIS:  one row per eligible reassessment study
+
+Primary index TACE patients: 822 N_PATIENTS
+Total liver CT/MRI studies (all HCC): 2699411 N_STUDIES
+Unique patients: 991787 N_PATIENTS
+
+--- Reassessment imaging availability (28-120d) ---
+Patients with CT/MRI 28-120d: 718 N_PATIENTS
+Patients with CT/MRI 21-120d: 733 N_PATIENTS (sensitivity)
+
+Index reassessment studies (one per patient): 718 N_STUDIES
+
+--- EXCLUSION WATERFALL ---
+Primary index TACE patients:          822 N_PATIENTS
+  - No liver CT/MRI at Hopkins:        4 N_PATIENTS
+  - Only imaging <28d (too early):      66 N_PATIENTS
+  - Only imaging >120d (too late):      12 N_PATIENTS
+  = With reassessment 28-120d:          718 N_PATIENTS
+
+--- Index reassessment modality ---
++--------+---+
+|modality|n  |
++--------+---+
+|CT      |146|
+|MRI     |572|
++--------+---+
+
+--- Index reassessment contrast likelihood ---
++---------------+---+
+|contrast_likely|n  |
++---------------+---+
+|YES            |662|
+|UNKNOWN        |16 |
+|UNLIKELY       |40 |
++---------------+---+
+
+
+Days post-TACE to reassessment:
+  p10=29, p25=32, median=38, p75=50, p90=76
+
+--- 10 representative index reassessments ---
++--------------+---------------+----------+--------------+--------+---------------+----------------------------------+---------------------+
+|pat           |index_tace_date|study_date|days_post_tace|modality|contrast_likely|proc_name                         |era_classification   |
++--------------+---------------+----------+--------------+--------+---------------+----------------------------------+---------------------+
+|DEI0bidxa7sz8a|2021-10-06     |2021-11-12|37            |CT      |YES            |CT ABDOMEN W/ IV CONTRAST         |DEFINITELY_MODERN    |
+|DEI0dt6zgdhgi7|2019-03-27     |2019-05-07|41            |CT      |YES            |CT ABDOMEN PELVIS W/WO IV CONTRAST|DEFINITELY_PRE_MODERN|
+|DEI0ysvkt6zgkb|2020-10-15     |2020-12-07|53            |MRI     |YES            |MRI ABDOMEN W/WO CONTRAST         |DATE_SHIFT_UNCERTAIN |
+|DEI0hn77sz872s|2022-08-17     |2022-09-17|31            |MRI     |YES            |MRI ABDOMEN W/WO CONTRAST         |DEFINITELY_MODERN    |
+|DEI050q5zraqmo|2018-05-14     |2018-06-12|29            |CT      |YES            |CT ABDOMEN W/ IV CONTRAST         |DEFINITELY_PRE_MODERN|
+|DEI0s5zrassbno|2024-11-28     |2025-01-02|35            |MRI     |YES            |MRI ABDOMEN W/WO CONTRAST         |DEFINITELY_MODERN    |
+|DEI082brt6zgrq|2016-12-27     |2017-02-17|52            |MRI     |YES            |MRI ABDOMEN W/WO CONTRAST         |DEFINITELY_PRE_MODERN|
+|DEI08x5wt6zgwg|2018-11-11     |2018-12-14|33            |MRI     |YES            |MRI ABDOMEN W/WO CONTRAST         |DEFINITELY_PRE_MODERN|
+|DEI0wf5zrafysv|2017-09-22     |2017-11-23|62            |MRI     |YES            |MRI ABDOMEN W/WO CONTRAST         |DEFINITELY_PRE_MODERN|
+|DEI0ar0t6zg05e|2023-09-25     |2023-11-09|45            |CT      |YES            |CT ABDOMEN W/WO IV CONTRAST       |DEFINITELY_MODERN    |
++--------------+---------------+----------+--------------+--------+---------------+----------------------------------+---------------------+
+
+
+✓ hcc_tace_reassessment_v12_3 persisted: 718 N_STUDIES
+
+======================================================================
+STEPS 4-5 — TUMOR STATE EXTRACTION + MODEL-ASSISTED AUDIT
+======================================================================
+
+SOURCE TABLES:
+  reach_users.xzhao81.hcc_tace_reassessment_v12_3
+  deid.derived.radiology_text
+UNIT OF ANALYSIS:  one row per patient (index reassessment)
+
+Reassessment studies: 718 N_STUDIES
+With radiology report text: 678 N_STUDIES
+Missing report text: 40 N_STUDIES
+
+--- RESPONSE CATEGORY DISTRIBUTION ---
++----------------------+---+
+|response_category     |n  |
++----------------------+---+
+|INDETERMINATE         |345|
+|PROGRESSIVE_DISEASE   |202|
+|RESIDUAL_VIABLE_STABLE|127|
+|NO_REPORT             |40 |
+|COMPLETE_RESPONSE     |4  |
++----------------------+---+
+
+--- LR-TR CLASSIFICATION ---
++---------------+---+
+|lrtr_class     |n  |
++---------------+---+
+|NOT_REPORTED   |679|
+|LR-TR_VIABLE   |37 |
+|LR-TR_EQUIVOCAL|1  |
+|LR-TR_NONVIABLE|1  |
++---------------+---+
+
+--- VARIABLE COMPLETENESS ---
+  complete_response: {'INDETERMINATE': 1, 'YES': 4, 'NO': 713}
+  residual_viable: {'INDETERMINATE': 526, 'YES': 191, 'NO': 1}
+  new_intrahepatic_lesion: {'YES': 42, 'NO': 676}
+  progression: {'YES': 203, 'NO': 515}
+  mvi_pvtt: {'YES': 58, 'NO': 660}
+  extrahepatic_disease: {'INDETERMINATE': 523, 'YES': 193, 'NO': 2}
+  bilobar: {'INDETERMINATE': 672, 'YES': 32, 'NO': 14}
+  infiltrative: {'YES': 11, 'NO': 707}
+  ascites: {'NOT_REPORTED': 650, 'YES': 32, 'NO': 36}
+
+======================================================================
+STEP 5 — MODEL-ASSISTED RADIOLOGY AUDIT
+======================================================================
+
+MODEL-ASSISTED — HUMAN CONFIRMATION REQUIRED
+All extractions are regex-based; no validation against gold standard.
+
+--- COMPLETE_RESPONSE: 4 of 4 cases ---
+
+  Case 1: DEI0je1t6zg1jf
+    TACE: 2016-10-14  Scan: 2016-11-19  Study: MRI ABDOMEN W/WO CONTRAST
+    LR-TR: NOT_REPORTED  CR: YES  Viable: NO
+    Progression: NO  New lesion: NO
+    MVI/PVTT: NO  Extrahepatic: YES
+    Bilobar: INDETERMINATE  Infiltrative: NO  Ascites: NOT_REPORTED
+    Impression: INDICATION: Metastatic urothelial cancer to the liver. Status post chemoembolization. COMPARISON: 9/17/2016. TECHNIQUE: Multiplanar, multisequence MRI imaging of the liver with and without intravenous...
+
+  Case 2: DEI050q5zraqmo
+    TACE: 2018-05-14  Scan: 2018-06-12  Study: CT ABDOMEN W/ IV CONTRAST
+    LR-TR: NOT_REPORTED  CR: YES  Viable: YES
+    Progression: YES  New lesion: YES
+    MVI/PVTT: NO  Extrahepatic: YES
+    Bilobar: INDETERMINATE  Infiltrative: NO  Ascites: NO
+    Impression: CLINICAL STATEMENT: History of hepatocellular carcinoma. CT for follow-up. TECHNIQUE: CT of the abdomen was performed with intravenous contrast administration. Arterial, venous, and delayed phases wer...
+
+  Case 3: DEI085uaft6zgf
+    TACE: 2025-12-13  Scan: 2026-03-13  Study: MRI ABDOMEN W/WO CONTRAST
+    LR-TR: LR-TR_NONVIABLE  CR: YES  Viable: YES
+    Progression: NO  New lesion: NO
+    MVI/PVTT: NO  Extrahepatic: INDETERMINATE
+    Bilobar: INDETERMINATE  Infiltrative: NO  Ascites: NOT_REPORTED
+    Impression: EXAM: MRI ABDOMEN W/WO CONTRAST  INDICATION: <LOCATION>  TECHNIQUE: Multiplanar and multisequence MRI of the abdomen before and after intravenous administration of Gadavist.   COMPARISON: 01/01/2026  ...
+
+  Case 4: DEI087sz881y1o
+    TACE: 2017-06-17  Scan: 2017-07-22  Study: MRI ABDOMEN W/WO CONTRAST
+    LR-TR: NOT_REPORTED  CR: YES  Viable: YES
+    Progression: NO  New lesion: NO
+    MVI/PVTT: NO  Extrahepatic: INDETERMINATE
+    Bilobar: INDETERMINATE  Infiltrative: NO  Ascites: NOT_REPORTED
+    Impression: ******** ADDENDUM #1 ********
+
+IMPRESSION: 1. Complete necrosis of a segment 7/8 lesion. 2. Wedge-shaped area in segment 5 of liver likely treatment-related changes without evidence of nodular enhance...
+
+--- RESIDUAL_VIABLE_STABLE: 30 of 127 cases ---
+
+  Case 1: DEI0qisd85zra8
+    TACE: 2019-06-17  Scan: 2019-08-11  Study: MRI ABDOMEN-KIDNEY OR LIVER
+    LR-TR: NOT_REPORTED  CR: NO  Viable: YES
+    Progression: NO  New lesion: NO
+    MVI/PVTT: NO  Extrahepatic: INDETERMINATE
+    Bilobar: INDETERMINATE  Infiltrative: NO  Ascites: NOT_REPORTED
+    Impression: EXAM: MRI ABDOMEN-KIDNEY OR LIVER INDICATION: <LOCATION> follow up after 1st TACE.  Treatment was to caudate lobe  Last treatment date: 6/17/2019    TECHNIQUE: Axial T1 and T2 images. Axial diffusion ...
+
+  Case 2: DEI0c1v7sz8vf1
+    TACE: 2019-06-27  Scan: 2019-07-30  Study: MRI ABDOMEN W/WO CONTRAST
+    LR-TR: NOT_REPORTED  CR: NO  Viable: YES
+    Progression: NO  New lesion: NO
+    MVI/PVTT: NO  Extrahepatic: INDETERMINATE
+    Bilobar: INDETERMINATE  Infiltrative: NO  Ascites: NOT_REPORTED
+    Impression: RESULT: MRI abdomen with and without contrast INDICATION: Four-week follow-up status post first liver TACE for hepatocellular carcinoma in transplant liver. TECHNIQUE: Axial T1 and T2 images. Axial di...
+
+  Case 3: DEI0um7sz8mnwb
+    TACE: 2024-12-31  Scan: 2025-02-28  Study: MRI ABDOMEN W/WO CONTRAST
+    LR-TR: LR-TR_VIABLE  CR: NO  Viable: YES
+    Progression: NO  New lesion: NO
+    MVI/PVTT: NO  Extrahepatic: YES
+    Bilobar: INDETERMINATE  Infiltrative: NO  Ascites: NOT_REPORTED
+    Impression: EXAM: MRI ABDOMEN W/WO CONTRAST  INDICATION: History of biopsy-proven <LOCATION> status post right hepatic Tace #1 and biopsy on 12/31/2024.  TECHNIQUE: Multiplanar multisequence MR of the abdomen was...
+
+  Case 4: DEI0ry7sz8yips
+    TACE: 2024-02-15  Scan: 2024-04-11  Study: MRI ABDOMEN W/WO CONTRAST
+    LR-TR: NOT_REPORTED  CR: NO  Viable: YES
+    Progression: NO  New lesion: NO
+    MVI/PVTT: NO  Extrahepatic: INDETERMINATE
+    Bilobar: INDETERMINATE  Infiltrative: NO  Ascites: NOT_REPORTED
+    Impression: ******** ADDENDUM #1 ********
+
+Addendum:   
+This is an addendum to include the following differential into Impression #2, which should read as follows:
+
+Few new T1 hyperintense foci scattered througho...
+
+  Case 5: DEI0meiy5zray1
+    TACE: 2024-12-07  Scan: 2025-01-26  Study: MRI ABDOMEN W/WO CONTRAST
+    LR-TR: LR-TR_VIABLE  CR: NO  Viable: YES
+    Progression: NO  New lesion: NO
+    MVI/PVTT: NO  Extrahepatic: YES
+    Bilobar: INDETERMINATE  Infiltrative: NO  Ascites: NOT_REPORTED
+    Impression: ** OUTSIDE STUDY INTERPRETATION **  Outside images were presented for second opinion interpretation. - Date reviewed at <LOCATION> for interpretation: 1/27/2025 9:50 AM - Date of original study: EXAM:...
+
+--- PROGRESSIVE_DISEASE: 30 of 202 cases ---
+
+  Case 1: DEI0cfrn6t6zg6
+    TACE: 2018-10-01  Scan: 2018-11-13  Study: MRI ABDOMEN W/WO CONTRAST
+    LR-TR: NOT_REPORTED  CR: NO  Viable: YES
+    Progression: YES  New lesion: NO
+    MVI/PVTT: NO  Extrahepatic: INDETERMINATE
+    Bilobar: INDETERMINATE  Infiltrative: NO  Ascites: NOT_REPORTED
+    Impression: EXAM: MRI ABDOMEN W/WO CONTRAST INDICATION: <AGE> female with history of multifocal hepatocellular carcinoma status post right hepatectomy and with disease in the liver remnant status post microwave a...
+
+  Case 2: DEI04u5zrauuxe
+    TACE: 2017-02-04  Scan: 2017-03-05  Study: MRI ABDOMEN W/WO CONTRAST
+    LR-TR: NOT_REPORTED  CR: NO  Viable: INDETERMINATE
+    Progression: YES  New lesion: NO
+    MVI/PVTT: NO  Extrahepatic: INDETERMINATE
+    Bilobar: INDETERMINATE  Infiltrative: NO  Ascites: NOT_REPORTED
+    Impression: EXAM: MRI ABDOMEN W/WO CONTRAST INDICATION: <AGE> male with cirrhosis and hepatocellular carcinoma status post TACE x1 to the right hepatic lobe tumor burden on 2/4/2017.   TECHNIQUE: Axial T1 and T2 ...
+
+  Case 3: DEI0trpt6zgp1b
+    TACE: 2022-03-22  Scan: 2022-04-21  Study: MRI ABDOMEN W/WO CONTRAST
+    LR-TR: NOT_REPORTED  CR: NO  Viable: INDETERMINATE
+    Progression: YES  New lesion: NO
+    MVI/PVTT: NO  Extrahepatic: INDETERMINATE
+    Bilobar: INDETERMINATE  Infiltrative: NO  Ascites: NOT_REPORTED
+    Impression: EXAM: MRI ABDOMEN W/WO CONTRAST INDICATION: <AGE> female status post TACE, undergoing follow-up evaluation..  Treatment was to segment 6  Last treatment date: 3/22/2022    TECHNIQUE: Axial T1 and T2 i...
+
+  Case 4: DEI0qt6zgqd5is
+    TACE: 2017-10-14  Scan: 2018-01-14  Study: MRI ABDOMEN W/WO CONTRAST
+    LR-TR: NOT_REPORTED  CR: NO  Viable: INDETERMINATE
+    Progression: YES  New lesion: YES
+    MVI/PVTT: YES  Extrahepatic: YES
+    Bilobar: INDETERMINATE  Infiltrative: NO  Ascites: NOT_REPORTED
+    Impression: EXAM: MRI ABDOMEN W/WO CONTRAST INDICATION: <AGE> male with hepatocellular carcinoma status post Y 91 embolization to the left hepatic lobe on 11/05/2017 and TACE on 10/14/2017..    TECHNIQUE: Axial T...
+
+  Case 5: DEI0yo5zraoqe4
+    TACE: 2016-08-14  Scan: 2016-09-15  Study: MRI ABDOMEN W/WO CONTRAST
+    LR-TR: NOT_REPORTED  CR: NO  Viable: INDETERMINATE
+    Progression: YES  New lesion: NO
+    MVI/PVTT: NO  Extrahepatic: INDETERMINATE
+    Bilobar: INDETERMINATE  Infiltrative: NO  Ascites: NOT_REPORTED
+    Impression: EXAM: MRI ABDOMEN W/WO CONTRAST LIVER SCREENING, AFTER PRIMARY TUMOR TREATED.  Treatment was to right hepatic lobe  Last treatment date: 8/15/2016    TECHNIQUE: Axial T1 and T2 images. Axial diffusion...
+
+--- EQUIVOCAL: 0 cases available ---
+
+--- MVI/PVTT flagged: 58 N_PATIENTS (all printed if <=30) ---
+  DEI0fka35zra35 TACE=2022-06-24 Scan=2022-08-22: EXAM: MRI ABDOMEN W/WO CONTRAST INDICATION: met <LOCATION> s/p TACE, restaging.  Treatment was to Left lobe  Last treatment date: 6/24/2022    TECHNIQ
+  DEI0q1awbt6zgb TACE=2017-06-09 Scan=2017-07-21: EXAM: MRI ABDOMEN W/WO CONTRAST INDICATION: <AGE> woman with history of fatty liver and infiltrated right hepatic lobe hepatocellular carcinoma.  Trea
+  DEI076t6zg60ue TACE=2025-10-01 Scan=2025-11-05: ******** ADDENDUM #1 ********  Addendum: This is an addendum to include the originally reported pancreas finding in the impression:     IMPRESSION: 1.
+  DEI0gn7as5zras TACE=2018-06-05 Scan=2018-07-05: INDICATION: Status post TACE COMPARISON: CT 6/7/2018 and MR 6/3/2018 TECHNIQUE:  multiplanar T1 and T2 images were obtained of the liver.  Following t
+  DEI0eiw7sz8w0f TACE=2026-03-14 Scan=2026-04-18: EXAM: MRI ABDOMEN W/WO CONTRAST  INDICATION: F/u Post TACE 3/14/26.  Treatment was to Right lobe  Last treatment date: 3/14/2026    TECHNIQUE: Axial T
+  DEI0tu7sz8ungy TACE=2016-05-04 Scan=2016-06-04: Exam 1:  HCI 6120 - MRI ABDOMEN W/WO CONTRAST   -  Jun 4, 2016  10:20     Acc#:40767103 RESULT:  History: Alcoholic cirrhosis and hepatocellular carci
+  DEI0sctm5zramq TACE=2017-09-28 Scan=2017-11-03: EXAM: MRI ABDOMEN W/WO CONTRAST INDICATION: <AGE> year old Male with hepatocellular carcinoma status post TACE. Baseline study. Treatment was to Left 
+  DEI0adt6zgdus1 TACE=2019-07-27 Scan=2019-09-02: EXAM: MRI ABDOMEN W/WO CONTRAST INDICATION: <LOCATION> status post TACE.  Treatment was to right hepatic lobe  Last treatment date: 7/27/2019    TECHN
+  DEI05t5zrat0br TACE=2021-12-09 Scan=2022-01-06: EXAM: MRI ABDOMEN W/WO CONTRAST INDICATION: <AGE> years old male with <LOCATION>, s/p Y-90 embolization; follow up evaluation TECHNIQUE: Multisequence
+  DEI0qdqqo7sz8o TACE=2016-04-04 Scan=2016-05-28: Exam 1:  HCI 6120 - MRI ABDOMEN W/WO CONTRAST   -  May 28, 2016  14:50     Acc#:40866982 RESULT:  History: Hepatocellular carcinoma.  Follow-up; statu
+  DEI0mij5zrajkq TACE=2019-04-11 Scan=2019-07-25: CLINICAL HISTORY: <AGE> man with history of hepatocellular carcinoma, status post TACE in radiation treatment. COMPARISON: Abdomen CT without contrast
+  DEI0m0y75zra7e TACE=2025-07-25 Scan=2025-10-23: Outside OUTSIDE IMAGES PRESENTED FOR SECOND OPINION INTERPRETATION   Date submitted at <LOCATION>: 10/23/2025 Date of study: 10/15/2025 Performed at: 
+  DEI0ch9ut6zguy TACE=2016-06-08 Scan=2016-08-01: History: History of hepatocellular carcinoma.  follow up; status post TACE  Treatment was to Right lobe  Last treatment date: 6/8/2016    Technique: A
+  DEI0mrwt6zgwq4 TACE=2017-10-07 Scan=2017-11-05: Indication: Postop arterial chemoembolization. Comparison:  October 8, 2017 Findings:  Helical imaging through the abdomen. No contrast administered. 
+  DEI0ou7sz8uanb TACE=2017-06-08 Scan=2017-07-09: EXAM: MRI ABDOMEN WO CONTRAST INDICATION: Alcoholic liver cirrhosis with <LOCATION> status post first Y 90 treatment. Follow-up examination Treatment 
+  DEI0qt6zgqd5is TACE=2017-10-14 Scan=2018-01-14: EXAM: MRI ABDOMEN W/WO CONTRAST INDICATION: <AGE> male with hepatocellular carcinoma status post Y 91 embolization to the left hepatic lobe on 11/05/2
+  DEI01t6zg1vj4n TACE=2019-07-13 Scan=2019-09-17: Exam: CT CHEST/ABDOMEN/PELVIS W/ IV CONTRAST. HISTORY: <AGE> female with advanced stage <LOCATION> status post immunotherapy, restaging. TECHNIQUE: CT
+  DEI0y0em5zramh TACE=2024-08-27 Scan=2024-09-28: EXAM: MRI ABDOMEN W/WO CONTRAST  INDICATION: Biopsy-proven <LOCATION> status post TACE.  TECHNIQUE: Multisequence, multiplanar MR imaging of the abdom
+  DEI0o32mt6zgm4 TACE=2019-03-12 Scan=2019-04-14: OUTSIDE STUDY INTERPRETATION FOR SECOND OPINION. DATE OF STUDY: 4/3/2019. DATE OF REVIEW AT <LOCATION>: 4/17/2019. INDICATION:  <AGE> with hepatocellu
+  DEI05pm9t6zg9x TACE=2023-08-16 Scan=2023-09-20: EXAM: MRI ABDOMEN W/WO CONTRAST
+
+INDICATION: y-90 8/22. 
+Treatment was to the left hepatic lobe 
+Last treatment date: 8/22/2023 
+
+TECHNIQUE: Axial T1 
+  DEI067sz86dx26 TACE=2022-12-03 Scan=2023-01-02: EXAM: MRI ABDOMEN W/WO CONTRAST INDICATION: s/p TACE 12/03- evaluate response to treatment Treatment was to right and left hepatic lobes  Last treatme
+  DEI0nt6zgnp6xr TACE=2018-02-16 Scan=2018-04-08: EXAM: MRI ABDOMEN W/WO CONTRAST INDICATION: Infiltrative <LOCATION>, status post TACE to the right hepatic lobe on 2/16/2018. History of colorectal ca
+  DEI0exg95zra94 TACE=2025-09-20 Scan=2025-10-19: EXAM: MRI ABDOMEN W/WO CONTRAST  INDICATION: Post transarterial chemoembolization 4 weeks ago. Dx: <LOCATION> (hepatocellular carcinoma) [C22.0 (ICD-1
+  DEI0jp5zrap063 TACE=2016-05-04 Scan=2016-08-29: EXAM: CT chest, abdomen and pelvis with contrast. INDICATION: <AGE> male with history of esophageal cancer status post chemoradiation and infiltrative
+  DEI0dgt6zggtf9 TACE=2018-03-09 Scan=2018-04-09: EXAM: MRI ABDOMEN W/WO CONTRAST INDICATION: History of hepatocellular carcinoma, status post TACE. TECHNIQUE: Multiplanar, multisequence MR imaging of
+  DEI0pt6zgpk6v0 TACE=2016-11-21 Scan=2016-12-27: ** Outside film interpretation ** INDICATION: History of hepatocellular carcinoma.  Status post TACE; Treatment was to Right lobe  Last treatment date
+  DEI0nn5t6zg53j TACE=2017-10-04 Scan=2017-11-04: EXAM: MRI ABDOMEN W/WO CONTRAST INDICATION: CIRRHOSIS.  Treatment was to right hepatic lobe.  Last treatment date: 10/4/2017.    TECHNIQUE: Axial T1 a
+  DEI0378g7sz8ga TACE=2016-05-24 Scan=2016-07-04: Exam 1:  HCI 6120 - MRI ABDOMEN W/WO CONTRAST   -  Jul 4, 2016  11:03     Acc#:40670638 RESULT:   History: <LOCATION> status post TACE to the right lo
+  DEI0dxw5zraw83 TACE=2025-08-23 Scan=2025-12-06: EXAM: MRI ABDOMEN W/WO CONTRAST  INDICATION: Hepatocellular carcinoma, status post TACE  TECHNIQUE: Multiplanar multisequence MR of the abdomen was pe
+  DEI0k2te7sz8e5 TACE=2017-02-03 Scan=2017-04-26: EXAM: MRI ABDOMEN W/WO CONTRAST INDICATION: <AGE> male with hepatocellular carcinoma, portal vein thrombosis, and NASH cirrhosis. Patient is status po
+
+--- Extrahepatic disease flagged: 193 N_PATIENTS ---
+
+✓ hcc_tace_tumor_state_v12_3 persisted: 718 N_STUDIES
+
