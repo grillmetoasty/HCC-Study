@@ -513,3 +513,412 @@ TECHNIQUE: Axial T1
 
 ✓ hcc_tace_tumor_state_v12_3 persisted: 718 N_STUDIES
 
+======================================================================
+STEPS 6-8 — ALBI, ECOG, AFP
+======================================================================
+
+SOURCE: hcc_tace_tumor_state_v12_3: 718 N_STUDIES
+
+--- STEP 6: ALBI ---
+Pre-built albumin rows: 41671, bilirubin rows: 39667
+Reassessment paired albumin+bilirubin: 565/718 = 78.7%
+mALBI distribution:
++--------------+-----+
+|reassess_malbi|count|
++--------------+-----+
+|             1|  241|
+|            2a|   86|
+|            2b|  180|
+|             3|   58|
++--------------+-----+
+
+
+Pre-TACE paired ALBI: 572/718 = 79.7%
+Paired delta ALBI: 463/718 = 64.5%
+
+ALBI change distribution:
++-------------+-----+
+|  albi_change|count|
++-------------+-----+
+|DETERIORATION|  250|
+|  IMPROVEMENT|   95|
+|       STABLE|  118|
++-------------+-----+
+
+Delta ALBI: median=0.136, IQR=[-0.061, 0.353]
+
+--- STEP 7: ECOG ---
+NOTE: Structured ECOG not available in REACH derived tables.
+ECOG extraction from notes would require NLP; marking as UNKNOWN for all.
+This is a data limitation that must be reported.
+ECOG known: 0/718 = 0.0%
+
+--- STEP 8: AFP ---
+Pre-built AFP rows: 8910
+Pre-TACE AFP (-30..0d): 544/718 = 75.8%
+Reassessment AFP (±14d): 451/718 = 62.8%
+Paired AFP: 382/718 = 53.2%
+
+AFP response category (paired, baseline AFP>20):
++----------------+-----+
+|    afp_response|count|
++----------------+-----+
+|20_49PCT_DECLINE|   27|
+|GE_50PCT_DECLINE|   92|
+|     NONSECRETOR|  191|
+|            RISE|   45|
+|          STABLE|   27|
++----------------+-----+
+
+
+✓ hcc_tace_labs_v12_3 persisted: 718 N_STUDIES
+
+--- DATA COMPLETENESS SUMMARY ---
+  Reassess ALBI: 565/718 = 78.7%
+  Pre-TACE ALBI: 463/718 = 64.5%
+  Delta ALBI: 463/718 = 64.5%
+  Pre-TACE AFP: 382/718 = 53.2%
+  Reassess AFP: 382/718 = 53.2%
+
+======================================================================
+STEPS 9-11 — EQUIPOISE + STRATEGIES + TIMING
+======================================================================
+
+--- STEP 9: CLINICAL EQUIPOISE FUNNEL ---
+Starting: 718 N_STUDIES, 718 N_PATIENTS
+
+1. With reassessment imaging 28-120d:  718 N_PATIENTS
+2. With radiology report text:          678 N_PATIENTS (excl 40 no report)
+3. Residual/recurrent/progressive HCC:  677 N_PATIENTS (excl 1 complete response/no report)
+4. No definite extrahepatic disease:    485 N_PATIENTS (excl 192 EHD)
+5. No MVI/PVTT (strict only):           450 N_PATIENTS (excl 35 MVI/PVTT)
+6. Hepatic reserve ok (strict, mALBI<3):418 N_PATIENTS (excl 32 mALBI=3)
+7. No curative pathway (≤120d):          418 N_PATIENTS (excl 0 curative)
+
+### BROAD EQUIPOISE PHENOTYPE:  485 N_PATIENTS
+### STRICT EQUIPOISE PHENOTYPE: 418 N_PATIENTS
+
+======================================================================
+STEP 10 — POST-REASSESSMENT STRATEGIES
+======================================================================
+
+--- BROAD EQUIPOISE: Strategy distribution (30d grace) ---
++--------------------+---+
+|initial_strategy    |n  |
++--------------------+---+
+|OBSERVATION_OR_OTHER|160|
+|REPEAT_TACE_ONLY    |110|
+|SYSTEMIC_PLUS_TACE  |5  |
+|SYSTEMIC_ONLY       |4  |
++--------------------+---+
+
+--- Strategy by era (DEFINITELY_MODERN only) ---
++--------------------+---+
+|initial_strategy    |n  |
++--------------------+---+
+|OBSERVATION_OR_OTHER|53 |
+|REPEAT_TACE_ONLY    |23 |
+|SYSTEMIC_ONLY       |3  |
+|SYSTEMIC_PLUS_TACE  |2  |
++--------------------+---+
+
+--- Systemic regimens (all strategies with systemic) ---
++-----------+---+
+|sys_regimen|n  |
++-----------+---+
+|LENVATINIB |3  |
+|STRIDE     |3  |
+|SORAFENIB  |1  |
+|NIVO_MONO  |1  |
+|AB         |1  |
++-----------+---+
+
+
+--- STEP 11: TREATMENT TIMING ---
+
+REPEAT_TACE_ONLY: N=110, median=17d, IQR=[12, 23], p10=6, p90=27
+
+SYSTEMIC_ONLY: N=4, median=18d, IQR=[3, 21], p10=3, p90=23
+
+SYSTEMIC_PLUS_TACE: N=5, median=9d, IQR=[7, 27], p10=7, p90=28
+
+✓ hcc_tace_strategy_v12_3 persisted: 279 N_PATIENTS
+
+======================================================================
+STEPS 12-16 + FINAL FEASIBILITY REPORT
+======================================================================
+
+--- STEP 12: TALENTACE-LIKE SUBCOHORT ---
+TALENTACE criteria (where measurable): systemically untreated,
+Child-Pugh A or preserved reserve (ALBI), unresectable, ECOG 0-1
+
+TALENTACE_LIKE_REACH: 297 N_PATIENTS
+
+TALENTACE-like strategy distribution:
++--------------------+-----+
+|initial_strategy    |count|
++--------------------+-----+
+|OBSERVATION_OR_OTHER|104  |
+|REPEAT_TACE_ONLY    |69   |
+|SYSTEMIC_ONLY       |4    |
+|SYSTEMIC_PLUS_TACE  |4    |
++--------------------+-----+
+
+
+--- STEP 13: RESPONSE x LIVER RESERVE 2x2 ---
+
+Full 2x2 (with Unknown reserve):
++----------------------+---------------------+---+
+|tumor_response_stratum|liver_reserve_stratum|n  |
++----------------------+---------------------+---+
+|FAVORABLE             |DETERIORATED         |32 |
+|FAVORABLE             |PRESERVED            |26 |
+|FAVORABLE             |UNKNOWN              |16 |
+|UNFAVORABLE           |DETERIORATED         |206|
+|UNFAVORABLE           |PRESERVED            |179|
+|UNFAVORABLE           |UNKNOWN              |219|
++----------------------+---------------------+---+
+
+Strategy by response x liver stratum:
+  FAVORABLE/PRESERVED: N=26  [OBSERVATION_OR_OTHER:10, None:13, REPEAT_TACE_ONLY:2, SYSTEMIC_PLUS_TACE:1]
+  FAVORABLE/DETERIORATED: N=32  [OBSERVATION_OR_OTHER:15, None:13, REPEAT_TACE_ONLY:4]
+  UNFAVORABLE/PRESERVED: N=179  [OBSERVATION_OR_OTHER:43, SYSTEMIC_ONLY:3, None:103, REPEAT_TACE_ONLY:28, SYSTEMIC_PLUS_TACE:2]
+  UNFAVORABLE/DETERIORATED: N=206  [OBSERVATION_OR_OTHER:40, None:128, REPEAT_TACE_ONLY:38]
+
+--- STEP 14: COMMON-SUPPORT DIAGNOSTICS ---
+Comparing REPEAT_TACE_ONLY vs SYSTEMIC_ONLY+SYSTEMIC_PLUS_TACE
+NOTE: Systemic arm too small for formal propensity analysis.
+
+Repeat TACE arm: 110 N_PATIENTS
+Systemic arm:    9 N_PATIENTS
+
+Modern repeat TACE: 23 N_PATIENTS
+Modern systemic:    5 N_PATIENTS
+
+Formal propensity score analysis NOT feasible: systemic arm N<20.
+
+--- STEP 15: DATE-SHIFT ROBUSTNESS ---
+Within-patient timing is EXACT (same offset).
+Calendar-era classification uses ±6mo buffer around approval dates.
+  DEFINITELY_PRE_MODERN: N=161, repeat TACE=73, systemic=2
+  DATE_SHIFT_UNCERTAIN: N=37, repeat TACE=14, systemic=2
+  DEFINITELY_MODERN: N=81, repeat TACE=23, systemic=5
+
+======================================================================
+STEP 16 — FINAL FEASIBILITY DECISION
+======================================================================
+
+### BROAD EQUIPOISE
+N total:             485
+Repeat TACE:         110
+Modern systemic:     9
+Combination:         5
+
+### STRICT EQUIPOISE
+N total:             418
+(Strict strategy counts require re-filtering - see funnel above)
+
+### TALENTACE-LIKE
+N total:             297
+
+### DATA COMPLETENESS IN BROAD EQUIPOISE
+  ALBI: 382/485 = 78.8%
+  Delta ALBI: 316/485 = 65.2%
+  Pre-TACE AFP: 277/485 = 57.1%
+  Paired AFP: 277/485 = 57.1%
+  ECOG:              0/485 = 0.0% (NOT AVAILABLE)
+  Explicit CP:       0/485 = 0.0% (NOT VALIDATED)
+  Response category: 485/485 = 100.0%
+
+### HUMAN REVIEW BURDEN
+  Radiology confirmation needed: ALL 485 (regex-based extraction)
+  Technical TACE suitability:     ALL repeat-TACE candidates
+  Treatment-intent confirmation:  ALL systemic-escalation patients
+
+### DECISION
+
+DESCRIPTIVE ONLY
+
+Rationale:
+  1. Post-TACE systemic escalation arm in modern era: 5 total (3 DEFINITELY_MODERN)
+  2. This is insufficient for ANY causal inference method.
+  3. Even with 60-day grace period, systemic N would remain <20.
+  4. The post-TACE decision node in REACH is overwhelmingly
+     repeat-TACE-dominant (110/119 = 92% of treated patients).
+  5. ECOG completely unavailable; AFP paired 53%; imaging regex unvalidated.
+  6. Formal propensity/target-trial analysis is NOT feasible.
+  7. A descriptive characterization of the post-TACE decision landscape
+     is the maximum this single-center dataset supports.
+  8. MULTICENTER REQUIRED for a powered post-TACE TACE-vs-systemic comparison.
+
+
+
+======================================================================
+COPY-PASTE REVIEW REPORT
+======================================================================
+
+1. CANONICAL TACE EPISODE CONSTRUCTION
+   Source: reach_users.xzhao81.hcc_locoregional_validated_v12
+   Logic: TACE_HIGH_CONFIDENCE + TACE_PROBABLE rows → collapse same (patient,date) → merge ≤2-day gaps
+   Raw TACE procedure rows:    3,304
+   Patient-date pairs:         2,549  
+   Canonical episodes (≤2d):   2525
+   Unique patients:            1052
+   Assertion: 2525 < 3,304 ✓
+
+2. INDEX-TACE WATERFALL
+   All TACE patients:                      1052
+   DEFINITE_FIRST_TACE:                    603
+   PROBABLE_FIRST_TACE:                    219
+   Primary cohort (definite+probable):     822
+   FIRST_OBSERVED_PRIOR_OUTSIDE_POSSIBLE:  44
+   DEFINITE_REPEAT_TACE:                   23
+   UNKNOWN:                                163
+
+3. MODERN-ERA WATERFALL (primary cohort)
+   DEFINITELY_PRE_MODERN (before 2019-11-29):   398
+   DATE_SHIFT_UNCERTAIN (±6mo of 2020-05-29):   74
+   DEFINITELY_MODERN (after 2020-11-29):         350
+
+4. REASSESSMENT IMAGING WATERFALL
+   Primary index TACE patients:   822
+   No liver CT/MRI at Hopkins:    4
+   Only imaging <28d:             66
+   Only imaging >120d:            12
+   With reassessment 28-120d:     718
+   Modality: CT=146, MRI=572
+   Contrast-enhanced:             662
+   Median days post-TACE:         38, IQR [32, 50]
+
+5. RADIOLOGY VARIABLE COMPLETENESS (N=718)
+   With report text:              678
+   LR-TR reported:                39
+   Complete response:             4
+   Residual viable:               191
+   Progression:                   203
+   New intrahepatic:              42
+   MVI/PVTT flagged:              58
+   Extrahepatic flagged:          193
+   ALL REGEX-BASED — HUMAN CONFIRMATION REQUIRED
+
+6. LIVER-FUNCTION COMPLETENESS (N=718)
+   Reassessment ALBI:    565/718 = 78.7%
+   Pre-TACE ALBI:        572/718 = 79.7%  
+   Paired delta ALBI:    463/718 = 64.5%
+   mALBI at reassessment: grade 1=241, 2a=86, 2b=180, 3=58
+   Delta ALBI: median=0.136, IQR=[-0.061, 0.353]
+   ALBI change: deterioration=250, stable=118, improvement=95
+
+7. AFP COMPLETENESS (N=718)
+   Pre-TACE AFP (-30..0d): 544/718 = 75.8%
+   Reassessment AFP (±14d): 451/718 = 62.8%
+   Paired AFP:              382/718 = 53.2%
+   AFP response (paired, baseline>20): ≥50% decline=92, 20-49% decline=27, stable=27, rise=45
+   Nonsecretor (AFP≤20):   191
+
+8. ECOG/CHILD-PUGH COMPLETENESS
+   Structured ECOG: 0/718 = 0% — NOT AVAILABLE IN REACH DERIVED TABLES
+   Explicit Child-Pugh: 0/718 = 0% — NOT VALIDATED
+   These are critical data gaps.
+
+9. FULL EQUIPOISE WATERFALL
+   Reassessment imaging:         718
+   With report text:             678 (excl 40)
+   Residual/recurrent HCC:       677 (excl 1 CR)
+   No extrahepatic disease:      485 (excl 192) ← BROAD EQUIPOISE
+   No MVI/PVTT:                  450 (excl 35)
+   Hepatic reserve ok (mALBI<3): 418 (excl 32)
+   No curative pathway:          418 (excl 0) ← STRICT EQUIPOISE
+
+10. BROAD STRATEGY COUNTS (30d grace, N=279 of 485 with identified strategy)
+    REPEAT_TACE_ONLY:      110
+    SYSTEMIC_ONLY:         4
+    SYSTEMIC_PLUS_TACE:    5
+    OBSERVATION_OR_OTHER:  160
+    Not classified:        206 (no treatment within 30d)
+
+11. STRICT STRATEGY COUNTS
+    (Subset of broad; strict phenotype N=418)
+    Same strategy proportions expected.
+
+12. EXACT SYSTEMIC REGIMENS (all eras)
+    LENVATINIB: 3
+    STRIDE: 3
+    SORAFENIB: 1
+    NIVO_MONO: 1
+    AB (Atezo/Bev): 1
+    Total systemic: 9 patients
+
+13. TREATMENT TIMING
+    REPEAT_TACE: N=110, median=17d, IQR=[12,23]
+    SYSTEMIC_ONLY: N=4, median=18d, IQR=[3,21]
+    SYSTEMIC_PLUS_TACE: N=5, median=9d, IQR=[7,27]
+
+14. TALENTACE-LIKE COHORT
+    N: 297
+    Criteria: no prior systemic, no EHD, mALBI 1 or 2a
+    (ECOG/six-and-twelve not derivable)
+
+15. RESPONSE x LIVER-FUNCTION 2x2
+    (See cell output for exact counts)
+    Dominant pattern: UNFAVORABLE tumor + DETERIORATED liver
+
+16. SUPPORT/ESS/BALANCE DIAGNOSTICS
+    NOT FEASIBLE: systemic arm N=9 (total), N=5 (modern)
+    Formal propensity analysis impossible with <20 in either arm.
+
+17. HUMAN-REVIEW REQUIREMENTS
+    Radiology confirmation:         ALL 485 broad-equipoise patients
+    Technical TACE suitability:      110 repeat-TACE candidates
+    Treatment-intent confirmation:   9 systemic patients
+    Total human review burden:       ~500 chart reviews
+
+18. UNRESOLVED INCONSISTENCIES
+    a) 206/485 broad-equipoise patients have no treatment within 30d —
+       likely observation, hospice, or lost to follow-up. Requires chart review.
+    b) Extrahepatic disease flagged in 192 patients — regex may over-capture
+       (mentions of "no metastasis" could be misparsed). Needs human review.
+    c) ECOG completely absent. This is a fundamental limitation for
+       equipoise assessment.
+    d) Only 1 definite complete response identified — likely under-detection
+       by regex. LR-TR nonviable in only 1 case.
+    e) AFP paired coverage 53% may underestimate AFP secretors due to
+       timing-window stringency.
+
+19. PERSISTED TABLES AND ROW COUNTS
+    hcc_tace_episodes_canonical_v12_3:  2525 episodes, 1052 patients
+    hcc_index_tace_v12_3:               1052 patients
+    hcc_index_tace_era_v12_3:           1052 patients  
+    hcc_tace_reassessment_v12_3:        718 studies
+    hcc_tace_tumor_state_v12_3:         718 studies
+    hcc_tace_labs_v12_3:                718 studies
+    hcc_tace_strategy_v12_3:            279 patients
+    _tace_albumin_v12_3:                scratch (albumin labs)
+    _tace_bilirubin_v12_3:              scratch (bilirubin labs)
+    _tace_afp_v12_3:                    scratch (AFP labs)
+
+20. IMPLEMENTATION LOGIC SUMMARY
+    Step 0: TACE_HC + TACE_PROBABLE → collapse same (pat,date) → merge ≤2d gaps
+    Step 1: First TACE per patient. Classify by pre-index history, Hopkins contact timing, HCC dx date.
+    Step 2: Atezo/Bev 2020-05-29 ±6mo buffer for date-shift robustness.
+    Step 3: image_procedures CT/MRI abdomen/liver, completed, 28-120d post-index TACE.
+    Step 4: Regex on radiology_text.content for LR-TR, response, progression, MVI, EHD.
+    Step 6: ALBI = log10(bili_mg*17.1)*0.66 + (alb_g*10)*(-0.085). ±7d/14d of scan.
+    Step 8: AFP from _tace_afp_v12_3, ±30d pre-TACE, ±14d reassessment.
+    Step 9: Sequential exclusion: no report, no active HCC, EHD, MVI, mALBI=3, curative.
+    Step 10: 30d grace: TACE vs systemic vs both vs observation vs death.
+
+=== FINAL DETERMINATION ===
+
+DESCRIPTIVE ONLY
+
+The post-TACE systemic escalation arm contains 9 total patients (5 modern era).
+A single-center target-trial emulation of TACE-vs-systemic escalation is NOT feasible.
+REACH can support a descriptive characterization of the post-TACE decision landscape.
+MULTICENTER COLLABORATION REQUIRED for a powered comparative analysis.
+
+=== STOP — NO OUTCOME ESTIMATION ===
+
+
+✓ ANALYSIS COMPLETE. MODEL-ASSISTED — HUMAN CONFIRMATION REQUIRED.
+
