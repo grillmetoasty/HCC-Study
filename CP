@@ -1,696 +1,1385 @@
-Follow `skills.md` strictly.
+Follow every requirement in `skills.md` throughout this analysis.
 
-This is a SINGLE-PURPOSE run.
+This is a NEW SCIENTIFIC EXPLORATION PHASE.
 
-Do NOT rank projects.
-Do NOT estimate treatment effects.
-Do NOT revisit unrelated systemic projects.
-Do NOT reuse the coarse v12/v12.1/v12.2 post-TACE pathway table.
+The goal is to identify the strongest HCC MEDICAL-ONCOLOGY research questions that can be answered exceptionally well using Johns Hopkins REACH.
 
-The only goal is:
+This run is NOT limited to ideas previously discussed.
 
-**Determine whether REACH contains a sufficiently large, clinically credible post-TACE reassessment population in which continued TACE-dominant treatment versus systemic escalation represents a genuine treatment decision.**
+Think broadly and systematically across:
+- first-line systemic treatment
+- treatment selection
+- treatment exposure
+- component modification
+- discontinuation
+- toxicity
+- hepatic deterioration
+- tumor biomarkers
+- treatment sequencing
+- therapeutic opportunity
+- second-line treatment
+- subsequent treatment access
+- treatment rechallenge
+- supportive care
+- portal-hypertension-related treatment decisions
+- immunotherapy
+- VEGF-directed therapy
+- TKIs
+- treatment-era changes
+- real-world implementation of modern HCC therapy
+- clinically meaningful phenotypes that may not yet have been considered.
 
-This analysis must be built from raw/canonical data step by step.
+However, this project screen should prioritize questions that are fundamentally MEDICAL ONCOLOGY questions.
 
-Print EVERYTHING needed for external review in plain text.
+The ideal resulting project should be executable primarily by:
 
-For every major step print:
-- source table
-- schema fields used
-- unit of analysis
-- SQL/PySpark logic
-- rows before
-- unique patients before
-- rows after
-- unique patients after
-- exclusions and reasons
-- join multiplicity
-- 10 representative rows
-- suspicious edge cases
+- Luke
+- Mari Nakazawa
+- Mark Yarchoan
 
-Do not leave critical results only in Databricks display tables.
+A statistician may be added later if needed.
+
+Avoid making a project dependent on:
+- IR technical adjudication
+- manual assessment of whether repeat TACE is technically feasible
+- extensive liver-radiology manual abstraction
+- surgical technical decision-making
+- large multidisciplinary chart-review teams.
+
+Existing structured imaging variables may be used as SECONDARY/SUPPORTIVE variables if already reliable, but do not make the primary project dependent on new manual radiology abstraction.
+
+Do NOT choose a final project.
+
+Do NOT estimate treatment effects yet.
+
+Do NOT perform a simplistic numerical project-ranking exercise.
+
+Your output should be a rigorous DATA OPPORTUNITY ATLAS that ChatGPT and the investigators can use to select several projects for discussion with Mari Nakazawa.
 
 # ============================================================
-# STEP 0 — USE ONLY CORRECTED CANONICAL INPUTS
+# CRITICAL META-RULE: SHOW YOUR WORK
 # ============================================================
 
-Do NOT use raw 3,304 TACE procedure rows as clinical TACE episodes.
+For every major phenotype, cohort, treatment exposure, or candidate study:
 
-First identify the currently most validated TACE episode table.
+PRINT BOTH:
 
-From prior work:
+1. WHAT YOU FOUND
+2. EXACTLY HOW YOU GENERATED IT
 
-- ~3,304 raw TACE-related procedure rows
-- ~2,549 deduplicated clinical TACE episodes
-- ~1,052 unique TACE patients
+Do not give only summaries.
 
-Print the exact table and logic that produced the deduplicated clinical episodes.
+For every major dataframe/table print:
+
+SOURCE TABLE(S):
+CANONICAL OR RAW:
+UNIT OF ANALYSIS:
+INDEX DATE:
+JOIN KEY(S):
+DATE FIELD(S):
+N_ROWS:
+N_UNIQUE_PATIENTS:
+INCLUSION RULE:
+EXCLUSION RULE:
+
+Then print the actual SQL/PySpark code used for the important:
+- joins
+- filters
+- window functions
+- episode construction
+- classification logic
+- deduplication
+- date windows
+- censoring
+- treatment assignment
+- biomarker extraction.
+
+If code is too long, print exact executable pseudocode plus the critical SQL/PySpark expressions.
+
+For every join print:
+
+LEFT_ROWS
+LEFT_PATIENTS
+RIGHT_ROWS
+RIGHT_PATIENTS
+MATCHED_LEFT_PATIENTS
+UNMATCHED_LEFT_PATIENTS
+ROWS_AFTER_JOIN
+PATIENTS_AFTER_JOIN
+JOIN_MULTIPLICITY
+
+If a many-to-one join unexpectedly expands >10%:
+
+`*** JOIN MULTIPLICATION ALERT ***`
+
+Investigate it before continuing.
+
+For every surprising clinical result print:
+
+`*** CLINICAL PLAUSIBILITY ALERT ***`
+
+and investigate:
+- denominator
+- unit
+- join keys
+- date windows
+- duplicate rows
+- coding meaning
+- treatment indication
+- exposure ascertainment
+- left truncation
+- outside treatment.
+
+# ============================================================
+# PART 0 — DECLARE THE CANONICAL SYSTEMIC DATA MODEL
+# ============================================================
+
+Begin by locating and reading back all relevant current canonical tables.
+
+Expected important tables include, where present:
+
+- hcc_master_patient_roster_v12_1 / newer corrected version
+- hcc_systemic_patients_canonical_v12_2
+- hcc_systemic_lines_canonical_v12_2
+- hcc_full_systemic_waterfall_v12_2
+- hcc_true_firstline_validation_v10
+- hcc_regimen_duration_v12_2
+- hcc_tumor_biomarkers_v12
+- hcc_decompensation_validated_v12
+- hcc_inpatient_admissions_v12_2
+- validated mortality data
+- research_status_final table if persisted
+- treatment_plan
+- treatment_plan_orders
+- med_admin
+- med_orders
+- lab_results
+- oncology notes
+- encounter diagnoses
+- problem list
+- relevant procedures
+- hospice/palliative-care data
+- other relevant Beacon/Epic oncology sources.
+
+DO NOT blindly assume the newest table is valid.
+
+Print for each candidate table:
+- schema
+- rows
+- patients
+- unit
+- date coverage
+- version
+- known limitations.
+
+Use the validated systemic universe from v12.2 as the starting point:
+
+approximately:
+- 796 raw systemic-signal patients
+- 571 validated systemic-treated patients
+- 806 canonical treatment lines
+- 282 high-confidence true-1L patients
+- 74 probable true-1L
+- 213 possible prior outside therapy
+
+but RECOMPUTE these counts rather than hard-coding them.
 
 Required assertion:
 
-`N_clinical_TACE_episodes < N_raw_TACE_rows`
+all high-confidence true-1L patients must be contained within the canonical validated systemic population.
 
-If the current source has 3,304 "episodes":
-STOP and rebuild episode-level TACE before continuing.
+Print the IDs if not.
 
-TACE episode deduplication should use:
+# ============================================================
+# PART 1 — COMPLETE SYSTEMIC-THERAPY INVENTORY
+# ============================================================
+
+Build one clean patient-level and line-level inventory.
+
+For each canonical systemic line derive:
+
 - patient
-- clinically coherent procedure date/window
-- source concordance
-- procedure context
+- line number
+- regimen
+- individual drugs
+- route
+- start date
+- raw last administration/order date
+- exposure confidence
+- research/trial status
+- true-1L confidence
+- prior systemic therapy evidence
+- next-line date
+- death
+- last contact
+- HCC indication confidence.
 
-Do not treat multiple billing/code rows from the same TACE as separate TACEs.
+Print counts by:
 
-Persist if needed:
-`hcc_tace_episodes_canonical_v12_3`
+### LINE
+- 1L
+- 2L
+- 3L+
+- all lines
 
-# ============================================================
-# STEP 1 — DEFINE THE INDEX TACE POPULATION
-# ============================================================
+### REGIMEN
+At minimum:
+- Atezo/Bev
+- STRIDE
+- Nivo/Ipi
+- Nivolumab
+- Pembrolizumab
+- Durvalumab
+- Lenvatinib
+- Sorafenib
+- Cabozantinib
+- Regorafenib
+- Ramucirumab
+- other meaningful combinations.
 
-We must distinguish:
-
-1. true/likely first TACE
-2. first TACE observed at Hopkins
-3. repeat TACE with previous TACE known
-4. prior TACE outside Hopkins possible
-
-For every TACE patient search available pre-index history for:
-- prior TACE procedures
-- IR notes mentioning prior TACE
-- oncology/hepatology notes mentioning prior TACE
-- outside treatment language
-- prior embolization
-
-Construct:
-
-`index_tace_status`
-
-- DEFINITE_FIRST_TACE
-- PROBABLE_FIRST_TACE
-- FIRST_OBSERVED_BUT_PRIOR_OUTSIDE_POSSIBLE
-- DEFINITE_REPEAT_TACE
-- UNKNOWN
-
-Print counts.
-
-For the PRIMARY feasibility cohort use:
-DEFINITE_FIRST_TACE + PROBABLE_FIRST_TACE.
-
-Keep first-observed as a sensitivity cohort.
-
-Print exact logic.
-
-# ============================================================
-# STEP 2 — DEFINE A ROBUST MODERN-ERA COHORT
-# ============================================================
-
-The study is intended to evaluate modern systemic escalation.
-
-REACH dates are shifted within patient by one fixed offset ≤6 months.
-
-Therefore do NOT use an exact approval boundary naively.
-
-Create:
-
-A. ALL-ERA descriptive cohort
-B. ROBUST MODERN-ERA cohort
-
-For modern ICI availability use the Atezo/Bev US approval anchor:
-2020-05-29.
-
-Classify:
-- DEFINITELY_PRE_MODERN if observed date < approval −6 months
-- DATE_SHIFT_UNCERTAIN if within ±6 months
-- DEFINITELY_MODERN if observed date > approval +6 months
-
-Primary modern analysis:
-DEFINITELY_MODERN.
-
-Sensitivity:
-include date-shift-uncertain separately.
-
-Do NOT assume STRIDE availability before its own robust approval window.
-
-Print TACE counts by robust era.
-
-# ============================================================
-# STEP 3 — UNIQUE POST-TACE REASSESSMENT IMAGING
-# ============================================================
-
-Use the deduplicated radiology STUDY table.
-
-One row must represent ONE CT/MRI study, not:
-- billing component
-- contrast phase
-- series
-- duplicated report
-
-Preferred key:
-accession/order/report ID.
-
-Fallback:
-patient + date + modality + liver-study identity.
-
-Eligible modalities:
-- contrast-enhanced CT liver/abdomen appropriate for HCC response
-- contrast-enhanced MRI liver/abdomen appropriate for HCC response
-
-Primary reassessment window:
-day 28 through day 120 after index TACE.
-
-Sensitivity:
-day 21–120.
-
-For every patient choose ONE index reassessment:
-the earliest clinically interpretable liver CT/MRI within the primary window.
+### ERA
+Because dates are patient-shifted by ≤6 months, create robust treatment-era categories around important approvals rather than relying on exact approval dates.
 
 Print:
+- definitely pre-modern
+- approval-boundary uncertain
+- definitely modern.
 
-INDEX TACE PATIENTS
-→ CT/MRI within 28–120d
-→ interpretable HCC response study
-
-For excluded patients print reason:
-- no imaging
-- only ultrasound
-- only noncontrast imaging
-- imaging too early
-- imaging too late
-- uninterpretable/other.
+Do not mix observed first line with high-confidence true first line.
 
 # ============================================================
-# STEP 4 — EXTRACT THE ACTUAL POST-TACE TUMOR STATE
+# PART 2 — REBUILD MEDICATION EXPOSURE AT THE DRUG-COMPONENT LEVEL
 # ============================================================
 
-Do NOT use the old permissive v9 regex.
+This is critical.
 
-Use the full radiology impression/report around the chosen reassessment study.
+Previous work showed that generic treatment-line duration is unreliable, especially for oral TKIs.
 
-Extract:
+Build separate exposure logic for:
 
-- treated lesion viable: yes/no/indeterminate
-- LR-TR viable/nonviable/equivocal if present
-- complete response
-- partial response
-- stable viable disease
-- progression
-- new intrahepatic lesion
-- number of active/viable lesions
-- largest viable lesion diameter
-- unilobar vs bilobar
-- infiltrative morphology
-- macrovascular invasion
-- PVTT
-- hepatic vein invasion
-- extrahepatic disease
-- nodal metastatic disease
-- ascites if clearly reported
+### IV agents
+Using MAR / administrations:
+- atezolizumab
+- bevacizumab
+- durvalumab
+- tremelimumab
+- nivolumab
+- ipilimumab
+- pembrolizumab
+- ramucirumab.
 
-For every derived variable preserve:
-- evidence text
-- extraction rule
+For each administration print:
+- medication
+- date
+- MAR action
+- dose if reliable
+- treatment plan
+- research status
+- source.
+
+Collapse duplicate MAR records representing one actual administration.
+
+### Oral TKIs
+Using orders and any available medication-list/refill evidence:
+- lenvatinib
+- sorafenib
+- cabozantinib
+- regorafenib.
+
+Classify exposure confidence:
+
+HIGH
+PROBABLE
+ORDER_ONLY
+UNCERTAIN.
+
+Do NOT convert time to death/next-line into observed oral treatment duration.
+
+If exact duration is not knowable, explicitly represent:
+- lower-bound exposure
+- upper-bound exposure
+- unknown actual stop.
+
+Print available fields such as:
+- order date
+- start
+- end
+- quantity
+- refills
+- active status
+- repeated order
+- discontinuation reason.
+
+Persist a component-level table:
+`hcc_systemic_drug_exposure_medonc_atlas`
+
+# ============================================================
+# PART 3 — FIRST-LINE MODERN MED-ONC COHORT
+# ============================================================
+
+Construct several transparent cohorts:
+
+A. HIGH-CONFIDENCE true 1L
+B. HIGH + PROBABLE true 1L
+C. HIGH-CONFIDENCE routine-care true 1L
+D. modern-era high-confidence routine-care true 1L
+
+Print treatment distribution for each.
+
+For the modern cohort distinguish:
+- AB
+- STRIDE
+- Nivo/Ipi
+- other ICI
+- TKI.
+
+For every cohort print:
+- N
+- deaths
+- reached 2L
+- follow-up duration
+- lab availability
+- AFP availability
+- ALBI availability
+- explicit ECOG availability
+- explicit Child-Pugh availability
+- note availability
+- hospitalization availability.
+
+Do not infer Child-Pugh from ALBI.
+
+Do not use the invalid binary ascites/encephalopathy reconstructed CP as primary CP.
+
+# ============================================================
+# PART 4 — ATEZO/BEV COMPONENT-MODIFICATION ATLAS
+# ============================================================
+
+This is a major candidate research area.
+
+Among AB-treated patients, reconstruct individual atezolizumab and bevacizumab administrations.
+
+Create a longitudinal component-state timeline:
+
+AB_COMBINATION
+ATEZO_ONLY
+BEV_ONLY
+BOTH_HELD
+DISCONTINUED
+SWITCHED_TO_NEW_LINE
+UNKNOWN.
+
+Identify:
+
+1. temporary bevacizumab hold
+2. permanent bevacizumab discontinuation with continued atezolizumab
+3. atezolizumab hold with bevacizumab continuation
+4. both held
+5. restart/rechallenge after hold
+6. dose interval extension if ascertainable
+7. permanent complete discontinuation.
+
+For each patient print:
+- AB start
+- every Atezo date
+- every Bev date
+- gap lengths
+- first component discordance
+- subsequent administrations
+- next-line therapy.
+
+Define candidate hold windows empirically from normal dosing intervals.
+
+Print distribution of inter-dose intervals before selecting thresholds.
+
+DO NOT hard-code a hold definition without showing the interval distribution.
+
+For each modification phenotype report:
+- patients
+- episodes
+- timing from AB initiation
+- duration of modification
+- resumed combination yes/no
+- continued atezo alone yes/no
+- subsequent therapy
+- deaths/events descriptively.
+
+# ============================================================
+# PART 5 — WHY WAS BEVACIZUMAB MODIFIED?
+# ============================================================
+
+For every AB component modification, search structured data and notes in a clinically reasonable pre-event window.
+
+Candidate reasons:
+
+- GI bleed
+- variceal bleed
+- hemoptysis
+- other hemorrhage
+- proteinuria
+- hypertension
+- thrombosis
+- wound/procedure/surgery
+- infection
+- renal dysfunction
+- hepatic dysfunction
+- cytopenia
+- disease progression
+- patient preference
+- trial protocol
+- unknown.
+
+Also examine:
+- EGD
+- varices
+- variceal banding
+- anticoagulation
+- antiplatelet therapy
+- proteinuria / urine protein testing
+- creatinine/eGFR
+- blood pressure if reliably available
+- prior GI bleed.
+
+Do NOT infer causality from temporal proximity alone.
+
+Create:
+- structured candidate reason
+- note-confirmed reason where available
 - confidence
+- evidence text.
 
-Use three states where appropriate:
-YES / NO / INDETERMINATE.
+Print all reason counts.
 
-Do NOT map indeterminate to NO.
-
-# ============================================================
-# STEP 5 — MODEL-ASSISTED RADIOLOGY AUDIT
-# ============================================================
-
-Before using imaging variables:
-
-Create a review packet.
-
-Sample with fixed seed:
-
-- 30 complete/nonviable responses
-- 30 residual viable disease
-- 30 progressive/new-lesion cases
-- all cases flagged MVI/PVTT up to 30
-- all cases flagged extrahepatic disease up to 30
-- 30 indeterminate cases
-
-For each print:
-
-PATIENT
-TACE DATE
-SCAN DATE
-PROCEDURE NAME
-FULL IMPRESSION
-MODEL EXTRACTION:
-  response
-  viable disease
-  lesion number
-  largest lesion
-  bilobar
-  infiltrative
-  PVTT/MVI
-  extrahepatic
-EVIDENCE PHRASES
-
-Label:
-
-`MODEL-ASSISTED — HUMAN CONFIRMATION REQUIRED`
-
-Do not claim validation.
+If N is manageable, print all patients with permanent Bev discontinuation.
 
 # ============================================================
-# STEP 6 — POST-TACE HEPATIC-RESERVE STATE
+# PART 6 — AB SAFETY / PORTAL-HYPERTENSION PHENOTYPE
 # ============================================================
 
-At the reassessment date calculate:
+Determine whether REACH can robustly answer clinically relevant questions around bevacizumab safety.
 
-PRIMARY:
-- ALBI continuous
-- mALBI grade
+For all AB patients derive baseline:
 
-Use nearest albumin + bilirubin preferably within:
-- ±7 days of scan
-fallback:
-- ±14 days
+- prior variceal bleed
+- esophageal/gastric varices
+- EGD before therapy
+- date from EGD to AB start
+- banding before treatment
+- nonselective beta-blocker
+- portal hypertension
+- platelet count
+- anticoagulation
+- antiplatelet use
+- ascites
+- Child-Pugh if explicit
+- ALBI
+- renal function.
 
-Do not use post-decision labs.
+After AB initiation derive:
 
-Also calculate:
+- GI bleed
+- variceal bleed
+- transfusion if identifiable
+- hospitalization for bleeding
+- bevacizumab hold
+- bevacizumab discontinuation.
 
-PRE-TACE ALBI:
-nearest paired albumin/bilirubin within −30..0 days before TACE.
+Print:
+- completeness
+- event counts
+- temporal windows
+- structured versus note-confirmed evidence.
+
+Potential questions to assess feasibility:
+- real-world adherence to pre-Bev EGD
+- determinants of Bev avoidance/hold
+- bleeding outcomes by baseline portal-hypertension phenotype
+- consequences of Bev interruption.
+
+Do NOT estimate comparative effects yet.
+
+# ============================================================
+# PART 7 — AB vs STRIDE TREATMENT-SELECTION PHENOTYPE
+# ============================================================
+
+We know generic AB-vs-STRIDE survival is crowded.
+
+Do NOT perform another generic effectiveness comparison.
+
+Instead determine whether REACH can answer:
+
+**Why do clinicians select AB versus STRIDE in routine practice?**
+
+Use only:
+- modern era
+- true 1L
+- routine care
+- adequate contemporaneous covariates.
+
+Candidate selection factors:
+
+- varices
+- EGD
+- prior GI bleed
+- anticoagulation
+- antiplatelet use
+- hypertension
+- proteinuria
+- CKD
+- recent surgery/procedure
+- transplant status
+- autoimmune disease
+- chronic steroids/immunosuppression
+- ECOG
+- ALBI
+- explicit CP
+- AFP
+- tumor etiology
+- age
+- sex
+- calendar era.
+
+Print:
+- arm N
+- missingness
+- unadjusted distributions
+- standardized differences
+- propensity-model discrimination as a channeling diagnostic
+- common support
+- overlap-weight ESS.
+
+NO survival/effect model.
+
+If treatment selection is nearly deterministic or support is poor, state so.
+
+# ============================================================
+# PART 8 — EARLY DYNAMIC LIVER-RESERVE PHENOTYPE
+# ============================================================
+
+For high-confidence true-1L modern systemic patients:
+
+Build fixed landmarks.
+
+### Week 6
+Index:
+day 42
+
+Baseline liver assessment:
+- nearest paired albumin/bilirubin within −14..+3 days from treatment start.
+
+Follow-up:
+- nearest paired albumin/bilirubin day 28–56.
+
+### Week 12
+Follow-up:
+- day 70–98.
+
+Derive:
+- ALBI baseline
+- ALBI follow-up
+- delta ALBI
+- mALBI change
+- new ascites
+- paracentesis
+- encephalopathy
+- SBP
+- variceal bleed
+- HRS/AKI where feasible.
+
+IMPORTANT:
+landmark eligibility may NOT rely on the unreliable upper-bound oral-TKI exposure duration.
+
+Define eligibility by:
+- alive at landmark
+- not clearly switched to 2L before landmark
+- sufficient observation.
+
+Treatment holds may remain eligible.
+
+Print exact rules.
+
+# ============================================================
+# PART 9 — EARLY TUMOR-BIOLOGY PHENOTYPE WITHOUT MANUAL RADIOLOGY
+# ============================================================
+
+Primary tumor signal should use structured biomarkers.
+
+Use strict structured AFP.
+
+At each landmark derive:
+
+- baseline AFP
+- follow-up AFP
+- absolute change
+- percent change where baseline interpretable
+- delta log AFP
+- AFP <400 / ≥400
+- ≥50% decline
+- ≥20% decline
+- increase.
+
+Do NOT use percent change for patients with trivial/normal baseline AFP.
+
+Define an AFP-informative subgroup with a clinically justified baseline minimum and print sensitivity thresholds.
+
+Also inventory:
+- AFP-L3
+- DCP/PIVKA-II
+if truly available.
+
+If not available, say so.
+
+Existing reliable imaging response may be secondary only.
+
+Do not initiate large new manual imaging review.
+
+# ============================================================
+# PART 10 — TUMOR × LIVER DYNAMIC STATE
+# ============================================================
+
+This is a major candidate project.
+
+Among patients with both interpretable AFP and ALBI at a fixed landmark construct descriptive states:
+
+1. FAVORABLE_TUMOR + PRESERVED_LIVER
+2. FAVORABLE_TUMOR + DETERIORATING_LIVER
+3. UNFAVORABLE_TUMOR + PRESERVED_LIVER
+4. UNFAVORABLE_TUMOR + DETERIORATING_LIVER.
+
+Do NOT optimize thresholds using outcomes.
+
+Print several prespecified sensitivity definitions.
+
+For each state print:
+- N
+- regimen distribution
+- baseline characteristics
+- subsequent 1L continuation
+- eventual 2L receipt
+- decompensation
+- death
+- follow-up.
+
+This is descriptive feasibility only.
+
+# ============================================================
+# PART 11 — FIRST-LINE FAILURE / DISCONTINUATION PHENOTYPE
+# ============================================================
+
+This is critical.
+
+Do NOT infer progression merely because line 2 started.
+
+Search:
+- Beacon discontinuation reasons
+- treatment-plan status
+- oncology notes
+- medication discontinuation
+- imaging reports only if already structured/reliably searchable
+- decompensation events
+- toxicity events
+- hospice/palliative care.
+
+Create mutually exclusive cause-of-1L-end categories:
+
+- DOCUMENTED_PROGRESSION
+- TOXICITY
+- HEPATIC_DYSFUNCTION
+- BLEEDING
+- OTHER_COMORBIDITY
+- PATIENT_PREFERENCE
+- RESPONSE/PLANNED_STRATEGY_CHANGE
+- TRANSFER/OUTSIDE_CARE
+- DEATH_DURING_1L
+- STILL_ON_1L_AT_CENSOR
+- UNKNOWN.
+
+For each category preserve:
+- source
+- evidence phrase
+- confidence.
+
+Print:
+- counts overall
+- by regimen
+- by era.
+
+Prepare a human-review packet for all UNKNOWN cases if N≤100, otherwise a random 100 plus all discordant cases.
+
+# ============================================================
+# PART 12 — THERAPEUTIC OPPORTUNITY AFTER 1L
+# ============================================================
+
+Define exactly what happens after first-line therapy.
+
+For each high-confidence true-1L patient derive:
+
+- alive at 1L end
+- hepatic reserve near 1L end
+- ECOG if available
+- progression documented
+- 2L started
+- days to 2L
+- 2L regimen
+- hospice
+- death
+- local treatment
+- transfer/loss to follow-up.
+
+Define:
+
+`SECOND_LINE_OPPORTUNITY_STATUS`
+
+Possible categories:
+
+- RECEIVED_2L
+- APPARENTLY_ELIGIBLE_NO_2L
+- HEPATIC_DYSFUNCTION_PRECLUDED
+- PERFORMANCE_STATUS_PRECLUDED
+- TOXICITY/COMORBIDITY_PRECLUDED
+- RAPID_DEATH
+- TRANSFERRED/UNKNOWN
+- STILL_ON_1L
+- UNKNOWN.
+
+IMPORTANT:
+
+Do NOT label someone "eligible" merely because they were alive.
+
+Eligibility requires supporting clinical evidence.
+
+If eligibility cannot be reconstructed reliably, report that limitation rather than forcing the phenotype.
+
+# ============================================================
+# PART 13 — POST-ICI SECOND-LINE ATLAS
+# ============================================================
+
+Using ONLY canonical high-confidence true-1L ICI patients:
+
+Print:
+- total ICI 1L
+- reached 2L
+- did not reach 2L
+- alive at 1L end
+- time to 2L.
+
+2L branches:
+- lenvatinib
+- cabozantinib
+- sorafenib
+- regorafenib
+- nivo/ipi
+- STRIDE
+- AB
+- ramucirumab
+- other.
+
+For each branch:
+- N
+- baseline liver function
+- AFP
+- previous 1L regimen
+- follow-up
+- deaths
+- treatment exposure confidence.
+
+Do NOT compare effectiveness yet.
+
+Determine whether any clinically meaningful pair has enough N and overlap for a single-center causal analysis.
+
+Print common-support/ESS diagnostics if an arm pair has at least approximately 20 patients per arm.
+
+# ============================================================
+# PART 14 — RAMUCIRUMAB / AFP ≥400 IMPLEMENTATION
+# ============================================================
+
+Because ramucirumab has an AFP-defined indication, determine whether REACH contains a useful implementation question.
+
+Among patients entering an appropriate later-line setting:
+
+- AFP ≥400 at decision point
+- AFP <400
+- AFP unavailable
 
 Then:
+- ramucirumab used yes/no
+- alternative therapy
+- treatment era
+- liver function.
 
-`delta_ALBI = reassessment_ALBI - pre_TACE_ALBI`
+Print exact N.
 
-Define descriptive indicators only:
-- ALBI improvement
-- stable
-- deterioration
-- mALBI grade worsening
+Do NOT assume nonuse was inappropriate.
 
-Do NOT optimize a cutoff against outcomes.
+Determine whether this is too rare for study.
 
-Also record before reassessment:
-- new ascites
+# ============================================================
+# PART 15 — ICI TOXICITY / RECHALLENGE ATLAS
+# ============================================================
+
+Do NOT equate transaminitis with immune hepatitis.
+
+Inventory potentially reliable immune-related events:
+
+- hepatitis/transaminitis
+- colitis
+- pneumonitis
+- thyroiditis/hypothyroidism
+- adrenal insufficiency
+- hypophysitis
+- nephritis
+- dermatitis
+- myocarditis
+- arthritis/rheumatologic toxicity
+- other.
+
+Use combinations of:
+- diagnostic coding
+- relevant labs
+- steroids
+- specialty consultation
+- treatment hold
+- immunosuppressants
+- note evidence.
+
+For each suspected irAE print confidence:
+
+HIGH
+PROBABLE
+POSSIBLE
+UNSUPPORTED.
+
+Then derive:
+- ICI held
+- ICI discontinued
+- rechallenged
+- time to rechallenge
+- recurrence after rechallenge.
+
+Print patient counts.
+
+Identify which individual toxicity phenotypes have adequate N.
+
+# ============================================================
+# PART 16 — STEROID EXPOSURE AROUND ICI
+# ============================================================
+
+Inventory systemic corticosteroid exposure:
+
+A. baseline chronic steroids before ICI
+B. early steroids after ICI
+C. steroids for suspected irAE
+D. steroids for unrelated indications.
+
+Use medication administration/order data and notes where possible.
+
+Do not conflate:
+- dexamethasone antiemetic premedication
+with
+- chronic immunosuppressive steroids.
+
+Print:
+- N
+- indication confidence
+- prednisone-equivalent dose if feasible
+- duration if feasible.
+
+Potential question:
+whether REACH can study baseline immunosuppression or post-irAE steroid/rechallenge patterns.
+
+No effect estimation.
+
+# ============================================================
+# PART 17 — AUTOIMMUNE DISEASE / IMMUNOSUPPRESSION
+# ============================================================
+
+Identify baseline autoimmune disease among ICI-treated HCC patients.
+
+Examples:
+- rheumatoid arthritis
+- inflammatory bowel disease
+- psoriasis/psoriatic arthritis
+- lupus
+- vasculitis
+- autoimmune hepatitis
+- multiple sclerosis
+- other meaningful autoimmune conditions.
+
+Also identify:
+- biologic therapy
+- DMARD
+- chronic steroids
+- transplant immunosuppression.
+
+Print:
+- N overall
+- N receiving ICI
+- irAE counts descriptively
+- ICI discontinuation.
+
+Assess whether N is adequate for a study.
+
+# ============================================================
+# PART 18 — HEPATIC DECOMPENSATION DURING SYSTEMIC THERAPY
+# ============================================================
+
+For each true-1L systemic regimen derive:
+
+baseline history and incident post-treatment:
+
+- ascites
 - paracentesis
 - encephalopathy
 - variceal bleed
 - SBP
-- AKI/HRS if available
+- HRS
+- liver failure.
 
-Child-Pugh:
-use only explicit validated class/score when available.
-Do NOT use the v12.2 binary reconstructed CP as primary.
+Require baseline absence before calling an event incident.
 
-Print completeness.
+Use competing death appropriately for future modeling, but no effect estimation now.
 
-# ============================================================
-# STEP 7 — PERFORMANCE STATUS
-# ============================================================
+Print:
+- event counts
+- time to first event
+- regimen
+- baseline ALBI
+- explicit CP availability.
 
-Use validated note-derived ECOG.
-
-Target closest ECOG within:
-- −30 to +7 days around reassessment.
-
-Report:
-- ECOG 0
-- ECOG 1
-- ECOG 2
-- ECOG ≥3
-- unknown
-
-Do not treat unknown as 0–1.
+Potential questions:
+- competing tumor vs liver failure
+- regimen-specific implementation
+- loss of systemic-treatment opportunity after decompensation.
 
 # ============================================================
-# STEP 8 — AFP RESPONSE
+# PART 19 — TREATMENT-ERA EVOLUTION
 # ============================================================
 
-Use ONLY the strict structured AFP phenotype.
+Describe how Hopkins systemic HCC treatment changed over time.
 
-Pre-TACE AFP:
-nearest in −30..0d.
+Because dates are shifted ±6 months, use robust eras rather than exact approval dates.
 
-Reassessment AFP:
-nearest within ±14d of reassessment.
+Print:
+- annual/era treatment mix
+- 1L regimen adoption
+- time from approval-safe boundary to uptake
+- use of historical off-label ICI
+- use of TKIs after ICI
+- 2L evolution.
 
-Report:
-- baseline availability
-- reassessment availability
-- paired availability
+Assess whether an implementation-science / real-world adoption question exists.
 
-Calculate:
-`delta_log_AFP = log(AFP_reassessment+1) - log(AFP_preTACE+1)`
-
-Also report descriptive:
-- ≥50% fall
-- 20–49% fall
-- stable
-- rise
-
-Only calculate relative change when baseline AFP is sufficiently elevated.
-
-Do not force relative change on AFP-low/nonsecretor disease.
+Do not make unsupported calendar claims inside uncertain boundaries.
 
 # ============================================================
-# STEP 9 — BUILD THE CLINICAL EQUIPOISE FUNNEL
+# PART 20 — CLINICAL-TRIAL PARTICIPATION / ROUTINE CARE
 # ============================================================
 
-Starting from patients with an interpretable reassessment:
+Use `research_status_final`.
 
-Print one attrition waterfall:
+Print:
+- definite trial
+- probable trial
+- uncertain
+- routine care
 
-INDEX TACE
-→ reassessment imaging
-→ residual/recurrent viable HCC
-→ no definite extrahepatic spread
-→ no clearly prohibitive macrovascular invasion
-→ hepatic reserve compatible with active treatment
-→ performance status compatible where known
-→ no immediate curative surgery/transplant pathway
-→ clinically plausible candidate for repeat TACE OR systemic escalation
+by:
+- regimen
+- line
+- era.
 
-IMPORTANT:
+Determine whether trial participation meaningfully alters:
+- treatment availability
+- regimen selection
+- data completeness
+- follow-up.
 
-Do not invent a single rigid "eligible" rule without printing it.
+Do NOT compare survival.
 
-Create at least:
-
-### Broad equipoise phenotype
-Liver-dominant active HCC, no obvious absolute contraindication to either strategy.
-
-### Strict equipoise phenotype
-- liver-confined
-- no main portal-vein invasion
-- no overt decompensation
-- ALBI/mALBI within a clinically defensible range
-- ECOG 0–1 where known
-- residual disease technically plausible for another TACE
-
-The strict phenotype may require human confirmation of technical TACE suitability.
-
-Print N removed at every step and reason.
+This is mainly to identify contamination risks in candidate projects.
 
 # ============================================================
-# STEP 10 — DEFINE POST-REASSESSMENT STRATEGIES
+# PART 21 — SUPPORTIVE / PALLIATIVE CARE PHENOTYPE
 # ============================================================
 
-TIME ZERO:
-index reassessment CT/MRI date.
+Inventory:
+- palliative-care consultation
+- hospice
+- opioid initiation if reliable
+- goals-of-care documentation if searchable
+- time from 1L end to hospice
+- time from final systemic treatment to death.
 
-Do not classify based on treatment that occurred before the reassessment.
+Assess whether a medical-oncology end-of-life-care question is feasible.
 
-Examine treatment initiated after reassessment.
+Examples:
+- treatment near end of life
+- systemic therapy within 14/30 days of death
+- hospice utilization
+- predictors of late treatment cessation.
 
-Primary grace period:
-30 days.
+Print counts only.
 
-Sensitivity:
-45 and 60 days.
-
-Create mutually exclusive initial strategies:
-
-A. REPEAT_TACE_ONLY
-- repeat TACE during grace period
-- no systemic start during grace period
-
-B. SYSTEMIC_ONLY
-- systemic therapy starts during grace period
-- no repeat TACE during grace period
-
-C. SYSTEMIC_PLUS_TACE
-- systemic therapy and repeat TACE both initiated/performed within prespecified combined-strategy window
-
-D. OTHER_LRT
-- Y90/SBRT/ablation without systemic
-
-E. CURATIVE_INTENT
-- resection/transplant/curative ablation pathway
-
-F. OBSERVATION
-- no active anticancer treatment but ongoing follow-up
-
-G. SUPPORTIVE/HOSPICE
-
-H. DEATH_BEFORE_STRATEGY
-
-I. UNKNOWN/LOST
-
-For systemic therapy print exact regimen:
-- Atezo/Bev
-- STRIDE
-- Nivo/Ipi
-- durvalumab
-- TKI
-- other
-
-Do not pool ICI and historical TKI automatically.
+Do not presume treatment near death was inappropriate.
 
 # ============================================================
-# STEP 11 — TREATMENT STRATEGY TIMING
+# PART 22 — HCC-SPECIFIC TREATMENT ACCESS / DISPARITIES
 # ============================================================
 
-For each strategy print days from reassessment to initiation.
+Assess whether REACH has sufficient data for a medical-oncology access question.
 
-Report:
-median / IQR / p10 / p90.
-
-This determines whether target-trial grace-period methods are necessary.
-
-Specifically print:
-
-REPEAT_TACE:
-N
-median days
-
-MODERN ICI SYSTEMIC:
-N
-median days
-
-SYSTEMIC_PLUS_TACE:
-N
-timing order:
-- systemic first
-- TACE first
-- same week
-
-# ============================================================
-# STEP 12 — TALENTACE-LIKE SUBCOHORT
-# ============================================================
-
-Create a descriptive subcohort approximating TALENTACE eligibility where REACH can measure it:
-
-- systemically untreated
-- ECOG 0–1
-- Child-Pugh A if explicit OR clearly preserved hepatic reserve using ALBI sensitivity definition
-- unresectable
-- tumor burden meeting six-and-twelve ≥6 if derivable
-- no prior systemic therapy
-
-Do NOT claim exact trial eligibility if variables are unavailable.
-
-Label:
-`TALENTACE_LIKE_REACH`
-
-Report:
-- N
-- strategy distribution
-- tumor burden
-- response after first TACE
-- delta ALBI
-
-This is for external-generalizability feasibility only.
-
-# ============================================================
-# STEP 13 — RESPONSE-ADAPTIVE STRATA
-# ============================================================
-
-Create descriptive 2×2 strata:
-
-TUMOR RESPONSE:
-- favorable
-- unfavorable
-
-× hepatic reserve:
-- preserved
-- deteriorated
-
-Do NOT optimize definitions to outcomes.
-
-Suggested starting definitions:
-
-Tumor favorable:
-clear CR/PR or marked AFP decline with concordant imaging.
-
-Tumor unfavorable:
-SD/PD/residual multifocal/new lesions.
-
-Liver preserved:
-no clinically meaningful ALBI worsening and no new decompensation.
-
-Liver deteriorated:
-meaningful ALBI worsening and/or new decompensation.
-
-Also retain all component variables continuously.
-
-Print treatment strategy distribution in each stratum.
-
-This is one of the most important feasibility results.
-
-# ============================================================
-# STEP 14 — COMMON-SUPPORT DIAGNOSTICS ONLY
-# ============================================================
-
-NO OUTCOME MODEL.
-
-For the strict equipoise cohort assess whether:
-
-A. repeat TACE only
-versus
-B. modern ICI systemic escalation
-
-have usable treatment overlap.
-
-Candidate treatment-assignment variables:
-
+Inventory:
 - age
 - sex
-- etiology
-- post-TACE ALBI
-- delta ALBI
-- explicit Child-Pugh
-- ECOG
+- race/ethnicity
+- insurance if available
+- geography/SES if available
+- distance if available
+- site of care
+- referral status if inferable.
+
+Possible outcomes:
+- receipt of modern 1L ICI
+- delay to systemic therapy
+- receipt of 2L
+- trial participation.
+
+Print completeness and cohort Ns.
+
+Do NOT proceed if data quality is insufficient.
+
+# ============================================================
+# PART 23 — RARE BUT POTENTIALLY HIGH-VALUE QUESTIONS
+# ============================================================
+
+Actively search for unexpected med-onc niches.
+
+Examples are prompts, NOT a complete list:
+
+- AFP ≥400 patients never receiving AFP-directed therapy
+- component-level AB de-escalation
+- ICI rechallenge after toxicity
+- restart after hepatic decompensation
+- ICI after transplant
+- systemic therapy around liver transplant
+- VEGF therapy around procedures
+- sequential dual-checkpoint exposure
+- Nivo/Ipi after prior PD-(L)1
+- STRIDE after prior PD-(L)1
+- AB after prior ICI
+- ICI-to-ICI sequencing
+- very long responders
+- treatment-free intervals
+- durable responders after discontinuation
+- stopping ICI for response
+- unusual treatment durations
+- systemic-to-curative/local transition
+- re-exposure to a previously used drug
+- systemic therapy in explicit Child-Pugh B
+- systemic therapy in very high AFP
+- systemic therapy in very elderly patients
+- treatment in anticoagulated patients
+- ICI in autoimmune disease
+- bevacizumab with portal-hypertension risk.
+
+Search broadly.
+
+For every potentially interesting unexpected phenotype print:
+- patient N
+- regimen
+- dates
+- key defining data
+- why it may be clinically interesting
+- primary data limitation.
+
+Do NOT suppress a finding merely because it was not pre-specified.
+
+# ============================================================
+# PART 24 — SAMPLE-SIZE / EVENT FEASIBILITY MATRIX
+# ============================================================
+
+Now build a PROJECT-FEASIBILITY MATRIX.
+
+This is NOT a quality ranking.
+
+For every plausible med-onc research question discovered above print:
+
+PROJECT_CONCEPT
+EXACT_TARGET_POPULATION
+INDEX_DATE
+EXPOSURE_OR_STRATEGY
+COMPARATOR_IF_ANY
+N_TOTAL
+N_EXPOSED
+N_COMPARATOR
+DEATHS
+2L_EVENTS
+DECOMP_EVENTS
+TOXICITY_EVENTS
+AFP_COMPLETENESS
+ALBI_COMPLETENESS
+ECOG_COMPLETENESS
+CP_COMPLETENESS
+NOTE_COMPLETENESS
+EXPOSURE_CONFIDENCE
+MANUAL_REVIEW_NEEDED
+PRIMARY_CONFOUNDING_THREAT
+PRIMARY_MEASUREMENT_THREAT
+POSITIVITY_CONCERN
+LIKELY_SINGLE_CENTER_FEASIBLE: YES / MAYBE / NO
+
+Do not use a numerical score.
+
+Do not declare a winner.
+
+# ============================================================
+# PART 25 — REQUIRED CANDIDATE PROJECT FAMILIES
+# ============================================================
+
+At minimum assess feasibility for:
+
+1. Tumor-response × hepatic-reserve dynamics during 1L ICI
+2. Competing modes of 1L failure: tumor vs liver vs toxicity
+3. Determinants of successful transition to 2L
+4. AB component modification / bevacizumab interruption
+5. Permanent Bev discontinuation with continued Atezo
+6. AB bleeding / portal-hypertension implementation
+7. AB vs STRIDE treatment-selection/channeling
+8. Post-ICI second-line strategy
+9. ICI toxicity + rechallenge
+10. ICI use in baseline autoimmune disease/immunosuppression
+11. Hepatic decompensation during modern systemic therapy
+12. Modern HCC treatment adoption over time
+13. End-of-life systemic-treatment patterns
+14. Systemic therapy in explicit Child-Pugh B
+15. AFP ≥400 / ramucirumab implementation
+16. Systemic-to-local/curative transition, MED-ONC perspective only
+17. Any additional high-value questions discovered from the data.
+
+Again:
+DO NOT assume these are the best projects.
+DO NOT force feasibility if N/data do not support them.
+
+# ============================================================
+# PART 26 — "WHAT REACH IS UNIQUELY GOOD AT" ANALYSIS
+# ============================================================
+
+For every viable candidate ask:
+
+Why is REACH particularly suited to this question?
+
+Potential advantages:
+- longitudinal Epic data
+- detailed MAR
+- Beacon treatment plans
+- medication orders
+- serial labs
 - AFP
-- AFP change
-- response category
-- lesion number
-- largest viable lesion
-- bilobar disease
-- infiltrative disease
-- PVTT/MVI
-- prior LRT
-- TACE selectivity/technique
-- calendar era
-
-Do NOT include redundant ALBI + albumin + bilirubin simultaneously.
-
-Print:
-- arm N
-- propensity distributions
-- support proportion
-- overlap-weight ESS
-- raw SMDs
-- weighted SMDs
-
-No treatment effect.
-
-# ============================================================
-# STEP 15 — DATE-SHIFT ROBUSTNESS
-# ============================================================
-
-Because all dates within a patient share one offset ≤6 months:
-
-within-patient timing is exact.
-
-Calendar-era treatment availability is uncertain near approval boundaries.
-
-For all modern-strategy analyses print:
-
-- definitely pre-modern
-- ±6mo uncertain
-- definitely post-modern
-
-Primary modern comparison should be robustly post-Atezo/Bev availability.
-
-Do not use exact calendar year as if unshifted.
-
-# ============================================================
-# STEP 16 — FINAL FEASIBILITY DECISION
-# ============================================================
+- ALBI
+- note text
+- decompensation events
+- hospitalization data
+- multiple treatment lines
+- trial participation
+- long follow-up
+- multidisciplinary care.
 
 Print:
 
-### BROAD EQUIPOISE
-N total
-repeat TACE N
-modern systemic N
-combination N
+`REACH ADVANTAGE:`
 
-### STRICT EQUIPOISE
-N total
-repeat TACE N
-modern systemic N
-combination N
+and
 
-### TALENTACE-LIKE
-N total
-strategy Ns
+`REACH WEAKNESS:`
 
-### DATA COMPLETENESS IN STRICT EQUIPOISE
-ALBI
-delta ALBI
-AFP
-paired AFP
-ECOG
-explicit Child-Pugh
-response
-tumor count
-largest viable lesion
-bilobar
-PVTT
-extrahepatic
+for each candidate.
 
-### HUMAN REVIEW BURDEN
-number needing:
-- radiology confirmation
-- technical TACE-suitability confirmation
-- treatment-intent confirmation
-
-### DECISION
-Only one of:
-
-`SINGLE-CENTER TARGET-TRIAL FEASIBLE`
-
-`FEASIBLE WITH MANUAL IMAGING ABSTRACTION`
-
-`DESCRIPTIVE ONLY`
-
-`MULTICENTER REQUIRED`
-
-Do NOT infer based merely on total TACE N.
+A candidate with a large N but no distinctive REACH advantage should not automatically be considered attractive.
 
 # ============================================================
-# REQUIRED COPY-PASTE REPORT
+# PART 27 — PHENOTYPE VALIDITY CHECKLIST
 # ============================================================
 
-At the end print in one plain-text block:
+For every candidate study classify every key variable as:
 
-1. canonical TACE episode construction
-2. index-TACE waterfall
-3. modern-era waterfall
-4. reassessment imaging waterfall
-5. radiology variable completeness
-6. liver-function completeness
-7. AFP completeness
-8. ECOG/CP completeness
-9. full equipoise waterfall
-10. broad strategy counts
-11. strict strategy counts
-12. exact systemic regimens
-13. treatment timing
-14. TALENTACE-like cohort
-15. response × liver-function 2×2
-16. support/ESS/balance diagnostics
-17. human-review requirements
-18. every unresolved inconsistency
-19. exact persisted tables and row counts
-20. implementation logic/code for every major phenotype
+A. VALIDATED / HIGH CONFIDENCE
+B. PROBABLY USABLE
+C. REQUIRES MANUAL REVIEW
+D. CURRENTLY UNRELIABLE
+E. UNAVAILABLE.
 
-Print actual values.
+Print the classification and evidence.
 
-Do not say "see table."
+Examples:
 
-STOP before outcome estimation.
+AFP: likely A
+ALBI: likely A
+true-1L: A/B depending cohort
+oral TKI stop date: D
+explicit Child-Pugh: B/C
+reconstructed Child-Pugh using diagnosis absence: D
+manual radiographic response: C
+AB MAR administrations: likely A
+Bev hold phenotype: must be validated
+discontinuation reason: must be validated
+immune hepatitis: C
+death: likely A.
+
+Do not silently promote a weak phenotype because it creates an interesting project.
+
+# ============================================================
+# PART 28 — PATIENT-LEVEL AUDIT PACKETS FOR TOP DATA SIGNALS
+# ============================================================
+
+For every candidate with particularly promising N:
+
+Print 10 random patient timelines with fixed seed.
+
+Timeline should include:
+
+- HCC evidence
+- systemic regimen
+- line
+- administrations/orders
+- AFP
+- ALBI
+- decompensation
+- discontinuation
+- next-line therapy
+- death/censor
+- candidate exposure/event.
+
+Also print ALL obvious discordant/edge cases up to 50.
+
+The purpose is to let ChatGPT independently determine whether the phenotype means what Genie says it means.
+
+# ============================================================
+# PART 29 — INTERNAL CONSISTENCY ASSERTIONS
+# ============================================================
+
+At minimum assert:
+
+- all TRUE_1L cohorts are subsets of canonical true-1L
+- all ICI cohorts are subsets of validated systemic
+- all AB component modifications occur after actual AB initiation
+- Bev discontinuation cannot precede last Bev administration
+- Atezo continuation after Bev stop requires an actual subsequent Atezo administration
+- 2L cannot precede 1L
+- incident decompensation must not have baseline evidence by its own definition
+- baseline labs precede index
+- landmark follow-up labs occur inside landmark windows
+- AFP percentage change requires an interpretable baseline
+- explicit CP is not inferred from ALBI
+- oral TKI end date is not treated as known when only upper-bound exposure exists
+- progression is not inferred solely from starting 2L
+- toxicity is not inferred solely from treatment discontinuation
+- trial status uses only `research_status_final`
+- patient counts and line counts are never mixed
+- same concept has identical patient IDs across modules.
+
+Print every assertion and actual values.
+
+Any failed assertion must be included prominently in final output.
+
+# ============================================================
+# PART 30 — FINAL COPY-PASTE MED-ONC OPPORTUNITY REPORT
+# ============================================================
+
+At the end print ONE COMPLETE plain-text block beginning:
+
+============================================================
+HCC MEDICAL-ONCOLOGY REACH OPPORTUNITY ATLAS
+============================================================
+
+The report must contain enough information that another advanced model can evaluate the entire project landscape WITHOUT opening the notebook.
+
+Include:
+
+A. canonical systemic cohort structure
+B. regimen counts by line and era
+C. true-1L counts
+D. drug-component exposure quality
+E. AB modification counts
+F. reasons for Bev interruption
+G. AB portal-hypertension/bleeding phenotype
+H. AB-vs-STRIDE selection diagnostics
+I. dynamic ALBI feasibility
+J. dynamic AFP feasibility
+K. tumor × liver state counts
+L. discontinuation/failure-mode counts
+M. 2L opportunity phenotype
+N. post-ICI 2L counts
+O. toxicity/rechallenge counts
+P. baseline steroid/autoimmune counts
+Q. decompensation counts
+R. adoption/era patterns
+S. supportive/hospice counts
+T. access/disparities data completeness
+U. rare/high-value discoveries
+V. project-feasibility matrix
+W. REACH advantage/weakness for each project
+X. phenotype-validity matrix
+Y. all failed/suspicious assertions
+Z. exact persisted tables and their rows/patients.
+
+For EVERY candidate project include a subsection:
+
+PROJECT:
+CLINICAL QUESTION:
+WHY A MEDICAL ONCOLOGIST CARES:
+TARGET POPULATION:
+EXPOSURE:
+COMPARATOR:
+INDEX DATE:
+AVAILABLE N:
+EVENT COUNTS:
+KEY COVARIATES:
+DATA COMPLETENESS:
+KEY PHENOTYPE VALIDITY:
+MAIN BIAS:
+MAIN REACH ADVANTAGE:
+MAIN REACH LIMITATION:
+MANUAL REVIEW NEEDED:
+SINGLE-CENTER FEASIBILITY:
+UNRESOLVED QUESTIONS:
+
+Do NOT rank projects.
+
+Do NOT declare a best project.
+
+Do NOT estimate causal treatment effects.
+
+Do NOT perform publication novelty claims.
+
+Novelty will be assessed separately against the current literature by ChatGPT.
+
+# ============================================================
+# PERSIST
+# ============================================================
+
+Persist reusable atlas tables with clearly versioned names, including at minimum:
+
+- hcc_medonc_patient_atlas_v1
+- hcc_medonc_line_atlas_v1
+- hcc_systemic_drug_exposure_medonc_atlas_v1
+- hcc_ab_component_states_v1
+- hcc_ab_modification_events_v1
+- hcc_ab_bleeding_risk_v1
+- hcc_dynamic_albi_medonc_v1
+- hcc_dynamic_afp_medonc_v1
+- hcc_1l_failure_modes_v1
+- hcc_2l_opportunity_v1
+- hcc_post_ici_2l_atlas_v1
+- hcc_ici_toxicity_rechallenge_v1
+- hcc_medonc_decompensation_v1
+- hcc_medonc_project_feasibility_v1.
+
+Before finishing:
+read back every persisted table and print:
+- table name
+- row count
+- unique patient count
+- unit of analysis.
+
+STOP after the opportunity atlas.
+
+Do not choose the final project.
