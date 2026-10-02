@@ -1,0 +1,436 @@
+# ============================================================
+# STANDING OUTPUT REQUIREMENTS — REQUIRED IN EVERY PHASE
+# ============================================================
+
+The human investigator must be able to copy/paste the entire important result set out of Databricks as plain text.
+
+DO NOT leave an important result only in:
+- a Databricks `display()` table,
+- a results grid,
+- a chart,
+- an interactive widget,
+- or a persisted table without printing its contents.
+
+For EVERY clinically important analysis, print a concise plain-text version directly in notebook output.
+
+Preferred formats:
+
+### Small tables
+Print as Markdown or plain text with all rows.
+
+### Medium tables
+Use something equivalent to:
+`pandas_df.to_string(index=False)`
+
+or Spark:
+`df.show(n=<enough rows>, truncate=False)`
+
+Do NOT truncate important columns.
+
+### Large patient-level tables
+Do NOT print thousands of rows.
+
+Instead print:
+- total row count
+- unique patient count
+- schema
+- summary counts
+- important distributions
+- first 20 rows
+- 20 random rows using a fixed seed
+- all edge/discordant cases up to a reasonable maximum
+- persisted table name
+
+# ============================================================
+# REQUIRED COPY-PASTE REPORT
+# ============================================================
+
+At the END of the notebook, print one consolidated section:
+
+`================ COPY-PASTE REVIEW REPORT ================`
+
+This must contain every table/result that ChatGPT will need to critically review the run without needing access to Databricks.
+
+At minimum include:
+
+1. Cohort waterfalls
+2. Raw-source counts
+3. Validated counts
+4. Patient vs episode vs line counts
+5. Treatment/regimen distributions
+6. Missingness/completeness tables
+7. Manual/model-assisted audit summaries
+8. Invariant-check results
+9. Confounder-balance tables
+10. Common-support/ESS results
+11. Event counts
+12. All discrepancies discovered
+13. All unresolved problems
+14. Final feasibility counts for candidate projects
+15. Exact persisted table names and row counts
+
+If an important result is generated earlier in the notebook, repeat it in this final report.
+
+Do NOT merely write:
+"see table above."
+
+Do NOT omit values because they were displayed interactively.
+
+# ============================================================
+# INTERNAL CONSISTENCY / SINGLE-SOURCE-OF-TRUTH RULES
+# ============================================================
+
+Every phase must use canonical persisted tables or explicitly named canonical dataframes.
+
+Do NOT silently switch between:
+- old v8/v9/v10/v11 tables,
+- temporary dataframes,
+- filtered subsets,
+- prior notebook variables,
+- cached versions of a cohort.
+
+At the start of each analysis print:
+
+SOURCE TABLE:
+UNIT OF ANALYSIS:
+N_ROWS:
+N_UNIQUE_PATIENTS:
+INDEX EVENT:
+INCLUSION RULE:
+EXCLUSION RULE:
+
+Example:
+
+SOURCE TABLE:
+`hcc_systemic_lines_canonical_v12`
+
+UNIT:
+one row per systemic treatment line
+
+N_ROWS:
+XXX
+
+N_UNIQUE_PATIENTS:
+YYY
+
+Do this BEFORE calculating any downstream statistic.
+
+# ============================================================
+# NEVER USE STALE DENOMINATORS
+# ============================================================
+
+Every summary statistic must be generated directly from the dataframe being analyzed in that cell.
+
+Do NOT manually type or reuse an old N.
+
+Do NOT use hard-coded cohort counts.
+
+For example, never write:
+
+`n = 144`
+
+because an earlier version contained 144 patients.
+
+Instead calculate:
+
+`n = current_df.select("pat").distinct().count()`
+
+or the equivalent.
+
+Project-level tables must be generated programmatically from the FINAL canonical cohorts.
+
+# ============================================================
+# EXPLICIT UNIT LABELING
+# ============================================================
+
+Every number must indicate whether it represents:
+
+- PATIENTS
+- TREATMENT LINES
+- DRUG EPISODES
+- ADMINISTRATIONS
+- PROCEDURES
+- IMAGING STUDIES
+- LAB RESULTS
+- ENCOUNTERS
+- HOSPITAL ADMISSIONS
+- EVENTS
+
+Never print:
+
+`N = 750`
+
+without identifying the unit.
+
+Preferred:
+
+`N_PATIENTS = 571`
+`N_LINES = 806`
+`N_DRUG_EPISODES = 1,608`
+
+# ============================================================
+# DENOMINATOR ASSERTIONS
+# ============================================================
+
+For every major cohort generate automatic assertions.
+
+Examples:
+
+`assert N_true1L_patients <= N_systemic_patients`
+
+`assert N_2L_patients <= N_1L_patients`
+
+`assert N_3L_patients <= N_2L_patients`
+
+`assert N_death_events <= N_patients`
+
+`assert N_unique_patients_in_table <= N_master_HCC_patients`
+
+`assert AFP_category_sum == N_patients_with_classifiable_AFP`
+
+`assert AB_plus_STRIDE_arm_counts == final_comparison_cohort_N`
+
+`assert systemic_to_local_conversion_rows == reported_conversion_N`
+
+If an assertion fails:
+
+PRINT:
+
+`*** INTERNAL CONSISTENCY FAILURE ***`
+
+followed by:
+- expected relationship
+- actual values
+- dataframe/table involved
+
+Then STOP downstream interpretation until fixed.
+
+# ============================================================
+# CROSS-TABLE RECONCILIATION
+# ============================================================
+
+When two tables describe the same clinical concept, explicitly reconcile them.
+
+For example:
+
+SYSTEMIC PATIENTS:
+- master roster: N
+- treatment-line table: N
+- drug-episode table: N
+- patient journey: N
+
+Then print:
+
+MATCH / EXPLAINED DIFFERENCE / UNEXPLAINED DIFFERENCE
+
+Do the same for:
+
+- deaths
+- TACE
+- Y90
+- ablation
+- surgery
+- transplant
+- AFP
+- ALBI
+- Child-Pugh
+- ECOG
+- 1L
+- 2L
+
+No discrepancy may be silently ignored.
+
+# ============================================================
+# DATA LINEAGE
+# ============================================================
+
+Every derived phenotype should retain:
+
+- source table
+- source field
+- raw value
+- transformation rule
+- confidence
+- phenotype version
+
+Where multiple sources contribute, store source flags individually.
+
+Example:
+
+`tace_source_billing`
+`tace_source_image_proc`
+`tace_source_ir_note`
+`tace_source_medication`
+`tace_confidence`
+
+This allows later forensic review.
+
+# ============================================================
+# VERSION CONTROL
+# ============================================================
+
+Never overwrite prior validated tables.
+
+New corrected logic must create a new versioned table.
+
+Example:
+
+`hcc_tace_validated_v12`
+
+not:
+
+`hcc_tace_validated`
+
+If logic changes within the same phase, use:
+
+`_v12a`
+`_v12b`
+
+until one version is explicitly declared canonical.
+
+At the end print:
+
+CANONICAL TABLE FOR EACH DOMAIN:
+- HCC roster:
+- mortality:
+- systemic treatment:
+- TACE:
+- other LRT:
+- surgery:
+- transplant:
+- biomarkers:
+- decompensation:
+- patient journey:
+
+# ============================================================
+# REPRODUCIBILITY
+# ============================================================
+
+Use fixed seeds for:
+- random audits
+- sampled patient timelines
+- train/test splits if eventually needed
+- any stochastic procedure
+
+Print the seed.
+
+All cohort-building rules must be encoded rather than manually selected.
+
+# ============================================================
+# SANITY / CLINICAL PLAUSIBILITY CHECK
+# ============================================================
+
+After every major result ask:
+
+"Would this number make clinical sense at Johns Hopkins?"
+
+Examples of mandatory red flags:
+
+- nearly every patient hospitalized on treatment day 0
+- only 20% of HCC patients having AFP
+- hundreds of "first-line" treatments before approval
+- more systemic patients than exist in the systemic cohort
+- ALBI missing in a cohort despite >90% availability elsewhere
+- ALBI grade being treated as Child-Pugh class
+- essentially zero surgeries despite hundreds of hepatectomy codes
+- a procedure code being assigned a clinical indication without corroboration
+- a large change in N without an attrition waterfall
+
+When a result is surprising:
+
+DO NOT rationalize it automatically.
+
+Instead print:
+
+`CLINICAL PLAUSIBILITY ALERT`
+
+and investigate:
+1. denominator
+2. unit
+3. source mapping
+4. code meaning
+5. join keys
+6. date window
+7. duplicate rows
+8. missing synonyms
+9. left truncation
+10. competing indication
+
+# ============================================================
+# ATTRITION WATERFALL
+# ============================================================
+
+For every analytic cohort print a complete waterfall.
+
+Example:
+
+Broad HCC                              3999
+→ high-confidence HCC                 2544
+→ systemic treated                     571
+→ first observed systemic              XXX
+→ adequate lookback                    XXX
+→ true 1L                              282
+→ routine care                         XXX
+→ biomarker available                  XXX
+→ landmark eligible                    XXX
+→ final analytic cohort                XXX
+
+Every reduction must have:
+- absolute N removed
+- percentage removed
+- reason removed
+
+The waterfall must sum exactly.
+
+# ============================================================
+# FINAL SELF-CONSISTENCY AUDIT
+# ============================================================
+
+Before producing any interpretation, rerun a master consistency block.
+
+Print:
+
+MASTER HCC N
+HIGH-CONFIDENCE HCC N
+DEATH N
+SYSTEMIC PATIENT N
+TRUE-1L PATIENT N
+2L PATIENT N
+TACE PATIENT N
+Y90 PATIENT N
+ABLATION PATIENT N
+SBRT COURSE N
+RESECTION PATIENT N
+TRANSPLANT PATIENT N
+DECOMPENSATION PATIENT N
+AFP AVAILABLE N
+ALBI AVAILABLE N
+CHILD-PUGH AVAILABLE N
+ECOG AVAILABLE N
+
+Compare these against the immediately preceding canonical tables.
+
+If the same concept has two different Ns:
+STOP.
+
+Explain the discrepancy before proceeding.
+
+# ============================================================
+# IMPORTANT BEHAVIORAL RULE
+# ============================================================
+
+Execution success does NOT mean scientific validation.
+
+"All cells executed" is not a completion criterion.
+
+A phase is complete only when:
+
+- counts reconcile,
+- units are explicit,
+- invariants pass,
+- unexpected findings are investigated,
+- important outputs are printed,
+- persisted tables read back correctly,
+- and unresolved ambiguities are clearly labeled.
+
+Never give a project recommendation from internally inconsistent data.
