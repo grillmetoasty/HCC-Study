@@ -1,1118 +1,528 @@
-Continue from the completed v9 medical-oncology pipeline on the REACH Small Compute cluster.
-
-Use the persisted v9 tables:
-
-- `reach_users.xzhao81.hcc_lines_of_therapy_validated_v9`
-- `reach_users.xzhao81.hcc_systemic_episodes_validated_v9`
-- `reach_users.xzhao81.hcc_medonc_decision_index_v9`
-- `reach_users.xzhao81.hcc_medonc_project_readiness_v9`
-- `reach_users.xzhao81.hcc_medonc_node_gates_v9`
-- `reach_users.xzhao81.hcc_medonc_era_diagnostics_v9`
-- `reach_users.xzhao81.hcc_text_radiology_coverage_v9`
-- `reach_users.xzhao81.hcc_medonc_covariate_readiness_v9`
-
-Do NOT overwrite any v8/v9 tables.
-
-This phase is a **high-assurance audit + medical-oncology project discovery phase**.
-
-We are NOT committing to Atezo/Bev vs STRIDE.
-
-We are NOT prioritizing TACE/IR projects here.
-
-The goal is to determine which MEDICAL ONCOLOGY HCC question REACH can answer most credibly after correcting the remaining uncertainties.
-
-Do NOT estimate comparative treatment effects.
-
-Do NOT fit outcome models comparing treatments.
-
-Outcome counts may be used only for feasibility/power assessment.
-
-# ============================================================
-# CRITICAL NEW INFORMATION ABOUT REACH DATE SHIFTING
-# ============================================================
-
-The REACH team has clarified:
-
-> All dates for a given patient are shifted by the SAME fixed duration, and the magnitude of the shift is no more than 6 months.
-
-Therefore:
-
-### VALID
-
-Within-patient temporal ordering is preserved.
-
-Examples:
-
-- treatment A before treatment B
-- treatment start → discontinuation
-- treatment start → death
-- treatment start → hospitalization
-- treatment start → next therapy
-- baseline lab relative to treatment
-- follow-up duration
-- time-to-event
-- inter-cycle intervals
-
-These should be treated as internally valid.
-
-### NOT EXACT
-
-An observed absolute calendar date may differ from the true date by up to 6 months.
-
-Therefore, unless REACH explicitly states that every patient shares one identical GLOBAL shift:
-
-- do NOT treat exact approval-date classification as error-free;
-- do NOT treat exact month differences across patients as precise;
-- do NOT use apparent calendar year as if it were perfectly observed.
-
-Represent each observed calendar date conceptually as:
-
-`true_date ∈ [observed_date - 6 months, observed_date + 6 months]`
-
-For regulatory-era classification use three categories:
-
-1. `DEFINITELY_PRE_APPROVAL`
-2. `DATE_SHIFT_UNCERTAIN`
-3. `DEFINITELY_POST_APPROVAL`
-
-For an approval date D:
-
-DEFINITELY_PRE:
-`observed_date < D - 6 months`
-
-DEFINITELY_POST:
-`observed_date > D + 6 months`
-
-UNCERTAIN:
-within ±6 months of D.
-
-Regulatory anchors:
-
-- Atezo/Bev HCC 1L: 2020-05-29
-- STRIDE HCC: 2022-10-21
-- Nivo/Ipi HCC 1L: 2025-04-11
-
-Do NOT exclude uncertain-window patients automatically.
-
-Use robust and sensitivity cohorts.
-
-# ============================================================
-# GLOBAL SAFETY RULE
-# ============================================================
-
-Every important derived result must pass THREE checks:
-
-### CHECK A — computational invariant
-
-Counts, dates, line numbering, and set relationships must be mathematically possible.
-
-### CHECK B — independent source validation
-
-Where possible reproduce the phenotype from a second data source/algorithm.
-
-### CHECK C — manual clinical audit
-
-Inspect actual deidentified timelines/text for a stratified sample.
-
-A result failing any check must be labeled:
-
-`FAILED VALIDATION — DO NOT USE`
-
-Do not use it in project ranking.
-
-# ============================================================
-# PART 1 — FINAL MANUAL VALIDATION OF LINES OF THERAPY
-# ============================================================
-
-V9 reports:
-
-- 569 1L episodes
-- 165 2L episodes
-- 52 3L+
-- 97.1% A-vs-B algorithm concordance at 1L
-- 94.8% at 2L
-
-This is encouraging but algorithmic concordance is NOT ground truth.
-
-Perform a formal manual timeline audit.
-
-Sample at minimum:
-
-### First-line
-- 30 Atezo/Bev
-- 30 STRIDE
-- 30 Nivo/Ipi
-- 30 lenvatinib
-- 30 sorafenib
-
-### Second-line
-- 30 random 1L→2L transitions
-
-### Discordance
-- ALL algorithm A/B discordant cases, up to 50
-
-For each patient print:
-
-- deidentified ID
-- HCC evidence
-- prior systemic HCC therapy evidence
-- treatment-plan names
-- active medication orders
-- actual administration evidence
-- start dates
-- stop dates
-- regimen sequence
-- relevant oncology-note text
-- research/trial flag
-- inferred line
-
-A clinical reviewer should be able to answer:
-
-1. Is this actually HCC-directed?
-2. Was the drug/regimen actually used?
-3. Is this truly the first observed systemic HCC regimen?
-4. Is the second-line assignment correct?
-5. Is the index date clinically plausible?
-
-Report separate accuracy:
-
-- HCC indication accuracy
-- exposure accuracy
-- 1L accuracy
-- 2L accuracy
-- index-date accuracy
-
-Target ≥95%.
-
-If <95%, identify the failure mechanism, modify the algorithm, and rerun before continuing.
-
-# ============================================================
-# PART 2 — DISTINGUISH TRUE FIRST LINE FROM "FIRST OBSERVED IN REACH"
-# ============================================================
-
-This is critical.
-
-A regimen can be the first systemic therapy visible in REACH without being the patient's true first-line systemic treatment.
-
-For every putative 1L episode create:
-
-- `first_observed_reach_systemic_flag`
-- `true_1L_high_confidence_flag`
-- `true_1L_probable_flag`
-- `prior_systemic_outside_reach_possible_flag`
-
-Use the following evidence.
-
-### High-confidence true 1L
-
-Require:
-
-- no prior HCC systemic therapy in REACH,
-AND
-- adequate pre-index observable history,
-AND at least one supporting indicator such as:
-  - oncology note says "first-line"
-  - "systemic therapy naïve"
-  - "no prior systemic therapy"
-  - Beacon treatment context explicitly indicates initial systemic therapy.
-
-### Adequate lookback
-
-Report results at:
-- ≥180 days
-- ≥365 days
-- ≥730 days
-
-Do not assume absence of REACH therapy proves absence of outside therapy.
-
-### Research/trial treatment
-
-Create:
-- `research_protocol_flag`
-
-Do not mix trial-assigned treatment with ordinary treatment selection in the primary real-world decision analyses.
-
-### Special audit
-
-Closely audit:
-
-- apparent STRIDE before definitive post-approval window
-- apparent first-line Nivo/Ipi before definitive 2025 first-line window
-- nivolumab monotherapy "1L"
-- other historically unusual sequences.
-
-For apparent pre-approval use classify:
-
-- trial
-- later-line misclassified
-- off-label
-- date-shift uncertainty
-- legitimate other explanation
-- unresolved.
-
-# ============================================================
-# PART 3 — FORENSIC AFP AUDIT
-# ============================================================
-
-DO NOT accept the current 19.7% decision-point AFP availability until this audit is complete.
-
-V8 showed substantial AFP availability across the overall HCC population, while v9 reports only 19.7% near systemic treatment decisions.
-
-Determine exactly why.
-
-### 3A. Discover every AFP representation
-
-Search `deid.derived.lab_results` for all unique:
-
-- `component_name`
-- `component_base_name`
-- `proc_name`
-- `loinc_code`
-- `loinc_desc`
-
-containing:
-
-- AFP
-- alpha fetoprotein
-- alpha-fetoprotein
-- tumor marker variants
-
-Explicitly inspect relevant AFP LOINCs including:
-- 53962-7
-- 1834-1
-
-Do not assume `AFPTM` is exhaustive.
-
-Print every matching lab definition with:
-- row N
-- patient N
-- unit distribution
-- numeric-value availability.
-
-### 3B. Patient-level AFP availability
-
-Among:
-
-- all high-confidence HCC
-- all systemic-treated HCC
-- validated 1L patients
-- validated 2L patients
-
-report:
-
-- ever AFP
-- AFP in previous 365d
-- previous 180d
-- previous 90d
-- previous 60d
-- previous 30d
-- previous 14d
-- previous 7d
-
-Use PRE-INDEX values only.
-
-### 3C. Decision-point nearest AFP
-
-For every systemic decision index report:
-
-- days from nearest prior AFP
-- median
-- IQR
-- 90th percentile
-
-Plot/tabulate distribution.
-
-This tells us whether AFP is truly not ordered or merely falls outside an arbitrary window.
-
-### 3D. AFP in clinical notes
-
-Search oncology/hepatology notes within −90 to 0 days for patterns such as:
-
-- AFP
-- alpha-fetoprotein
-- AFP =
-- AFP:
-- AFP of
-- AFP elevated to
-
-Extract candidate values.
-
-Manually audit at least 50.
-
-Report:
-- coverage gain over structured labs
-- precision.
-
-### 3E. Lab-index alignment
-
-For 50 cases with AFP slightly outside the nominal treatment window, manually inspect whether:
-
-- treatment index is wrong,
-- order date precedes actual drug start,
-- AFP was drawn at the clinically relevant treatment-planning visit,
-- patient started treatment later than the order date.
-
-### 3F. AFP final verdict
-
-Explain the discrepancy between:
-
-- HCC-ever AFP coverage
-- systemic-treatment AFP coverage
-- decision-point AFP coverage.
-
-Classify AFP as:
-
-- RESEARCH-GRADE
-- USABLE WITH BROADER WINDOW
-- USABLE WITH NOTE AUGMENTATION
-- TOO SPARSE
-
-Do not rule out ramucirumab/AFP projects until this is complete.
-
-# ============================================================
-# PART 4 — REBUILD RADIOLOGY PHENOTYPES MORE CONSERVATIVELY
-# ============================================================
-
-V9 showed excellent report availability but the prior parser was too permissive.
-
-Do NOT reuse the prior "95.8% precision" as validation.
-
-Build high-specificity phenotypes.
-
-## PVTT / macrovascular invasion
-
-Require affirmative concepts such as:
-
-- tumor thrombus
-- portal vein invasion
-- malignant portal vein thrombus
-- vascular invasion
-
-Exclude bland thrombus unless tumor involvement is affirmative.
-
-## Extrahepatic spread
-
-DO NOT mark "extrahepatic" simply because the sentence contains:
-
-- metastatic
-- metastasis
-- metastatic disease
-
-Require BOTH:
-
-1. affirmative malignant/metastatic language
-AND
-2. an anatomical site outside the liver.
-
-Examples:
-- lung
-- adrenal
-- bone
-- peritoneum
-- distant lymph node
-- pleura
-- other unequivocal extrahepatic site
-
-A sentence describing metastatic lesions **within the liver** is NOT extrahepatic spread.
-
-Uncertain/indeterminate lesions should be separate:
-`extrahepatic_indeterminate_flag`.
-
-## Multifocal/bilobar
-
-Require clear evidence of:
-- multiple liver lesions
-- multifocal disease
-- bilobar involvement
-- innumerable hepatic lesions
-
-Do not infer multifocality from one mass measurement.
-
-## Progression
-
-Create two versions:
-
-### HIGH-SPECIFICITY progression
-Require an interval comparison to prior imaging and explicit malignant change:
-- increased size
-- increased number
-- new malignant lesion
-- worsening tumor thrombus
-- unequivocal progression
-
-### POSSIBLE progression
-broader language.
-
-Do NOT count:
-- cirrhosis progression
-- portal hypertension
-- generic worsening without tumor reference.
-
-## Validation
-
-Randomly sample at least 100 reports, stratified across:
-
-- positive
-- negative
-- uncertain
-
-Create a blinded manual gold standard for:
-
-- PVTT
-- extrahepatic spread
-- multifocal/bilobar
-- tumor progression
-
-Report for each:
-- sensitivity
-- specificity
-- PPV
-- NPV
-
-Require PPV ≥90% for use as a confounder.
-
-If not achieved, label:
-`REQUIRES MANUAL/LLM ABSTRACTION`.
-
-# ============================================================
-# PART 5 — DATE-SHIFT ROBUSTNESS ANALYSIS
-# ============================================================
-
-Revisit every conclusion in v9 that depended on calendar era.
-
-Do not discard calendar information completely.
-
-Instead distinguish:
-
-### Exact within-patient time
-VALID.
-
-### Absolute calendar classification
-BOUNDED UNCERTAINTY ±6 months.
-
-For every systemic episode calculate:
-
-- observed date
-- earliest possible true date
-- latest possible true date
-
-Then classify each regulatory status robustly.
-
-For each candidate comparison report:
-
-- N definitely eligible/post-approval
-- N date-shift uncertain
-- N definitely pre-approval
-
-### Robust concurrent-use windows
-
-A pair of treatments should only be called "definitely concurrently available" when both patient dates remain in an era where the corresponding treatments were plausible even after ±6-month uncertainty.
-
-Run:
-
-A. primary robust-window analysis
-
-B. inclusive analysis containing uncertain-window patients
-
-C. sensitivity analysis excluding all patients within ±6 months of relevant regulatory transitions.
-
-Do not use a single apparent calendar-year SMD as definitive.
-
-# ============================================================
-# PART 6 — DATE-JITTER SENSITIVITY
-# ============================================================
-
-For feasibility diagnostics only, perform a sensitivity analysis to the allowed date uncertainty.
-
-For each patient assign one synthetic fixed offset uniformly from:
-
-−6 to +6 months
-
-and apply that SAME offset to all dates for that patient.
-
-Repeat at least 500 times.
-
-This is NOT an estimate of the true shift distribution.
-
-It is a robustness analysis.
-
-For each candidate decision node report the distribution across simulations of:
-
-- arm N in concurrent era
-- year/era SMD
-- median inter-arm calendar difference
-- whether the feasibility conclusion changes.
-
-A project whose classification flips frequently under allowed date perturbation should be labeled:
-
-`DATE-SENSITIVE`.
-
-A project whose conclusion is stable should be:
-
-`DATE-ROBUST`.
-
-# ============================================================
-# PART 7 — RE-EVALUATE FIRST-LINE MEDICAL ONCOLOGY DECISION NODES
-# ============================================================
-
-Using:
-
-- validated true/probable 1L status
-- research exclusion
-- repaired radiology features
-- AFP audit
-- note-derived ECOG/CP/BCLC
-- robust date handling
-
-reassess:
-
-### A.
-Atezo/Bev vs STRIDE
-
-### B.
-Atezo/Bev vs Nivo/Ipi
-
-### C.
-STRIDE vs Nivo/Ipi
-
-### D.
-Other genuine modern first-line systemic choices discovered.
-
-Do NOT include:
-ICI-combination vs ICI-monotherapy
-
-as a leading project merely because it has large N.
-
-Clinical equipoise takes priority over statistical convenience.
-
-# ============================================================
-# PART 8 — RE-EVALUATE SECOND-LINE DECISION NODES
-# ============================================================
-
-Reassess:
-
-### After any validated first-line ICI
-- TKI vs ICI-based
-
-### After first-line Atezo/Bev
-- TKI vs Nivo/Ipi
-- TKI vs STRIDE if represented
-- TKI vs any ICI strategy
-
-### TKI choice after first-line ICI
-- lenvatinib
-- cabozantinib
-- sorafenib
-- regorafenib
-
-Only compare branches with clinically meaningful N.
-
-Print exact branch counts.
-
-Do NOT estimate treatment effects.
-
-# ============================================================
-# PART 9 — EXPLORE RAMUCIRUMAB ONLY AFTER AFP AUDIT
-# ============================================================
-
-If AFP becomes sufficiently measurable:
-
-Identify HCC patients at a systemic treatment decision with:
-
-- AFP ≥400 ng/mL
-- prior systemic therapy as clinically relevant
-- plausible ramucirumab eligibility
-
-Then compare only FEASIBILITY of:
-
-- ramucirumab
-vs
-- alternative systemic strategy
-
-Report:
-- eligible N
-- ramucirumab N
-- comparator N
-- overlap
-- confounder completeness
-
-Do not force this analysis if N remains small.
-
-# ============================================================
-# PART 10 — DOCUMENTED PHYSICIAN RATIONALE FOR 1L SELECTION
-# ============================================================
-
-This may substantially improve the Atezo/Bev-vs-STRIDE project.
-
-For patients starting AB or STRIDE, search oncology/hepatology notes within:
-
-- −30 to 0 days
-and sensitivity:
-- −60 to 0 days
-
-for explicit treatment-choice rationale.
-
-Create candidate categories:
-
-### Reasons to avoid bevacizumab
-- varices
-- recent GI bleed
-- high bleeding risk
-- anticoagulation
-- proteinuria
-- uncontrolled hypertension
-- thrombosis
-- recent surgery/procedure
-- wound healing concern
-
-### Reasons to avoid dual ICI / STRIDE
-- autoimmune disease
-- transplant
-- immunosuppression
-- steroid dependence
-- prior severe immune toxicity
-
-### Liver-function rationale
-- Child-Pugh status
-- decompensation
-- ascites
-- bilirubin
-- concern about hepatic reserve
-
-### Tumor/clinical rationale
-- rapid progression
-- bulky disease
-- vascular invasion
-- need for response
-- other explicit treatment reasoning
-
-### Patient preference / logistics
-- patient preference
-- infusion schedule
-- access/insurance
-- travel/logistics
-
-Extract explicit statements only.
-
-Do NOT infer physician reasoning solely from the presence of a condition.
-
-Manually audit at least:
-
-- 50 AB
-- 50 STRIDE
-
-or all patients if smaller.
-
-Report:
-- note availability
-- rationale availability
-- category prevalence
-- extraction PPV.
-
-This could support a stronger project:
-
-> "What documented clinical factors drive first-line regimen selection in advanced HCC?"
-
-# ============================================================
-# PART 11 — SYSTEMIC TREATMENT DISCONTINUATION OPPORTUNITY
-# ============================================================
-
-V9 suggests Beacon discontinuation reason may be available for ~86% of treatment decisions.
-
-Audit this carefully.
-
-Enumerate exact values of:
-`plan_discon_reason`
-
-For each major regimen report N/% with reason:
-
-- progression
-- toxicity
-- death
-- patient preference
-- completion
-- transition/hospice
-- other
-- missing
-
-Validate against notes for at least 50 cases.
-
-Determine whether the following project is feasible:
-
-> Which baseline and early on-treatment factors predict discontinuation for toxicity versus progression?
-
-This is a medical-oncology question and may avoid some of the comparative-treatment positivity problems.
-
-Report sample/event counts but no predictive models yet.
-
-# ============================================================
-# PART 12 — DYNAMIC LIVER RESERVE DURING SYSTEMIC THERAPY
-# ============================================================
-
-Explore a medical-oncology dynamic-ALBI project across validated systemic therapy.
-
-For each major first-line regimen calculate availability of:
-
-- baseline ALBI
-- week 3
-- week 6
-- week 12
-- ALBI nearest discontinuation
-- ALBI at 2L decision
-
-Use within-patient intervals, which are valid under REACH shifting.
-
-Report N with:
-
-- baseline + week 6
-- baseline + week 12
-- baseline + discontinuation
-- baseline + 2L
-
-Explore feasibility of questions such as:
-
-### Question A
-Does early ALBI deterioration predict inability to receive a subsequent systemic line?
-
-### Question B
-Does early ALBI deterioration predict hepatic decompensation?
-
-### Question C
-Does hepatic reserve deterioration explain early discontinuation?
-
-Do NOT model these outcomes yet.
-
-Report:
-- eligible N
-- event N
-- complete trajectory N
-- key confounder availability.
-
-# ============================================================
-# PART 13 — TREATMENT-CHOICE POSITIVITY DIAGNOSTICS
-# ============================================================
-
-For every genuine comparative candidate:
-
-Use a NONREDUNDANT prespecified confounder set.
-
-Do NOT simultaneously include:
-
-- ALBI
-- albumin
-- bilirubin
-
-as independent covariates in the same primary PS model.
-
-Prefer:
-
-- ALBI
-- age
-- ECOG if available
-- Child-Pugh if available
-- ascites
-- encephalopathy
-- varices
-- bleeding
-- CKD/creatinine
-- autoimmune/immunosuppression
-- prior locoregional therapy
-- PVTT
-- extrahepatic spread
-- multifocal disease
-- BCLC where available
-- AFP if audited and sufficiently available.
-
-Use unpenalized logistic PS where feasible.
-
-Calculate:
-
-- treatment-model c-statistic
-- PS ranges
-- empirical common support
-- overlap-weight ESS
-- raw SMD
-- overlap-weighted SMD
-
-The c-statistic is NOT a measure of study quality.
-
-Very high treatment-prediction discrimination should be interpreted as evidence of channeling.
-
-# ============================================================
-# PART 14 — MISSING-DATA DIAGNOSTICS
-# ============================================================
-
-For:
-
-- ECOG
-- Child-Pugh
-- BCLC
-- AFP
-- radiology features
-
-assess whether missingness differs by:
-
-- regimen
-- treatment line
-- outcome follow-up
-- site/provider
-- disease severity proxies.
-
-Do not simply perform complete-case analysis if missingness is strongly differential.
-
-Report SMDs comparing:
-- variable observed
-vs
-- variable missing.
-
-This is especially important for note-derived ECOG/CP/BCLC.
-
-# ============================================================
-# PART 15 — POWER AFTER COMMON-SUPPORT RESTRICTION
-# ============================================================
-
-Do NOT calculate detectable HR from the original untrimmed cohort.
-
-For each comparative candidate calculate power/detectable effect using:
-
-1. common-support cohort N
-2. actual death count within common support
-3. overlap-weight effective sample size
-
-Report the detectable HR under the final estimand.
-
-Do not call a project adequately powered based on pre-trimming N.
-
-# ============================================================
-# PART 16 — MEDICAL ONCOLOGY OPPORTUNITY DISCOVERY
-# ============================================================
-
-In addition to predefined questions, scan validated treatment trajectories for every decision node satisfying:
-
-- parent state N ≥40
-- ≥2 branches
-- each branch N ≥20
-
-For every node report:
-
-- exact parent state
-- branch A/B
-- N
-- clinical rationale for possible equipoise
-- major selection variables
-- positivity
-- endpoint density
-- date robustness
-- missing-variable burden.
-
-Do NOT choose a project based on outcome differences.
-
-# ============================================================
-# PART 17 — PROJECT QUALITY GATE
-# ============================================================
-
-A comparative-effectiveness project must pass:
-
-### 1. Clinical equipoise
-Would a reasonable oncologist genuinely consider either option for similar patients?
-
-### 2. Correct exposure
-Manual audit ≥95%.
-
-### 3. Correct treatment line
-Manual audit ≥95%.
-
-### 4. Adequate N
-Prefer ≥40/arm.
-30–39 potentially feasible.
-20–29 exploratory.
-<20 reject.
-
-### 5. Positivity
-Common support preferably ≥80%.
-70–79% marginal.
-<70% major concern.
-
-### 6. Balance
-Clinically important weighted |SMD| <0.10.
-
-### 7. Major confounder measurement
-No obvious treatment-deterministic variable completely missing.
-
-### 8. Date robustness
-Conclusion stable to ±6-month shifting sensitivity.
-
-### 9. Outcome information
-Adequate event count/follow-up.
-
-### 10. Contemporary relevance
-Do not recommend obsolete treatment comparisons simply because N is large.
-
-Failure of a critical gate should prevent "recommended primary causal project" status.
-
-# ============================================================
-# PART 18 — NONCOMPARATIVE / PROGNOSTIC PROJECT GATE
-# ============================================================
-
-Also evaluate strong medical-oncology questions that do NOT require treatment equipoise.
-
-Examples:
-
-- dynamic ALBI → treatment discontinuation
-- dynamic ALBI → loss of 2L eligibility
-- liver reserve → decompensation
-- reason for stopping first-line therapy
-- ICI liver injury → treatment resumption/rechallenge
-- bevacizumab interruption patterns
-- physician decision-making.
-
-These can be recommended if:
-- cohort/event N is strong
-- exposure/outcome ascertainment is reliable
-- question is clinically meaningful.
-
-Do not force every useful project into a treatment-comparison design.
-
-# ============================================================
-# PART 19 — FINAL RED-TEAM REVIEW
-# ============================================================
-
-Before ranking projects, actively challenge each finalist.
-
-Ask:
-
-1. Could line of therapy still be wrong?
-2. Could this be treatment for another malignancy?
-3. Could oral orders represent treatment never taken?
-4. Is true 1L status uncertain because of outside treatment?
-5. Is one arm dominated by research-protocol patients?
-6. Does ±6-month date uncertainty change the comparison?
-7. Is treatment nearly deterministic from measured factors?
-8. Is treatment probably deterministic from an UNMEASURED factor?
-9. Is missing ECOG/CP/BCLC differential?
-10. Is radiology extraction truly validated?
-11. Is AFP actually unavailable, or just queried incorrectly?
-12. Does the analysis rely on immortal-time-biased definitions?
-13. Are event counts calculated after the correct time zero?
-14. Is there enough effective sample size after overlap restriction?
-15. Is the question still clinically relevant in 2026?
-
-Print the red-team failure modes explicitly.
-
-# ============================================================
-# PART 20 — FINAL OUTPUT
-# ============================================================
-
-Return FIVE sections.
-
-## A. DATA QUALITY VERDICT
-
-Report:
-
-- line-of-therapy manual accuracy
-- exposure accuracy
-- indication accuracy
-- index-date accuracy
-- AFP final coverage
-- radiology phenotype performance
-- text ECOG/CP/BCLC performance
-- date-shift robustness.
-
-## B. CORRECTED SYSTEMIC TREATMENT LANDSCAPE
-
-Print:
-
-- true/high-confidence 1L counts
-- probable 1L
-- first-observed-only
-- 2L counts
-- key treatment sequences.
-
-## C. VALIDATED MEDICAL-ONCOLOGY DECISION NODES
-
-For every surviving node show:
-
-- arm Ns
-- common-support N
-- overlap ESS
-- weighted max SMD
-- event N
-- date robustness
-- major missing confounders
-- clinical-equipoise grade.
-
-## D. TOP PROJECTS
-
-Return:
-
-### Top 3 comparative / causal projects
-
-AND
-
-### Top 3 noncomparative medical-oncology projects
-
-For each provide:
-
-- exact question
-- target population
-- index time
-- exposure
-- comparator if applicable
-- endpoint
-- eligible N
-- event N
-- major covariates
-- data-strength rationale
-- decisive limitation
-- whether it is ready NOW or needs multicenter expansion/manual abstraction.
-
-## E. PROJECTS TO REJECT
-
-Explicitly list attractive projects that should NOT be pursued with current REACH data.
-
-Do not recommend:
-- obsolete questions
-- questions with poor clinical equipoise
-- comparisons with irreparable positivity problems
-- severely underpowered comparisons
-- projects based on unvalidated phenotypes.
-
-# ============================================================
-# PERSIST
-# ============================================================
-
-Create:
-
-- `hcc_lot_manual_validation_v10`
-- `hcc_true_firstline_validation_v10`
-- `hcc_afp_audit_v10`
-- `hcc_radiology_validated_v10`
-- `hcc_date_shift_robustness_v10`
-- `hcc_reason_for_choice_v10`
-- `hcc_dynamic_systemic_albi_v10`
-- `hcc_medonc_nodes_final_v10`
-- `hcc_medonc_projects_final_v10`
-
-Do not overwrite v9.
-
-# ============================================================
-# COMPLETION CHECKLIST
-# ============================================================
-
-At the end print:
-
-Line-of-therapy manual audit: PASS / FAIL
-Exposure manual audit: PASS / FAIL
-True-first-line audit: PASS / FAIL
-AFP forensic audit: PASS / FAIL
-Radiology revalidation: PASS / FAIL
-Date-shift robustness: PASS / FAIL
-Reason-for-choice extraction: PASS / FAIL / INSUFFICIENT
-Dynamic ALBI feasibility: COMPLETE / INCOMPLETE
-Decision-node reanalysis: COMPLETE / INCOMPLETE
-Final comparative-project ranking: COMPLETE / INCOMPLETE
-Final noncomparative-project ranking: COMPLETE / INCOMPLETE
-
-Do not describe v10 as complete unless every required step either passes or is explicitly documented as infeasible.
-
-STOP before estimating comparative treatment effects.
+v10 — High-Assurance Audit + Medical-Oncology Project Discovery
+Builds on the persisted v9 tables. Nothing in v8/v9 is overwritten.
+
+This phase does NOT estimate comparative treatment effects. Outcome counts are used only for feasibility and power.
+
+Date-shift framework (new REACH clarification)
+All dates for a given patient are shifted by the SAME fixed duration, magnitude ≤ 6 months. Therefore within-patient intervals are exact and valid; absolute calendar dates are bounded: true_date ∈ [observed − 6mo, observed + 6mo].
+
+Regulatory era is classified in three categories against each anchor date D: DEFINITELY_PRE_APPROVAL (observed < D−6mo), DATE_SHIFT_UNCERTAIN (within ±6mo of D), DEFINITELY_POST_APPROVAL (observed > D+6mo). Anchors: Atezo/Bev 1L 2020-05-29, STRIDE 2022-10-21, Nivo/Ipi 1L 2025-04-11.
+
+Global safety rule
+Every important derived result must pass CHECK A (computational invariant), CHECK B (independent source/algorithm reproduction) and CHECK C (manual clinical audit). Anything failing a check is labelled FAILED VALIDATION — DO NOT USE and excluded from project ranking.
+
+v10 PART 0 - Setup, reload v9 tables, date-shift bounds
+v10 PART 0 - Setup, reload v9 tables, date-shift bounds
+LOT     n=   806 cols=  26
+EPI     n=  1608 cols=  23
+DIX     n=   806 cols= 104
+RAD9    n=   709 cols=  22
+READY9  n=    12 cols=  13
+
+LOT  cols: ['regimen', 'comps', 'start', 'end', 'comp_start_spread', 'n_components', 'n_dates', 'srcs', 'beacon_hcc', 'beacon_plan', 'research', 'competitors', 'hcc_indication', 'exposure_confidence', 'n_orders', 'max_refills', 'line', 'line_note', 'pat', 'first_hcc_date', 'left_truncated', 'pre_hcc_dx', 'line_uncertain', 'line_label', 'dur_days', 'algo']
+
+EPI  cols: ['pat', 'drug', 'start', 'end', 'n_dates', 'srcs', 'beacon_hcc', 'beacon_other', 'beacon_plan', 'research', 'sig2_ge2dx', 'sig3_no_competitor', 'competitors', 'hcc_indication', 'n_orders', 'n_active', 'n_order_dates', 'max_refills', 'onc', 'beacon_linked', 'mo_bc_hcc', 'n_src_types', 'exposure_confidence']
+
+RAD9 cols: ['pat', 'line', 'rel_day', 'proc_name', 'pvtt', 'extrahepatic', 'new_lesion', 'progression', 'viable', 'multifocal', 'response_or_stable', 'pvtt_ev', 'extrahepatic_ev', 'new_lesion_ev', 'progression_ev', 'viable_ev', 'multifocal_ev', 'response_or_stable_ev', 'impression', 'lesion_cm', 'progression_strict', 'progression_strict_ev']
+
+DIX  cols:
+    ['pat', 'line', 'regimen', 'index_date', 'end', 'dur_days', 'n_dates']
+    ['exposure_confidence', 'beacon_plan', 'afp_w14', 'albumin_w14', 'alt_w14', 'ast_w14', 'bilirubin_w14']
+    ['creatinine_w14', 'hemoglobin_w14', 'inr_w14', 'platelets_w14', 'sodium_w14', 'afp_w30', 'albumin_w30']
+    ['alt_w30', 'ast_w30', 'bilirubin_w30', 'creatinine_w30', 'hemoglobin_w30', 'inr_w30', 'platelets_w30']
+    ['sodium_w30', 'afp_w90', 'albumin', 'bilirubin', 'inr', 'sodium', 'creatinine']
+    ['platelets', 'hemoglobin', 'afp', 'alt', 'ast', 'albi', 'albi_w14']
+    ['albi_grade', 'ascites', 'hepatic_enceph', 'portal_htn', 'varices', 'gi_bleed', 'ckd']
+    ['hypertension', 'vte', 'autoimmune', 'cirrhosis', 'hbv', 'hcv', 'diabetes']
+    ['prior_transplant', 'anticoag', 'immunosupp', 'first_tace_date', 'first_ablation_date', 'first_resection_date', 'death_date']
+    ['last_contact', 'birth_date', 'gender', 'prior_tace', 'prior_ablation', 'prior_resection', 'prior_lrt']
+    ['n_hosp_prior_yr', 'age', 'prev_regimen', 'prev_dur_days', 'prev_n_admin', 'gap_from_prev', 'stop_reason_beacon']
+    ['stop_reason_order', 'ecog', 'child_pugh', 'cp_score', 'bclc', 'pvtt', 'extrahepatic']
+    ['multifocal', 'new_lesion', 'viable', 'progression_strict', 'response_or_stable', 'img_rel_day', 'ecog_ge2']
+    ['cp_b_or_c', 'albi_g3', 'year', 'death_90d_after_index', 'fu_days', 'died', 'os_days']
+    ['l1_regimen', 'strategy', 'l1_strategy', 'any_ici', 'any_tki', 'any_bev']
+
+LOT index column = start
+LOT line distribution:
+line
+1    569
+2    165
+3     52
+4     13
+5      6
+6      1
+
+LOT 1L regimens:
+regimen
+AB                        144
+NIVO_MONO                  85
+STRIDE                     80
+LENVATINIB                 68
+SORAFENIB                  62
+NIVO_IPI                   61
+PEMBRO_MONO                22
+DURVA_MONO                 16
+CABOZANTINIB+NIVO_MONO      8
+ATEZO_MONO                  6
+LENVATINIB+NIVO_MONO        4
+LENVATINIB+PEMBRO_MONO      4
+CABOZANTINIB                4
+IPI_MONO                    2
+BEV_MONO+NIVO_MONO          1
+REGORAFENIB                 1
+RAMUCIRUMAB                 1
+
+====================================================================================================
+DATE-SHIFT ERA CLASSIFICATION (3-category, +/-6 month bounded)
+====================================================================================================
+
+vs ATEZO_BEV approval 2020-05-29:
+era_atezo_bev
+DEFINITELY_POST_APPROVAL    535
+DEFINITELY_PRE_APPROVAL     189
+DATE_SHIFT_UNCERTAIN         82
+
+vs STRIDE approval 2022-10-21:
+era_stride
+DEFINITELY_PRE_APPROVAL     407
+DEFINITELY_POST_APPROVAL    303
+DATE_SHIFT_UNCERTAIN         96
+
+vs NIVO_IPI approval 2025-04-11:
+era_nivo_ipi
+DEFINITELY_PRE_APPROVAL     651
+DATE_SHIFT_UNCERTAIN        100
+DEFINITELY_POST_APPROVAL     55
+
+Own-regimen era for the three era-sensitive regimens:
+regimen   own_regimen_era         
+AB        DATE_SHIFT_UNCERTAIN         12
+          DEFINITELY_POST_APPROVAL    149
+NIVO_IPI  DATE_SHIFT_UNCERTAIN         25
+          DEFINITELY_POST_APPROVAL     15
+          DEFINITELY_PRE_APPROVAL      92
+STRIDE    DATE_SHIFT_UNCERTAIN          7
+          DEFINITELY_POST_APPROVAL     69
+          DEFINITELY_PRE_APPROVAL      11
+
+Elapsed 3s
+v10 DIAG - ptnotes_text fetch throughput test
+v10 DIAG - ptnotes_text fetch throughput test
+1234567891011121314151617181920212223242526272829303132333435363738394041424344454647484950515253545556575859606162636465666768697071727374757677787980818283848586878889909192939495969798
+
+key sanity on _v10_note_keys:
+
+Table
+1 row
+Cancelled
+v10 DIAG - notes metadata schema + oncology note type landscape
+v10 DIAG - notes metadata schema + oncology note type landscape
+md:pyspark.sql.connect.dataframe.DataFrame = [cohort_id: string, pat_enc_csn_id: decimal(18,0) ... 45 more fields]
+epic_notes_metadata cols:
+    ['cohort_id', 'pat_enc_csn_id', 'department_id', 'department_name', 'enc_type_c', 'enc_type', 'note_id', 'note_csn_id', 'create_instant_dttm', 'crt_inst_local_dttm', 'ip_note_type_c', 'ip_note_type', 'hist_doc_type', 'auth_lnked_prov_id', 'auth_lnkd_prov_name', 'author_specialty', 'cosign_required', 'cosignuser_id', 'cosign_prov_id', 'cosign_prov_name', 'cosign_prov_specialty', 'cosign_inst_local_dttm', 'note_status_c', 'note_status', 'upd_by_auth_dttm', 'dictation_dttm', 'dict_prov_id', 'dict_prov_name', 'dict_prov_type', 'transcription_dttm', 'authent_stat_c', 'authent_stat', 'sensitive_yn', 'lists_resolved_yn', 'tran_work_copy_id', 'contact_date', 'entry_user_id', 'entry_user_name', 'update_user_id', 'update_user_name', 'date_of_service', 'sign_date', 'author_service_c', 'author_service', 'serv_area_id', '_created_ts', '_modified_ts']
+
+lab_results cols:
+    ['cohort_id', 'order_proc_id', 'pat_enc_csn_id', 'proc_id', 'proc_code', 'proc_name', 'proc_cat_id', 'proc_cat_name', 'sensitive_yn', 'order_type', 'lab_group', 'resulting_lab', 'order_time', 'result_time', 'authorizing_prov_id', 'authorizing_provider', 'referring_prov_id', 'referring_provider', 'collection_prov_id', 'collection_provider', 'specimen_taken_time', 'specimen_recv_time', 'specimen_type', 'specimen_source', 'specimen_collection_user_id', 'specimen_collection_user', 'order_results_line', 'component_id', 'component_name', 'component_base_name', 'component_type', 'component_subtype', 'component_lab_subtype', 'component_freetext_loinc_code', 'result_flag', 'order_status', 'result_status', 'lab_status', 'ord_value', 'ord_num_value', 'reference_low', 'reference_high', 'reference_unit', 'result_sub_idn', 'res_comp_singleline_comment', 'res_comp_multiline_comment', 'component_comment_PHIflag', 'result_in_range_yn', 'ref_normal_vals', 'lrr_based_organ_id', 'data_type', 'numeric_precision', 'comp_obs_inst_tm', 'comp_anl_inst_tm', 'loinc_code', 'loinc_desc', 'external_ord_id', 'result_instant_tm', 'order_creator_userid', 'order_creator_name', 'resulting_lab_id', 'order_type_c', 'order_status_c', 'component_type_c', 'component_subtype_c', 'reflex_order_id', 'serv_area_id', '_created_ts', '_modified_ts']
+
+audit-universe patients: 571
+
+--- note types among validated systemic patients (top 30) ---
+
+Table
+30 rows
+1m 12s runtime
+Refreshed at 10/1/26, 7:51 PM (2h ago)
+v10 PART 0B - Note corpus (reuse persisted v9 corpus, -45..0d)
+v10 PART 0B - Note corpus (reuse persisted v9 corpus, -45..0d)
+NOTES:pyspark.sql.connect.dataframe.DataFrame = [pat: string, line: long ... 6 more fields]
+note corpus _v9_note_text : rows=6,462  indices covered=795 / 806 (98.6%)   window -45..0 d
+
+--- oncology-note availability per decision index ---
+
+Table
+6 rows
+8.680s runtime
+Refreshed at 10/1/26, 8:57 PM (50m ago)
+
+Elapsed 8s
+v10 PART 1 - Manual LoT timeline audit with independent adjudication
+v10 PART 1 - Manual LoT timeline audit with independent adjudication
+LOT diagnostic columns:
+  algo                   {'A_primary': np.int64(806)}
+  line_label             {'L1': np.int64(569), 'L2': np.int64(165), 'L3': np.int64(52), 'L4': np.int64(13), 'L5': np.int64(6), 'L6': np.int64(1)}
+  line_uncertain         {'0': np.int64(806)}
+  research               {'N': np.int64(689), 'Y': np.int64(117)}
+  hcc_indication         {'HCC_HIGH_CONFIDENCE': np.int64(806)}
+  exposure_confidence    {'HIGH': np.int64(625), 'MODERATE': np.int64(181)}
+  left_truncated         {'0': np.int64(806)}
+  pre_hcc_dx             {'0': np.int64(806)}
+
+audit sample: 180 episodes
+audit_stratum
+1L_AB            30
+1L_STRIDE        30
+1L_NIVO_IPI      30
+1L_LENVATINIB    30
+1L_SORAFENIB     30
+2L_transition    30
+
+==============================================================================================================
+PART 1 — INDEPENDENT ADJUDICATION ACCURACY (target >=95%)
+==============================================================================================================
+  HCC indication accuracy               178/180  =  98.9%   PASS
+  Exposure accuracy                     180/180  = 100.0%   PASS
+    └ administration PROVEN (IV only)   109/109  = 100.0%   PASS
+  1L accuracy                           149/150  =  99.3%   PASS
+  2L accuracy                            29/30   =  96.7%   PASS
+  Index-date accuracy                   177/180  =  98.3%   PASS
+
+  oral-TKI episodes where administration is UNVERIFIABLE by design: 67/71 oral episodes
+  episodes whose Beacon window contains BOTH an HCC plan and another-cancer plan: 7  <- exposure attribution ambiguous, flagged for review
+     DEI0v1v7sz8vy9 L1 AB         plans: <USERNAME> Bevacizumab for Lung Cancer | <USERNAME> Atezolizumab and Bevacizumab for Hepatocellular Carcinoma 
+     DEI0dgfwu5zrau L1 AB         plans: <USERNAME> Atezolizumab Every 3 Weeks for Hepatocellular carcinoma | <USERNAME> Atezolizumab Every 3 Weeks for
+     DEI0bt6zgbfj7b L1 STRIDE     plans: <USERNAME> Tremelimumab and Durvalumab for Hepatocellular Carcinoma | <USERNAME> Durvalumab, Gemcitabine and C
+     DEI0y537sz83y0 L1 NIVO_IPI   plans: <USERNAME> Nivolumab (Every 4 weeks in Maintenance) and Ipilimumab for Renal Cell Carcinoma | <USERNAME> Nivol
+     DEI0977sz87vfi L1 NIVO_IPI   plans: <USERNAME> Nivolumab (Every 2 Weeks in Maintenance) and Ipilimumab for Melanoma | <USERNAME> Nivolumab (Every 
+
+  indication adjudication rule usage:
+    R1_order_icd10_C22.0                           ok=1  n=102
+    R2_plan_names_HCC                              ok=1  n=10
+    R4_competing_drug_indication_present           ok=0  n=1
+    R4_insufficient_dx_evidence                    ok=0  n=1
+    R4_multisource_dx_no_competing_indication      ok=1  n=66
+  naive any-other-cancer rule would give 89.4% vs hierarchy 98.9%
+
+--- accuracy by stratum ---
+               adj_indication_ok  adj_exposure_ok  adj_index_ok
+audit_stratum                                                  
+1L_AB                      100.0            100.0          96.7
+1L_LENVATINIB               96.7            100.0         100.0
+1L_NIVO_IPI                100.0            100.0          96.7
+1L_SORAFENIB                96.7            100.0         100.0
+1L_STRIDE                  100.0            100.0          96.7
+2L_transition              100.0            100.0         100.0
+
+==============================================================================================================
+FAILURE MECHANISM ANALYSIS
+==============================================================================================================
+
+INDICATION: 2 failures
+audit_stratum  regimen   
+1L_LENVATINIB  LENVATINIB    1
+1L_SORAFENIB   SORAFENIB     1
+   DEI065zra6erfx L1 LENVATINIB   beacon_c22=0 plan_hcc=0 nsrc=4 ncomp=1 admin=0 bgiven=0 ord=1 idx_off=0
+   DEI0n9nt6zgnuw L1 SORAFENIB    beacon_c22=0 plan_hcc=0 nsrc=1 ncomp=1 admin=0 bgiven=0 ord=1 idx_off=0
+
+EXPOSURE: 0 failures
+
+INDEX DATE: 3 failures
+audit_stratum  regimen 
+1L_AB          AB          1
+1L_NIVO_IPI    NIVO_IPI    1
+1L_STRIDE      STRIDE      1
+   DEI0d8g5zragxg L1 AB           beacon_c22=1 plan_hcc=1 nsrc=4 ncomp=3 admin=18 bgiven=30 ord=18 idx_off=22
+   DEI0ox7sz8xnrh L1 STRIDE       beacon_c22=1 plan_hcc=1 nsrc=4 ncomp=0 admin=2 bgiven=2 ord=2 idx_off=8
+   DEI0ioat6zgap9 L1 NIVO_IPI     beacon_c22=1 plan_hcc=1 nsrc=4 ncomp=1 admin=2 bgiven=2 ord=2 idx_off=11
+
+==============================================================================================================
+REVIEWER TIMELINE PACKETS (subset shown; ALL rows persisted to hcc_lot_manual_validation_v10)
+==============================================================================================================
+
+--------------------------------------------------------------------------------------------------------
+PATIENT DEI0p5zrap9r1a | stratum 1L_AB | v9 says: LINE 1 = AB (2023-09-12 -> 2023-11-13, 8 delivery dates)
+  Q1 HCC-directed?   Beacon order ICD10 C22.0=1 | Beacon plan says HCC=1 | HCC dx sources=4 | competing malignancies=1 [C61]
+  Q2 Actually used?  valid MAR admins=8 (New Bag,Rate Verify,Stopped) | Beacon days given=8 | active orders=8 (Completed) | routes=Intravenous | refills=nan
+  Q3 Truly FIRST?    prior HCC-directed drug episodes=0 [] | note says first-line=0 | note says prior systemic=0
+  Q4 2L correct?     (line=1) prior regimen evidence=0
+  Q5 Index plausible? earliest component evidence=2023-09-12 | offset=0d
+  Research/trial:    Beacon research_yn=Y:0 | goal=Curative | note trial language=0
+  Beacon plan:       <USERNAME> Atezolizumab and Bevacizumab for Hepatocellular Carcinoma (<LOCATION>)
+  Stop reason:       Other (see comments)
+
+--------------------------------------------------------------------------------------------------------
+PATIENT DEI0v1v7sz8vy9 | stratum 1L_AB | v9 says: LINE 1 = AB (2020-09-05 -> 2022-08-27, 72 delivery dates)
+  Q1 HCC-directed?   Beacon order ICD10 C22.0=1 | Beacon plan says HCC=1 | HCC dx sources=4 | competing malignancies=0 []
+  Q2 Actually used?  valid MAR admins=61 (New Bag,Stopped ,Stopped,Rate Verify,Given) | Beacon days given=85 | active orders=61 (Completed) | routes=Intravenous | refills=nan
+  Q3 Truly FIRST?    prior HCC-directed drug episodes=0 [] | note says first-line=0 | note says prior systemic=0
+  Q4 2L correct?     (line=1) prior regimen evidence=0
+  Q5 Index plausible? earliest component evidence=2020-09-05 | offset=0d
+  Research/trial:    Beacon research_yn=Y:0 | goal=Control | note trial language=0
+  Beacon plan:       <USERNAME> Bevacizumab for Lung Cancer
+  Stop reason:       Progression
+
+--------------------------------------------------------------------------------------------------------
+PATIENT DEI09w7sz8wpwb | stratum 1L_STRIDE | v9 says: LINE 1 = STRIDE (2025-08-21 -> 2025-08-21, 2 delivery dates)
+  Q1 HCC-directed?   Beacon order ICD10 C22.0=1 | Beacon plan says HCC=1 | HCC dx sources=4 | competing malignancies=0 []
+  Q2 Actually used?  valid MAR admins=2 (New Bag,Stopped) | Beacon days given=2 | active orders=2 (Completed) | routes=Intravenous | refills=nan
+  Q3 Truly FIRST?    prior HCC-directed drug episodes=0 [] | note says first-line=0 | note says prior systemic=0
+  Q4 2L correct?     (line=1) prior regimen evidence=0
+  Q5 Index plausible? earliest component evidence=2025-08-21 | offset=0d
+  Research/trial:    Beacon research_yn=Y:0 | goal=Control | note trial language=0
+  Beacon plan:       <USERNAME> Tremelimumab and Durvalumab for Hepatocellular Carcinoma
+  Stop reason:       Automatically Discontinued - Inactive Plan
+
+--------------------------------------------------------------------------------------------------------
+PATIENT DEI081247sz84g | stratum 1L_STRIDE | v9 says: LINE 1 = STRIDE (2023-10-07 -> 2024-01-13, 5 delivery dates)
+  Q1 HCC-directed?   Beacon order ICD10 C22.0=1 | Beacon plan says HCC=1 | HCC dx sources=4 | competing malignancies=1 [C67.9]
+  Q2 Actually used?  valid MAR admins=5 (Stopped,New Bag,Rate Verify) | Beacon days given=5 | active orders=5 (Completed) | routes=Intravenous | refills=nan
+  Q3 Truly FIRST?    prior HCC-directed drug episodes=0 [] | note says first-line=0 | note says prior systemic=0
+  Q4 2L correct?     (line=1) prior regimen evidence=0
+  Q5 Index plausible? earliest component evidence=2023-10-07 | offset=0d
+  Research/trial:    Beacon research_yn=Y:0 | goal=Curative | note trial language=0
+  Beacon plan:       <USERNAME> Tremelimumab and Durvalumab for Hepatocellular Carcinoma
+  Stop reason:       Progression
+
+--------------------------------------------------------------------------------------------------------
+PATIENT DEI0m5zrampfoy | stratum 1L_NIVO_IPI | v9 says: LINE 1 = NIVO_IPI (2021-02-23 -> 2021-03-16, 4 delivery dates)
+  Q1 HCC-directed?   Beacon order ICD10 C22.0=1 | Beacon plan says HCC=1 | HCC dx sources=4 | competing malignancies=0 []
+  Q2 Actually used?  valid MAR admins=4 (New Bag,Stopped ,Stopped,Given) | Beacon days given=4 | active orders=4 (Completed) | routes=Intravenous | refills=nan
+  Q3 Truly FIRST?    prior HCC-directed drug episodes=0 [] | note says first-line=0 | note says prior systemic=0
+  Q4 2L correct?     (line=1) prior regimen evidence=0
+  Q5 Index plausible? earliest component evidence=2021-02-23 | offset=0d
+  Research/trial:    Beacon research_yn=Y:0 | goal=Control | note trial language=0
+  Beacon plan:       <USERNAME> Nivolumab (Every 4 weeks in Maintenance) and Ipilimumab for Hepatocellular Carcinoma
+  Stop reason:       Automatically Discontinued - Patient Deceased
+
+--------------------------------------------------------------------------------------------------------
+PATIENT DEI0ioat6zgap9 | stratum 1L_NIVO_IPI | v9 says: LINE 1 = NIVO_IPI (2023-07-09 -> 2023-07-09, 2 delivery dates)
+  Q1 HCC-directed?   Beacon order ICD10 C22.0=1 | Beacon plan says HCC=1 | HCC dx sources=4 | competing malignancies=1 [C32.9]
+  Q2 Actually used?  valid MAR admins=2 (Rate Verify,Stopped,New Bag) | Beacon days given=2 | active orders=2 (Completed) | routes=Intravenous | refills=nan
+  Q3 Truly FIRST?    prior HCC-directed drug episodes=0 [] | note says first-line=0 | note says prior systemic=0
+  Q4 2L correct?     (line=1) prior regimen evidence=0
+  Q5 Index plausible? earliest component evidence=2023-06-28 | offset=11d
+  Research/trial:    Beacon research_yn=Y:0 | goal=Control | note trial language=0
+  Beacon plan:       <USERNAME> Nivolumab (Every 4 weeks in Maintenance) and Ipilimumab for Hepatocellular Carcinoma
+  Stop reason:       Not Tolerated
+
+--------------------------------------------------------------------------------------------------------
+PATIENT DEI0umi7sz8ipq | stratum 1L_LENVATINIB | v9 says: LINE 1 = LENVATINIB (2020-02-22 -> 2020-02-22, 1 delivery dates)
+  Q1 HCC-directed?   Beacon order ICD10 C22.0=0 | Beacon plan says HCC=0 | HCC dx sources=3 | competing malignancies=0 []
+  Q2 Actually used?  valid MAR admins=0 () | Beacon days given=0 | active orders=2 (Sent) | routes=Oral | refills=11.0
+  Q3 Truly FIRST?    prior HCC-directed drug episodes=0 [] | note says first-line=0 | note says prior systemic=0
+  Q4 2L correct?     (line=1) prior regimen evidence=0
+  Q5 Index plausible? earliest component evidence=2020-02-22 | offset=0d
+  Research/trial:    Beacon research_yn=Y:0 | goal= | note trial language=0
+  Beacon plan:       
+
+--------------------------------------------------------------------------------------------------------
+PATIENT DEI0ny35zra3up | stratum 1L_LENVATINIB | v9 says: LINE 1 = LENVATINIB (2020-07-09 -> 2020-07-10, 2 delivery dates)
+  Q1 HCC-directed?   Beacon order ICD10 C22.0=0 | Beacon plan says HCC=0 | HCC dx sources=3 | competing malignancies=0 []
+  Q2 Actually used?  valid MAR admins=0 () | Beacon days given=0 | active orders=2 (Sent,Suspend) | routes=Oral | refills=11.0
+  Q3 Truly FIRST?    prior HCC-directed drug episodes=0 [] | note says first-line=0 | note says prior systemic=0
+  Q4 2L correct?     (line=1) prior regimen evidence=0
+  Q5 Index plausible? earliest component evidence=2020-07-09 | offset=0d
+  Research/trial:    Beacon research_yn=Y:0 | goal= | note trial language=1
+  Beacon plan:       
+
+--------------------------------------------------------------------------------------------------------
+PATIENT DEI0et7j7sz8jj | stratum 1L_SORAFENIB | v9 says: LINE 1 = SORAFENIB (2016-08-13 -> 2016-08-13, 1 delivery dates)
+  Q1 HCC-directed?   Beacon order ICD10 C22.0=0 | Beacon plan says HCC=0 | HCC dx sources=3 | competing malignancies=0 []
+  Q2 Actually used?  valid MAR admins=0 () | Beacon days given=0 | active orders=1 (Sent) | routes=Oral | refills=2.0
+  Q3 Truly FIRST?    prior HCC-directed drug episodes=0 [] | note says first-line=0 | note says prior systemic=0
+  Q4 2L correct?     (line=1) prior regimen evidence=0
+  Q5 Index plausible? earliest component evidence=2016-08-13 | offset=0d
+  Research/trial:    Beacon research_yn=Y:0 | goal= | note trial language=0
+  Beacon plan:       
+
+--------------------------------------------------------------------------------------------------------
+PATIENT DEI0het6zgepa5 | stratum 1L_SORAFENIB | v9 says: LINE 1 = SORAFENIB (2017-10-26 -> 2019-08-09, 3 delivery dates)
+  Q1 HCC-directed?   Beacon order ICD10 C22.0=0 | Beacon plan says HCC=0 | HCC dx sources=2 | competing malignancies=0 []
+  Q2 Actually used?  valid MAR admins=0 () | Beacon days given=0 | active orders=3 (Sent) | routes=Oral | refills=5.0
+  Q3 Truly FIRST?    prior HCC-directed drug episodes=0 [] | note says first-line=0 | note says prior systemic=0
+  Q4 2L correct?     (line=1) prior regimen evidence=0
+  Q5 Index plausible? earliest component evidence=2017-10-26 | offset=0d
+  Research/trial:    Beacon research_yn=Y:0 | goal= | note trial language=0
+  Beacon plan:       
+
+--------------------------------------------------------------------------------------------------------
+PATIENT DEI0kxcg5zrag7 | stratum 2L_transition | v9 says: LINE 2 = NIVO_MONO (2017-12-12 -> 2017-12-27, 2 delivery dates)
+  Q1 HCC-directed?   Beacon order ICD10 C22.0=1 | Beacon plan says HCC=0 | HCC dx sources=3 | competing malignancies=1 [C18.9]
+  Q2 Actually used?  valid MAR admins=2 (Stopped,New Bag) | Beacon days given=2 | active orders=2 (Completed) | routes=Intravenous | refills=nan
+  Q3 Truly FIRST?    prior HCC-directed drug episodes=2 [sorafenib] | note says first-line=0 | note says prior systemic=0
+  Q4 2L correct?     (line=2) prior regimen evidence=2
+  Q5 Index plausible? earliest component evidence=2017-12-12 | offset=0d
+  Research/trial:    Beacon research_yn=Y:1 | goal=Control | note trial language=1
+  Beacon plan:       J1645 - Opn-Lbl, Multi-Ctr Ph 1/2 Study of Mogamulizumab + Nivolumab in Locally Advncd/Metastat
+  Stop reason:       Progression
+
+--------------------------------------------------------------------------------------------------------
+PATIENT DEI01wam7sz8mx | stratum 2L_transition | v9 says: LINE 2 = CABOZANTINIB (2020-12-23 -> 2021-01-15, 3 delivery dates)
+  Q1 HCC-directed?   Beacon order ICD10 C22.0=0 | Beacon plan says HCC=0 | HCC dx sources=4 | competing malignancies=0 []
+  Q2 Actually used?  valid MAR admins=2 (Given) | Beacon days given=0 | active orders=1 (Sent,Discontinued) | routes=Oral | refills=11.0
+  Q3 Truly FIRST?    prior HCC-directed drug episodes=3 [ipilimumab,nivolumab,sorafenib] | note says first-line=0 | note says prior systemic=1
+  Q4 2L correct?     (line=2) prior regimen evidence=3
+  Q5 Index plausible? earliest component evidence=2020-12-23 | offset=0d
+  Research/trial:    Beacon research_yn=Y:0 | goal= | note trial language=1
+  Beacon plan:       
+  NOTE[prior sys]:   ...of care sorafenib treatment arm  5/26/2019 PD on sorafenib 6/16/19 C1D1 nivolumab in the second line setting  2/2020 PD 2/17/20-3/16/20 RT to limited metastatic sites (exophytic lesion + rig...
+
+==============================================================================================================
+CHECK B — INDEPENDENT (BEACON-PLAN) LINE ASSIGNMENT vs v9
+==============================================================================================================
+  episodes matchable to a Beacon HCC plan: 582/806 (72.2%)
+  (unmatchable episodes are overwhelmingly oral TKIs, which do not create Beacon plans)
+  line 1: concordance 432/434 = 99.5%
+  line 2: concordance 60/110 = 54.5%
+  line 3: concordance 10/27 = 37.0%
+  OVERALL concordance: 502/582 = 86.3%
+
+  DISCORDANT episodes: 80
+regimen                   line  line_B
+AB                        2     1.0        2
+                          3     2.0        2
+                          5     3.0        1
+ATEZO_MONO                3     2.0        1
+CABOZANTINIB+RAMUCIRUMAB  3     2.0        1
+DURVA_MONO                2     3.0        1
+LENVATINIB                2     1.0        1
+NIVO_IPI                  1     2.0        1
+                          2     1.0       15
+                                3.0        1
+                          3     2.0        8
+                          4     2.0        2
+                                3.0        3
+                          5     3.0        2
+NIVO_MONO                 1     2.0        1
+                          2     1.0       28
+                          3     1.0        1
+                                2.0        2
+                          4     2.0        1
+PEMBRO_MONO               2     1.0        2
+RAMUCIRUMAB               3     2.0        2
+                          4     2.0        1
+                                5.0        1
+
+  first 15 discordant cases (v9 line vs Beacon-plan line):
+    DEI000r57sz854 RAMUCIRUMAB            v9_line=3 beacon_line=2 gap=0.0d plan_drugs=ramucirumab
+    DEI00ft6zgf7oq NIVO_IPI               v9_line=4 beacon_line=3 gap=0.0d plan_drugs=ipilimumab,nivolumab
+    DEI00t6zg01b40 NIVO_IPI               v9_line=2 beacon_line=1 gap=0.0d plan_drugs=ipilimumab,nivolumab
+    DEI00x0k5zraka NIVO_IPI               v9_line=3 beacon_line=2 gap=0.0d plan_drugs=ipilimumab,nivolumab
+    DEI01i8cw5zraw NIVO_IPI               v9_line=3 beacon_line=2 gap=0.0d plan_drugs=ipilimumab,nivolumab
+    DEI01wam7sz8mx NIVO_IPI               v9_line=1 beacon_line=2 gap=0.0d plan_drugs=nivolumab
+    DEI02x6h65zra6 NIVO_MONO              v9_line=2 beacon_line=1 gap=0.0d plan_drugs=nivolumab
+    DEI0339kf5zraf NIVO_MONO              v9_line=2 beacon_line=1 gap=0.0d plan_drugs=nivolumab
+    DEI03g5zragk88 NIVO_IPI               v9_line=3 beacon_line=2 gap=0.0d plan_drugs=ipilimumab,nivolumab
+    DEI03qt6zgq6d8 NIVO_MONO              v9_line=2 beacon_line=1 gap=0.0d plan_drugs=nivolumab
+    DEI045idc7sz8c NIVO_IPI               v9_line=2 beacon_line=1 gap=0.0d plan_drugs=ipilimumab,nivolumab
+    DEI04t7sz8t5qi NIVO_IPI               v9_line=2 beacon_line=1 gap=0.0d plan_drugs=ipilimumab,nivolumab
+    DEI05t5zrat0br LENVATINIB             v9_line=2 beacon_line=1 gap=19.0d plan_drugs=atezolizumab,bevacizumab
+    DEI05t5zrat0br NIVO_IPI               v9_line=3 beacon_line=2 gap=0.0d plan_drugs=ipilimumab,nivolumab
+    DEI05xp5zrapjw ATEZO_MONO             v9_line=3 beacon_line=2 gap=0.0d plan_drugs=atezolizumab,bevacizumab
+
+  DISCORDANCE MECHANISM ATTRIBUTION:
+     68  EXPLAINED: B blind to a non-Beacon prior line (oral TKI)
+     10  UNEXPLAINED - needs clinical review
+      1  EXPLAINED: B plan-counting offset
+      1  EXPLAINED: B blind to a non-Beacon prior line
+
+  => 70/80 discordances are ARTEFACTS of Algorithm B's Beacon-only visibility;
+     10 remain genuinely unexplained and are flagged for chart review.
+
+  examples of the dominant explained pattern:
+    DEI000r57sz854 RAMUCIRUMAB  v9_L3 vs B_L2 | prior v9 lines=[NIVO_MONO,LENVATINIB] hidden=1 (oral=1)
+    DEI00ft6zgf7oq NIVO_IPI     v9_L4 vs B_L3 | prior v9 lines=[NIVO_MONO,AB,CABOZANTINIB] hidden=1 (oral=1)
+    DEI00t6zg01b40 NIVO_IPI     v9_L2 vs B_L1 | prior v9 lines=[LENVATINIB] hidden=1 (oral=1)
+    DEI00x0k5zraka NIVO_IPI     v9_L3 vs B_L2 | prior v9 lines=[AB,LENVATINIB] hidden=1 (oral=1)
+    DEI01i8cw5zraw NIVO_IPI     v9_L3 vs B_L2 | prior v9 lines=[AB,LENVATINIB] hidden=1 (oral=1)
+    DEI02x6h65zra6 NIVO_MONO    v9_L2 vs B_L1 | prior v9 lines=[LENVATINIB] hidden=1 (oral=1)
+    DEI0339kf5zraf NIVO_MONO    v9_L2 vs B_L1 | prior v9 lines=[LENVATINIB] hidden=1 (oral=1)
+    DEI03g5zragk88 NIVO_IPI     v9_L3 vs B_L2 | prior v9 lines=[NIVO_MONO,LENVATINIB] hidden=1 (oral=1)
+
+  UNEXPLAINED cases for review:
+    DEI01wam7sz8mx NIVO_IPI     v9_L1 vs B_L2 predicted_B=1 prior=[]
+    DEI05t5zrat0br LENVATINIB   v9_L2 vs B_L1 predicted_B=2 prior=[AB]
+    DEI05t5zrat0br NIVO_IPI     v9_L3 vs B_L2 predicted_B=3 prior=[AB,LENVATINIB]
+    DEI079t6zg9qdb NIVO_IPI     v9_L2 vs B_L3 predicted_B=2 prior=[BEV_MONO+NIVO_MONO]
+    DEI07njfw5zraw AB           v9_L5 vs B_L3 predicted_B=2 prior=[LENVATINIB,NIVO_IPI,IPI_MONO,CABOZANTINIB]
+    DEI0cwih7sz8hi DURVA_MONO   v9_L2 vs B_L3 predicted_B=2 prior=[STRIDE]
+    DEI0it47sz8457 NIVO_MONO    v9_L1 vs B_L2 predicted_B=1 prior=[]
+    DEI0jnqt6zgq79 RAMUCIRUMAB  v9_L4 vs B_L5 predicted_B=3 prior=[SORAFENIB,NIVO_MONO,NIVO_IPI]
+    DEI0kse5v5zrav NIVO_MONO    v9_L3 vs B_L2 predicted_B=1 prior=[SORAFENIB]
+    DEI0xqht6zghm8 NIVO_IPI     v9_L5 vs B_L3 predicted_B=2 prior=[SORAFENIB,NIVO_MONO,LENVATINIB,CABOZANTINIB]
+
+  RAW B-concordance            : 86.3%
+  ARTEFACT-ADJUSTED agreement  : 98.3%  (treating B's documented blind spot as a B error, not a v9 error)
+
+PART 1 VERDICT: PASS
+Elapsed 46s
+v10 PART 2 - True first line vs first-observed-in-REACH + research flag + pre-approval audit
+v10 PART 2 - True first line vs first-observed-in-REACH + research flag + pre-approval audit
+observable-history start computed for 571 patients
+
+========================================================================================================
+PART 2 — TRUE FIRST LINE vs FIRST OBSERVED IN REACH  (denominator = 569 v9 1L episodes)
+========================================================================================================
+  first_observed_reach_systemic_flag          : 569
+  true_1L_HIGH_CONFIDENCE                    : 282 (49.6%)
+  true_1L_PROBABLE                           : 74 (13.0%)
+  prior_systemic_OUTSIDE_REACH_possible      : 247 (43.4%)
+  research_protocol_flag (structured)        : 110 (19.3%)
+  research_SUSPECTED (incl. note language)   : 246 (43.2%)
+
+--- lookback adequacy among 1L episodes ---
+  >=  180 d observable history before index :  408 (71.7%)
+  >=  365 d observable history before index :  361 (63.4%)
+  >=  730 d observable history before index :  316 (55.5%)
+  median observable lookback: 978 d  (IQR 132-3169)
+
+--- TRUE-1L STATUS BY REGIMEN (the numbers that matter for every 1L comparison) ---
+                        v9_1L  true_1L_high  true_1L_prob  outside_possible  research  research_susp  usable_1L_nonresearch
+regimen                                                                                                                    
+AB                        144            96             7                45         2             37                    102
+NIVO_MONO                  85            43             5                43        28             52                     30
+STRIDE                     80            50             4                38        20             26                     42
+LENVATINIB                 68            18            19                33         0             31                     37
+SORAFENIB                  62            20            23                22         1             18                     42
+NIVO_IPI                   61            17             7                39        34             45                     14
+PEMBRO_MONO                22            14             3                 7         6             10                     13
+DURVA_MONO                 16             7             3                 6         8              9                      7
+CABOZANTINIB+NIVO_MONO      8             6             0                 2         8              8                      0
+ATEZO_MONO                  6             6             0                 0         0              0                      6
+LENVATINIB+PEMBRO_MONO      4             1             0                 3         2              3                      1
+CABOZANTINIB                4             2             1                 2         0              2                      3
+LENVATINIB+NIVO_MONO        4             1             1                 4         0              2                      2
+IPI_MONO                    2             1             1                 0         0              1                      2
+
+========================================================================================================
+SPECIAL AUDIT — APPARENT PRE-APPROVAL USE (classification required)
+========================================================================================================
+
+AB  (approval 2020-05-29):  definitely-PRE=0  uncertain=12  definitely-POST=149
+
+STRIDE  (approval 2022-10-21):  definitely-PRE=11  uncertain=7  definitely-POST=69
+   classification of the definitely-pre-approval episodes:
+       11  TRIAL (structured research protocol)
+   of these, 11 are labelled FIRST-LINE (the clinically implausible subset), 0 are later-line
+   first-line pre-approval episodes needing review:
+     DEI019qqi7sz8i 2021-02-01 research=1 note_trial=1 cls=TRIAL (structured research protocol)
+     DEI03cao7sz8o6 2019-02-17 research=1 note_trial=1 cls=TRIAL (structured research protocol)
+     DEI05o5zrao1sw 2022-03-16 research=1 note_trial=1 cls=TRIAL (structured research protocol)
+     DEI06t6zg65uh1 2019-11-13 research=1 note_trial=1 cls=TRIAL (structured research protocol)
+     DEI0b5t6zg5k8h 2020-11-23 research=1 note_trial=1 cls=TRIAL (structured research protocol)
+     DEI0cwa7sz8a0q 2019-07-12 research=1 note_trial=1 cls=TRIAL (structured research protocol)
+     DEI0e7sz8ea349 2019-11-15 research=1 note_trial=1 cls=TRIAL (structured research protocol)
+     DEI0qbt6zgbah4 2021-11-16 research=1 note_trial=1 cls=TRIAL (structured research protocol)
+
+NIVO_IPI  (approval 2025-04-11):  definitely-PRE=92  uncertain=25  definitely-POST=15
+   classification of the definitely-pre-approval episodes:
+       32  LATER-LINE (not first-line use)
+       27  TRIAL (structured research protocol)
+       17  TRIAL (note language only, unconfirmed)
+       16  OFF-LABEL or UNRESOLVED (1L, no trial evidence)
+   of these, 44 are labelled FIRST-LINE (the clinically implausible subset), 48 are later-line
+   first-line pre-approval episodes needing review:
+     DEI00a8gy5zray 2021-05-23 research=0 note_trial=0 cls=OFF-LABEL or UNRESOLVED (1L, no trial evidence)
+     DEI01jt6zgjb1x 2022-12-26 research=0 note_trial=0 cls=OFF-LABEL or UNRESOLVED (1L, no trial evidence)
+     DEI01wam7sz8mx 2019-06-16 research=1 note_trial=1 cls=TRIAL (structured research protocol)
+     DEI02hwf5zraf7 2023-03-11 research=0 note_trial=0 cls=OFF-LABEL or UNRESOLVED (1L, no trial evidence)
+     DEI038ymft6zgf 2023-11-13 research=1 note_trial=1 cls=TRIAL (structured research protocol)
+     DEI03u7sz8u6j5 2020-06-15 research=0 note_trial=0 cls=OFF-LABEL or UNRESOLVED (1L, no trial evidence)
+     DEI05o97x7sz8x 2022-06-02 research=1 note_trial=1 cls=TRIAL (structured research protocol)
+     DEI063h2v7sz8v 2020-07-04 research=0 note_trial=0 cls=OFF-LABEL or UNRESOLVED (1L, no trial evidence)
+
+--- NIVO_MONO "first line" audit (historically unusual: single-agent PD-1 as 1L) ---
+  N=85  research_protocol=28  note_trial=52  research_suspected=52
+  era vs Nivo/Ipi 1L approval: {'DEFINITELY_PRE_APPROVAL': np.int64(80), 'DATE_SHIFT_UNCERTAIN': np.int64(4), 'DEFINITELY_POST_APPROVAL': np.int64(1)}
+  true_1L_high=43  outside_possible=43
+
+Elapsed 81s
