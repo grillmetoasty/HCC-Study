@@ -1,429 +1,1486 @@
+Continue from the completed v8–v10 HCC work on REACH Small Compute.
 
-v10 PART 0 - Setup, reload v9 tables, date-shift bounds
-v10 PART 0 - Setup, reload v9 tables, date-shift bounds
-LOT     n=   806 cols=  26
-EPI     n=  1608 cols=  23
-DIX     n=   806 cols= 104
-RAD9    n=   709 cols=  22
-READY9  n=    12 cols=  13
+This phase has a different purpose.
 
-LOT  cols: ['regimen', 'comps', 'start', 'end', 'comp_start_spread', 'n_components', 'n_dates', 'srcs', 'beacon_hcc', 'beacon_plan', 'research', 'competitors', 'hcc_indication', 'exposure_confidence', 'n_orders', 'max_refills', 'line', 'line_note', 'pat', 'first_hcc_date', 'left_truncated', 'pre_hcc_dx', 'line_uncertain', 'line_label', 'dur_days', 'algo']
+DO NOT start by choosing Atezo/Bev vs STRIDE.
+DO NOT start by choosing TACE.
+DO NOT start by choosing AFP or ALBI.
 
-EPI  cols: ['pat', 'drug', 'start', 'end', 'n_dates', 'srcs', 'beacon_hcc', 'beacon_other', 'beacon_plan', 'research', 'sig2_ge2dx', 'sig3_no_competitor', 'competitors', 'hcc_indication', 'n_orders', 'n_active', 'n_order_dates', 'max_refills', 'onc', 'beacon_linked', 'mo_bc_hcc', 'n_src_types', 'exposure_confidence']
+Instead:
 
-RAD9 cols: ['pat', 'line', 'rel_day', 'proc_name', 'pvtt', 'extrahepatic', 'new_lesion', 'progression', 'viable', 'multifocal', 'response_or_stable', 'pvtt_ev', 'extrahepatic_ev', 'new_lesion_ev', 'progression_ev', 'viable_ev', 'multifocal_ev', 'response_or_stable_ev', 'impression', 'lesion_cm', 'progression_strict', 'progression_strict_ev']
+**Exhaustively characterize what REACH can actually observe in the entire HCC population, construct the clinically meaningful decision points across the HCC treatment journey, and determine which research question can produce the highest-quality, highest-impact, most defensible study.**
 
-DIX  cols:
-    ['pat', 'line', 'regimen', 'index_date', 'end', 'dur_days', 'n_dates']
-    ['exposure_confidence', 'beacon_plan', 'afp_w14', 'albumin_w14', 'alt_w14', 'ast_w14', 'bilirubin_w14']
-    ['creatinine_w14', 'hemoglobin_w14', 'inr_w14', 'platelets_w14', 'sodium_w14', 'afp_w30', 'albumin_w30']
-    ['alt_w30', 'ast_w30', 'bilirubin_w30', 'creatinine_w30', 'hemoglobin_w30', 'inr_w30', 'platelets_w30']
-    ['sodium_w30', 'afp_w90', 'albumin', 'bilirubin', 'inr', 'sodium', 'creatinine']
-    ['platelets', 'hemoglobin', 'afp', 'alt', 'ast', 'albi', 'albi_w14']
-    ['albi_grade', 'ascites', 'hepatic_enceph', 'portal_htn', 'varices', 'gi_bleed', 'ckd']
-    ['hypertension', 'vte', 'autoimmune', 'cirrhosis', 'hbv', 'hcv', 'diabetes']
-    ['prior_transplant', 'anticoag', 'immunosupp', 'first_tace_date', 'first_ablation_date', 'first_resection_date', 'death_date']
-    ['last_contact', 'birth_date', 'gender', 'prior_tace', 'prior_ablation', 'prior_resection', 'prior_lrt']
-    ['n_hosp_prior_yr', 'age', 'prev_regimen', 'prev_dur_days', 'prev_n_admin', 'gap_from_prev', 'stop_reason_beacon']
-    ['stop_reason_order', 'ecog', 'child_pugh', 'cp_score', 'bclc', 'pvtt', 'extrahepatic']
-    ['multifocal', 'new_lesion', 'viable', 'progression_strict', 'response_or_stable', 'img_rel_day', 'ecog_ge2']
-    ['cp_b_or_c', 'albi_g3', 'year', 'death_90d_after_index', 'fu_days', 'died', 'os_days']
-    ['l1_regimen', 'strategy', 'l1_strategy', 'any_ici', 'any_tki', 'any_bev']
+We are willing to pursue:
 
-LOT index column = start
-LOT line distribution:
-line
-1    569
-2    165
-3     52
-4     13
-5      6
-6      1
+- medical oncology,
+- locoregional/systemic integration,
+- TACE,
+- conversion therapy,
+- longitudinal biomarkers,
+- treatment sequencing,
 
-LOT 1L regimens:
-regimen
-AB                        144
-NIVO_MONO                  85
-STRIDE                     80
-LENVATINIB                 68
-SORAFENIB                  62
-NIVO_IPI                   61
-PEMBRO_MONO                22
-DURVA_MONO                 16
-CABOZANTINIB+NIVO_MONO      8
-ATEZO_MONO                  6
-LENVATINIB+NIVO_MONO        4
-LENVATINIB+PEMBRO_MONO      4
-CABOZANTINIB                4
-IPI_MONO                    2
-BEV_MONO+NIVO_MONO          1
-REGORAFENIB                 1
-RAMUCIRUMAB                 1
+provided the final study is clinically important, reasonably novel, and supported by the data.
 
-====================================================================================================
-DATE-SHIFT ERA CLASSIFICATION (3-category, +/-6 month bounded)
-====================================================================================================
+Do NOT estimate comparative treatment effects in this phase.
 
-vs ATEZO_BEV approval 2020-05-29:
-era_atezo_bev
-DEFINITELY_POST_APPROVAL    535
-DEFINITELY_PRE_APPROVAL     189
-DATE_SHIFT_UNCERTAIN         82
+Feasibility diagnostics, event counts, common support, measurement quality and power are allowed.
 
-vs STRIDE approval 2022-10-21:
-era_stride
-DEFINITELY_PRE_APPROVAL     407
-DEFINITELY_POST_APPROVAL    303
-DATE_SHIFT_UNCERTAIN         96
+# ============================================================
+# IMPORTANT PRIOR FINDINGS THAT MUST NOT BE LOST
+# ============================================================
 
-vs NIVO_IPI approval 2025-04-11:
-era_nivo_ipi
-DEFINITELY_PRE_APPROVAL     651
-DATE_SHIFT_UNCERTAIN        100
-DEFINITELY_POST_APPROVAL     55
+Use these as known QA lessons, not assumptions requiring rediscovery unless a check fails.
 
-Own-regimen era for the three era-sensitive regimens:
-regimen   own_regimen_era         
-AB        DATE_SHIFT_UNCERTAIN         12
-          DEFINITELY_POST_APPROVAL    149
-NIVO_IPI  DATE_SHIFT_UNCERTAIN         25
-          DEFINITELY_POST_APPROVAL     15
-          DEFINITELY_PRE_APPROVAL      92
-STRIDE    DATE_SHIFT_UNCERTAIN          7
-          DEFINITELY_POST_APPROVAL     69
-          DEFINITELY_PRE_APPROVAL      11
+### HCC universe
+- broad HCC ≈ 3,999
+- high-confidence HCC ≈ 2,544
 
-Elapsed 3s
-v10 DIAG - ptnotes_text fetch throughput test
-v10 DIAG - ptnotes_text fetch throughput test
-1234567891011121314151617181920212223242526272829303132333435363738394041424344454647484950515253545556575859606162636465666768697071727374757677787980818283848586878889909192939495969798
+### Systemic therapy
+v10 showed that "first observed systemic treatment in REACH" is NOT equivalent to true first-line.
 
-key sanity on _v10_note_keys:
+Only approximately 282/569 previously labelled 1L episodes were high-confidence true first-line.
 
-Table
-1 row
-Cancelled
-v10 DIAG - notes metadata schema + oncology note type landscape
-v10 DIAG - notes metadata schema + oncology note type landscape
-md:pyspark.sql.connect.dataframe.DataFrame = [cohort_id: string, pat_enc_csn_id: decimal(18,0) ... 45 more fields]
-epic_notes_metadata cols:
-    ['cohort_id', 'pat_enc_csn_id', 'department_id', 'department_name', 'enc_type_c', 'enc_type', 'note_id', 'note_csn_id', 'create_instant_dttm', 'crt_inst_local_dttm', 'ip_note_type_c', 'ip_note_type', 'hist_doc_type', 'auth_lnked_prov_id', 'auth_lnkd_prov_name', 'author_specialty', 'cosign_required', 'cosignuser_id', 'cosign_prov_id', 'cosign_prov_name', 'cosign_prov_specialty', 'cosign_inst_local_dttm', 'note_status_c', 'note_status', 'upd_by_auth_dttm', 'dictation_dttm', 'dict_prov_id', 'dict_prov_name', 'dict_prov_type', 'transcription_dttm', 'authent_stat_c', 'authent_stat', 'sensitive_yn', 'lists_resolved_yn', 'tran_work_copy_id', 'contact_date', 'entry_user_id', 'entry_user_name', 'update_user_id', 'update_user_name', 'date_of_service', 'sign_date', 'author_service_c', 'author_service', 'serv_area_id', '_created_ts', '_modified_ts']
+Never call something true 1L unless it passes the v10 true-first-line criteria.
 
-lab_results cols:
-    ['cohort_id', 'order_proc_id', 'pat_enc_csn_id', 'proc_id', 'proc_code', 'proc_name', 'proc_cat_id', 'proc_cat_name', 'sensitive_yn', 'order_type', 'lab_group', 'resulting_lab', 'order_time', 'result_time', 'authorizing_prov_id', 'authorizing_provider', 'referring_prov_id', 'referring_provider', 'collection_prov_id', 'collection_provider', 'specimen_taken_time', 'specimen_recv_time', 'specimen_type', 'specimen_source', 'specimen_collection_user_id', 'specimen_collection_user', 'order_results_line', 'component_id', 'component_name', 'component_base_name', 'component_type', 'component_subtype', 'component_lab_subtype', 'component_freetext_loinc_code', 'result_flag', 'order_status', 'result_status', 'lab_status', 'ord_value', 'ord_num_value', 'reference_low', 'reference_high', 'reference_unit', 'result_sub_idn', 'res_comp_singleline_comment', 'res_comp_multiline_comment', 'component_comment_PHIflag', 'result_in_range_yn', 'ref_normal_vals', 'lrr_based_organ_id', 'data_type', 'numeric_precision', 'comp_obs_inst_tm', 'comp_anl_inst_tm', 'loinc_code', 'loinc_desc', 'external_ord_id', 'result_instant_tm', 'order_creator_userid', 'order_creator_name', 'resulting_lab_id', 'order_type_c', 'order_status_c', 'component_type_c', 'component_subtype_c', 'reflex_order_id', 'serv_area_id', '_created_ts', '_modified_ts']
+### AFP
+The v9 AFP result was wrong.
 
-audit-universe patients: 571
+Correct strict tumor-marker components include principally:
+- AFETOPROTEIN
+- AFPTM
+- AFPMKR
 
---- note types among validated systemic patients (top 30) ---
+Correct v10 coverage:
+- systemic-treated ever AFP ≈87.9%
+- decision point −14d ≈72%
+- −30d ≈79%
+- −90d ≈85%
+- any prior ≈88%
 
-Table
-30 rows
-1m 12s runtime
-Refreshed at 10/1/26, 7:51 PM (2h ago)
-v10 PART 0B - Note corpus (reuse persisted v9 corpus, -45..0d)
-v10 PART 0B - Note corpus (reuse persisted v9 corpus, -45..0d)
-NOTES:pyspark.sql.connect.dataframe.DataFrame = [pat: string, line: long ... 6 more fields]
-note corpus _v9_note_text : rows=6,462  indices covered=795 / 806 (98.6%)   window -45..0 d
+Do not revert to AFPTM-only logic.
 
---- oncology-note availability per decision index ---
+Do NOT use note-extracted AFP as the primary measurement.
 
-Table
-6 rows
-8.680s runtime
-Refreshed at 10/1/26, 8:57 PM (51m ago)
+### Date shifting
+Every patient's dates are shifted by one fixed offset of ≤6 months.
 
-Elapsed 8s
-v10 PART 3 - Forensic AFP audit (3A-3F)
-v10 PART 3 - Forensic AFP audit (3A-3F)
-========================================================================================================
-3A — AFP REPRESENTATION DISCOVERY
-========================================================================================================
+Therefore:
 
-(i) clarity_eap dictionary search (fast, ~113k rows):
-  dictionary hits: 90
-  proc_code                                                                proc_name                  proc_cat_name is_active_yn
-   LAB53628 A-FETOPROTEIN (AFP), MATERNAL SERUM FOR OPEN SPINA BIFIDA (LABCORP ONLY)          GENERAL LAB - ROUTINE            N
-ACH40283040                                          ACHMTL E3AFP TUMOR MARKER,SERUM                 HB CHARGEABLES            Y
-ACH40281545                                  ACHMTL E3ALPHA-FETOPROTEIN,CSF     MAYO                 HB CHARGEABLES            Y
-ACH40283041                                  ACHMTL E3BETA-HCG TUMOR MARKER(QNT),SER                 HB CHARGEABLES            Y
-   LAB21561                                                       AFP AMNIOTIC FLUID     GENERAL LAB - LAB ADD ONLY            N
-   LAB23321                                                       AFP AMNIOTIC FLUID          INACTIVE LAB BACKLOAD            N
-      AFP04                                             AFP LEVEL 1 CONSULT ESTAB PT       PR PROFESSIONAL SERVICES            Y
-      AFP01                                               AFP LEVEL 1 CONSULT NEW PT       PR PROFESSIONAL SERVICES            Y
-      AFP05                                   AFP LEVEL 2 CONSULT/PROCEDURE ESTAB PT       PR PROFESSIONAL SERVICES            Y
-      AFP02                                     AFP LEVEL 2 CONSULT/PROCEDURE NEW PT       PR PROFESSIONAL SERVICES            Y
-      AFP06                                   AFP LEVEL 3 CONSULT/PROCEDURE ESTAB PT       PR PROFESSIONAL SERVICES            Y
-      AFP03                                     AFP LEVEL 3 CONSULT/PROCEDURE NEW PT       PR PROFESSIONAL SERVICES            Y
-   LAB55465                                             AFP MATERNAL SERUM (LABCORP)          GENERAL LAB - ROUTINE            N
-   LAB55466                                               AFP MATERNAL SERUM (QUEST)          GENERAL LAB - ROUTINE            N
-   O9105033                                                 AFP MATERNAL SERUM PANEL                           None            Y
-    1604980                                                      AFP MATERNAL SERUM.                           None            N
-   LAB21562                                                      AFP MATERNAL, SERUM         AF REFERENCE LAB TESTS            N
-   LAB90090                                               AFP TUMOR MARKER, EXTERNAL GENERAL LAB - EXTERNAL SCANNED            N
-    1604970                                                  AFP TUMOR MARKER,SERUM.                           None            N
-   LAB24522                                                         AFP WITH AFP-L3%          INACTIVE LAB BACKLOAD            N
-   LAB40663                                                        AFP X-TRA PROFILE          INACTIVE LAB BACKLOAD            N
-   LAB20436                                                      AFP, AMNIOTIC FLUID          INACTIVE LAB BACKLOAD            N
-   LAB25165                       AFP, AMNIOTIC FLUID W/REFLEX TO ACHE AND FETAL HGB BODY FLUIDS NON-CSF AND STOOLS            N
-   LAB44953                                                 AFP, SERUM, TUMOR MARKER          INACTIVE LAB BACKLOAD            N
-   LAB25067                                               AFP, TUMOR MARKER (SERIAL)          INACTIVE LAB BACKLOAD            N
-   LAB24104                                                                  AFP,CSF          INACTIVE LAB BACKLOAD            N
-   LAB41152                                                   AFP,TUMOR MARKER,SERUM          INACTIVE LAB BACKLOAD            N
-   LAB24876                                                   AFP,TUMOR MARKER,SERUM          INACTIVE LAB BACKLOAD            N
-   LAB54317                                                 AFP-L3% (SERIAL MONITOR)        NEW EAP ADDITION REVIEW            N
-   LAB48987                                             AFP/ACHE/HBF, AMNIOTIC FLUID        NEW EAP ADDITION REVIEW            N
-   LAB26135                                 ALPHA FETOPROTEIN MATERNAL (OUTSIDE LAB)          INACTIVE LAB BACKLOAD            N
-     LAB692                                        ALPHA FETOPROTEIN MATERNAL, SERUM          GENERAL LAB - ROUTINE            N
-     LAB559                                           ALPHA FETOPROTEIN TUMOR MARKER          GENERAL LAB - ROUTINE            N
-   LAB48856                                           ALPHA FETOPROTEIN TUMOR MARKER        NEW EAP ADDITION REVIEW            N
-   LAB45047                                           ALPHA FETOPROTEIN TUMOR MARKER          INACTIVE LAB BACKLOAD            N
-     LAB663                                              ALPHA FETOPROTEIN, AMNIOTIC          INACTIVE LAB BACKLOAD            N
-   LAB55203                                            ALPHA FETOPROTEIN, BODY FLUID        NEW EAP ADDITION REVIEW            N
-   LAB23112                                                   ALPHA FETOPROTEIN, CSF         CSF ROUTINE ORDERABLES            N
-     LAB664                                            ALPHA FETOPROTEIN, L3 PERCENT          INACTIVE LAB BACKLOAD            N
-   LAB46820                                          ALPHA FETOPROTEIN, TUMOR MARKER        NEW EAP ADDITION REVIEW            N
+VALID:
+- all within-patient ordering
+- all within-patient intervals
+- treatment duration
+- time to next therapy
+- baseline-to-follow-up intervals
+- time to death
+- time to decompensation
 
-  candidate AFP proc_codes: 77
+ABSOLUTE cross-patient calendar dates:
+- bounded uncertainty ±6 months.
 
-(ii) what those proc_codes actually RESULT as in lab_results (equi-filter):
-proc_code                         proc_name                  component_name component_base_name loinc_code                          loinc_desc reference_unit  n_rows  n_pats  n_numeric
-   LAB559    ALPHA FETOPROTEIN TUMOR MARKER          AFP TUMOR MARKER-TOSOH        AFETOPROTEIN       None                                None          ng/mL   39272   18308      39272
-   LAB559    ALPHA FETOPROTEIN TUMOR MARKER          AFP TUMOR MARKER-TOSOH        AFETOPROTEIN    53962-7    Alpha-1-Fetoprotein.tumor marker          ng/mL   24292   11433      24292
-   LAB559    ALPHA FETOPROTEIN TUMOR MARKER       LAB SPCH AFP TUMOR MARKER        AFETOPROTEIN    53962-7    Alpha-1-Fetoprotein.tumor marker          ng/mL   17926    8267      17926
-   LAB559    ALPHA FETOPROTEIN TUMOR MARKER        AFP, SERUM, TUMOR MARKER               AFPTM    53962-7    Alpha-1-Fetoprotein.tumor marker          ng/mL   17401    5933      17401
-   LAB692 ALPHA FETOPROTEIN MATERNAL, SERUM                            RACE             MSSRACE    21484-1                                Race           None    4396    4005       4396
-   LAB692 ALPHA FETOPROTEIN MATERNAL, SERUM                  INTERPRETATION           AFPMATERN    49246-2  Alpha-1-Fetoprotein interpretation           None    4388    3997       4046
-   LAB692 ALPHA FETOPROTEIN MATERNAL, SERUM                        COMMENT:             COMMENT       None                                None           None    4069    3693       4069
-   LAB692 ALPHA FETOPROTEIN MATERNAL, SERUM                         RESULTS               AFPRR       None                                None           None    4065    3689       4065
-   LAB692 ALPHA FETOPROTEIN MATERNAL, SERUM                   TEST RESULTS:          TESTRESULT    41274-2  Alpha-1-Fetoprotein interpretation           None    4060    3680       4060
-   LAB692 ALPHA FETOPROTEIN MATERNAL, SERUM              MULTIPLE GESTATION              MULGST    45371-2                  Multiple pregnancy           None    4035    3666       4035
-   LAB692 ALPHA FETOPROTEIN MATERNAL, SERUM            OSBR RISK       1 IN            OSBRRISK    48803-1             Neural tube defect risk           None    4035    3666       4035
-   LAB692 ALPHA FETOPROTEIN MATERNAL, SERUM                          WEIGHT             LABPATI    29463-7                         Body weight            lbs    4035    3666       4035
-   LAB692 ALPHA FETOPROTEIN MATERNAL, SERUM            INSULIN DEP DIABETES                IDDM    44877-9 Insulin dependent diabetes mellitus           None    4035    3666       4035
-   LAB692 ALPHA FETOPROTEIN MATERNAL, SERUM                       AFP VALUE            AFPVALUE     1834-1                 Alpha-1-Fetoprotein          ng/mL    4035    3666       4035
-   LAB692 ALPHA FETOPROTEIN MATERNAL, SERUM    GEST. AGE ON COLLECTION DATE             LABGEST    18185-9                     Gestational age          weeks    4035    3666       4035
-   LAB692 ALPHA FETOPROTEIN MATERNAL, SERUM            GESTAT. AGE BASED ON            DATEMETH    21299-3              Gestational age method           None    4035    3666       4035
-   LAB559    ALPHA FETOPROTEIN TUMOR MARKER ALPHA FETOPROTEIN, TUMOR MARKER        AFETOPROTEIN    53962-7    Alpha-1-Fetoprotein.tumor marker          ng/mL    3775    1489       3775
-   LAB692 ALPHA FETOPROTEIN MATERNAL, SERUM             AFP MATERNAL, SERUM           AFPMATERN       None                                None           None    3521    3277       1217
-   LAB692 ALPHA FETOPROTEIN MATERNAL, SERUM             AFP MATERNAL, SERUM           AFPMATERN     1834-1                 Alpha-1-Fetoprotein           None    3375    3173       3375
-   LAB692 ALPHA FETOPROTEIN MATERNAL, SERUM                           MSAFP        AFETOPROTEIN     1834-1                 Alpha-1-Fetoprotein          ng/mL    3341    3099       3341
-   LAB692 ALPHA FETOPROTEIN MATERNAL, SERUM                   MSS ONTD RISK            ONTDRISK    48803-1             Neural tube defect risk           None    3297    3065       3295
-   LAB692 ALPHA FETOPROTEIN MATERNAL, SERUM         INSULIN DEPEND DIABETIC                IDDM    44877-9 Insulin dependent diabetes mellitus           None    3296    3064       3294
-   LAB692 ALPHA FETOPROTEIN MATERNAL, SERUM                         COMMENT             COMMENT     8251-1                     Service comment           None    3296    3064         22
-   LAB692 ALPHA FETOPROTEIN MATERNAL, SERUM             MATERNAL AGE AT EDD           MATAGEEDD    43993-5                     Age.at delivery             yr    3165    2910       3165
-   LAB692 ALPHA FETOPROTEIN MATERNAL, SERUM               EDD DETERMINED BY            DATEMETH    21299-3              Gestational age method           None    2951    2744       2949
-   LAB692 ALPHA FETOPROTEIN MATERNAL, SERUM                  INTERPRETATION              INTERP    49246-2  Alpha-1-Fetoprotein interpretation           None    2949    2740         38
-   LAB692 ALPHA FETOPROTEIN MATERNAL, SERUM               NUMBER OF FETUSES             NOFETUS    11878-6                             Fetuses           None    2943    2736       2941
-   LAB692 ALPHA FETOPROTEIN MATERNAL, SERUM                        COMMENTS            COMMENTS     8251-1                     Service comment           None    2943    2736         24
-   LAB692 ALPHA FETOPROTEIN MATERNAL, SERUM          MOTHER'S ETHNIC ORIGIN          MOETHNICOR    21484-1                                Race           None    2943    2736       2941
-   LAB692 ALPHA FETOPROTEIN MATERNAL, SERUM        PREV PREGNANCY DOWN SYND        PREVPREGDOWN    50715-2                          Trisomy 21           None    2943    2736       2941
+Use v10 robust-date logic where calendar era matters.
 
-(iii) explicit LOINC probe (53962-7, 1834-1 and other AFP LOINCs):
-loinc_code                       loinc_desc component_base_name                  component_name reference_unit  n_rows  n_pats  n_numeric
-   53962-7 Alpha-1-Fetoprotein.tumor marker        AFETOPROTEIN          AFP TUMOR MARKER-TOSOH          ng/mL   24292   11433      24292
-   53962-7 Alpha-1-Fetoprotein.tumor marker        AFETOPROTEIN       LAB SPCH AFP TUMOR MARKER          ng/mL   17926    8267      17926
-   53962-7 Alpha-1-Fetoprotein.tumor marker               AFPTM        AFP, SERUM, TUMOR MARKER          ng/mL   17452    5944      17452
-   53962-7 Alpha-1-Fetoprotein.tumor marker        AFETOPROTEIN ALPHA FETOPROTEIN, TUMOR MARKER          ng/mL    5392    1913       5392
-    1834-1              Alpha-1-Fetoprotein            AFPVALUE                       AFP VALUE          ng/mL    5342    4822       5342
-    1834-1              Alpha-1-Fetoprotein        AFETOPROTEIN                           MSAFP          ng/mL    3752    3462       3752
-    1834-1              Alpha-1-Fetoprotein           AFPMATERN             AFP MATERNAL, SERUM           None    3375    3173       3375
-    1834-1              Alpha-1-Fetoprotein           AFPMATERN                      AFP, SERUM          ng/mL    3058    2950       3058
-    1832-5              Alpha-1-Fetoprotein            AFPVALUE                       AFP VALUE          ug/mL     466     441        466
-    1832-5              Alpha-1-Fetoprotein              AFPAMN                  AFP, AMNIO FLD           None     457     441        457
-    1832-5              Alpha-1-Fetoprotein              AFPAMN                  AFP, AMNIO FLD          ug/mL     251     236        251
-    1834-1              Alpha-1-Fetoprotein        AFETOPROTEIN                      AFP, SERUM          ng/mL     232     232        232
-   53962-7 Alpha-1-Fetoprotein.tumor marker        AFETOPROTEIN  ALPHA-FETOPROTEIN,TUMOR MARKER          ng/mL     206     146        206
-    1832-5              Alpha-1-Fetoprotein            ONTDRISK               ALPHA-FETOPROTEIN         mcg/mL      53      52         53
-    1834-1              Alpha-1-Fetoprotein            AFPVALUE                       AFP VALUE           None      37      37         37
-    1832-5              Alpha-1-Fetoprotein              AFPAMN              AFP AMNIOTIC FLUID           None      24      23         23
-    1834-1              Alpha-1-Fetoprotein           AFPMATERN                      AFP, SERUM           None      21      21         21
-   53962-7 Alpha-1-Fetoprotein.tumor marker        AFETOPROTEIN              AFP, TUMOR MARKER+          ng/mL      13      12         13
-    1834-1              Alpha-1-Fetoprotein        AFETOPROTEIN                           MSAFP           None       7       7          5
-    1834-1              Alpha-1-Fetoprotein                 AFP                             AFP          ng/mL       6       6          6
-   53962-7 Alpha-1-Fetoprotein.tumor marker        AFETOPROTEIN ALPHA FETOPROTEIN, TUMOR MARKER           None       4       4          4
-    1832-5              Alpha-1-Fetoprotein            ONTDRISK               ALPHA-FETOPROTEIN        mcg/mL        2       2          2
-   53962-7 Alpha-1-Fetoprotein.tumor marker        AFETOPROTEIN               AFP, TUMOR MARKER          ng/mL       1       1          1
-    1832-5              Alpha-1-Fetoprotein            ONTDRISK               ALPHA-FETOPROTEIN           None       1       1          1
-   53962-7 Alpha-1-Fetoprotein.tumor marker               AFPTM        AFP, SERUM, TUMOR MARKER           None       1       1          1
+### Radiology
+The v9 radiology parser was overly permissive.
 
-  >>> FINAL AFP component_base_name set: ['AFETOPROTEIN', 'AFP', 'AFPAMN', 'AFPCSF', 'AFPFLUID', 'AFPFLUIDSRCE', 'AFPL3', 'AFPL3PCT', 'AFPMATERN', 'AFPMKR', 'AFPMOM', 'AFPMOMAMNIO', 'AFPRR', 'AFPTM', 'AFPVALUE', 'CHRMAFAFP', 'CLARIFAFPOR', 'MATERNALAFP']
-  >>> v9 used only [AFPTM]. Newly discovered beyond AFPTM: ['AFETOPROTEIN', 'AFP', 'AFPAMN', 'AFPCSF', 'AFPFLUID', 'AFPFLUIDSRCE', 'AFPL3', 'AFPL3PCT', 'AFPMATERN', 'AFPMKR', 'AFPMOM', 'AFPMOMAMNIO', 'AFPRR', 'AFPVALUE', 'CHRMAFAFP', 'CLARIFAFPOR', 'MATERNALAFP']
+Do not call a radiology phenotype validated merely because Genie rereads its own output.
 
-  AFP result rows for HCC universe: 21,025 | numeric usable: 18,297 | patients with >=1 numeric AFP: 2,463
-  units: {'ng/mL': np.int64(18064), 'NG/ML': np.int64(220), '%': np.int64(5), 'lbs': np.int64(1), 'weeks': np.int64(1)}
+Human validation is still required for research-grade radiology extraction.
 
-========================================================================================================
-3B — PATIENT-LEVEL AFP AVAILABILITY (PRE-INDEX ONLY)
-========================================================================================================
-               cohort    n  ever_afp  pct_ever
-     all HCC universe 3999      2463      61.6
-  high-confidence HCC 2544      1884      74.1
- systemic-treated HCC  571       502      87.9
-validated 1L patients  569       500      87.9
-validated 2L patients  165       162      98.2
+### Manual validation terminology
+IMPORTANT:
 
-  ALL 806 decision indices (n=806):
-    -7d:61.0%  -14d:72.0%  -30d:78.9%  -60d:82.9%  -90d:84.6%  -180d:86.1%  -365d:86.7%
-    any prior AFP ever: 88.0%
+Genie is an AI system.
 
-  1L indices (n=569):
-    -7d:60.1%  -14d:70.1%  -30d:77.0%  -60d:80.7%  -90d:81.5%  -180d:82.8%  -365d:83.0%
-    any prior AFP ever: 84.0%
+It may:
+- produce an audit packet,
+- perform an internal model spot-check,
+- show evidence text.
 
-  2L indices (n=165):
-    -7d:61.8%  -14d:76.4%  -30d:84.2%  -60d:89.1%  -90d:93.3%  -180d:95.8%  -365d:95.8%
-    any prior AFP ever: 97.6%
+It MUST NOT call its own review a:
+- "human audit,"
+- "manual gold standard,"
+- "human validation."
 
-========================================================================================================
-3C — DAYS FROM DECISION INDEX BACK TO NEAREST PRIOR AFP
-========================================================================================================
-  indices with ANY prior AFP: 709/806 (88.0%)
-  median 3 d | IQR 0-10 d | p90 32 d
+Only the human investigator can perform those.
 
-  distribution of nearest-prior-AFP lag:
-         0-7 d :  454 (64.0%)  ############################################################
-        8-14 d :  115 (16.2%)  ###############
-       15-30 d :   64 ( 9.0%)  ########
-       31-60 d :   35 ( 4.9%)  ####
-       61-90 d :   13 ( 1.8%)  #
-      91-180 d :   13 ( 1.8%)  #
-     181-365 d :    5 ( 0.7%)  
-        >365 d :   10 ( 1.4%)  #
+Use terminology:
 
-========================================================================================================
-3D — AFP IN CLINICAL NOTES (window -45..0 d; LOWER BOUND, see Part 0B)
-========================================================================================================
-  indices with ANY AFP mention in notes      : 647 (80.3%)
-  indices with a PARSED numeric AFP in notes : 557 (69.1%)
-  structured AFP in the SAME -45..0 d window : 655 (81.3%)
-  union structured OR note-parsed            : 705 (87.5%)
-  >>> COVERAGE GAIN from notes              : +50 indices (+6.2 percentage points)
+`MODEL-ASSISTED AUDIT — REQUIRES HUMAN CONFIRMATION`
 
-  MANUAL AUDIT of note-parsed AFP vs structured lab (n=80):
-    agreement within 25%: 34/80 = 42.5%  (extraction PPV)
-    DEI0dd5zradg2i L1 note=    130.7 lab=   1220.3 BAD | AFP was 130.7
-    DEI079t6zg9qdb L1 note=   1226.0 lab=   1250.1 OK  | AFP: 1,226.0
-    DEI0dp7sz8pr4v L1 note=   2345.7 lab=   3787.4 BAD | AFP: 2,345.7
-    DEI01jt6zgjb1x L2 note=      5.9 lab=      5.9 OK  | AFETOPROTEIN	5.9
-    DEI0qt6zgqqb5i L2 note= 605000.0 lab= 585000.0 OK  | AFP 605,000,
-    DEI0orq61t6zg1 L1 note=      4.2 lab=      4.5 OK  | AFP 4.2
-    DEI0g5zrag4rdx L2 note=     26.3 lab=      6.6 BAD | AFP 26.3
-    DEI0ot6zgo8qw5 L1 note=    500.0 lab=   1319.9 BAD | AFP >500
-    DEI0tt6zgtm42p L1 note=      3.1 lab=      2.2 BAD | AFETOPROTEIN	3.1
-    DEI0okkwt6zgws L1 note=    476.9 lab=    338.7 BAD | AFETOPROTEIN	476.9
-    DEI0kfc5zracx4 L1 note=      5.8 lab=      8.5 BAD | AFP 5.8
-    DEI04qr7sz8rvr L1 note=      6.0 lab=  39422.5 BAD | AFP (6
+where appropriate.
 
-========================================================================================================
-3E — IS AFP JUST OUTSIDE THE WINDOW? (index/order-date alignment)
-========================================================================================================
-  indices whose nearest prior AFP is 15-90 d before index: 102 (12.7%)
-  -> these are NOT "AFP never ordered"; the marker exists but falls outside a 14 d window.
-  of those, Beacon plan opened BEFORE the delivery index in 56/102 cases (median 10 d earlier)
-  => using PLAN-OPEN date rather than first-infusion date as time zero would recapture AFP
-     widening the AFP window to -30d recaptures 56 additional indices (cumulative 78.9% coverage)
-     widening the AFP window to -60d recaptures 88 additional indices (cumulative 82.9% coverage)
-     widening the AFP window to -90d recaptures 102 additional indices (cumulative 84.6% coverage)
+# ============================================================
+# PHASE A — COMPLETE HCC DATA EXHAUST
+# ============================================================
 
-========================================================================================================
-3F — AFP FINAL VERDICT
-========================================================================================================
-  HCC-ever AFP coverage (patient level)        : 74.1% of high-confidence HCC
-  systemic-treated AFP ever (patient level)    : 87.9%
-  decision-point coverage -14 d (v9 definition): 72.0%
-  decision-point coverage -30 d                : 78.9%
-  decision-point coverage -90 d                : 84.6%
-  decision-point coverage ANY prior AFP        : 88.0%
-  structured(-45d) OR note-augmented           : 87.5%
+Before deciding on a project, search the entire accessible REACH schema for HCC-relevant data that we have not yet incorporated.
 
-  >>> AFP CLASSIFICATION: RESEARCH-GRADE
+Use:
 
-Elapsed 353s
-v10 PART 3G - AFP contamination control + root-cause proof of the v9 19.7% error
-v10 PART 3G - AFP contamination control + root-cause proof of the v9 19.7% error
-========================================================================================================
-3G — STRICT TUMOUR-MARKER-ONLY AFP
-========================================================================================================
-  wide-net rows 18,297 -> strict rows 18,128  (dropped 169 non-tumour-marker rows)
-  strict patients with >=1 AFP: 2,451  (wide net: 2,463)
-  strict components retained: {'AFETOPROTEIN': np.int64(13719), 'AFPTM': np.int64(4374), 'AFPMKR': np.int64(35)}
+- `information_schema.tables`
+- `information_schema.columns`
+- schema inspection
+- small sample queries
+- patient linkage to the 3,999 HCC universe
 
-  DECISION-POINT COVERAGE (n=806 indices) under each AFP definition:
-  v9 definition (AFPTM only)         -7d:  8.3%  -14d: 12.0%  -30d: 16.4%  -60d: 21.0%  -90d: 22.5%  any_prior: 32.3%
-  v10 STRICT tumour-marker           -7d: 61.0%  -14d: 72.0%  -30d: 78.9%  -60d: 82.9%  -90d: 84.6%  any_prior: 88.0%
-  v10 wide net (contaminated)        -7d: 61.0%  -14d: 72.0%  -30d: 78.9%  -60d: 82.9%  -90d: 84.6%  any_prior: 88.0%
+Search BOTH:
+- `deid.derived`
+- `deid.omop`
+and any other readable REACH schemas.
 
-  ROOT CAUSE OF THE v9 19.7% FIGURE:
-    patients whose AFP is recorded as AFPTM        : 810
-    patients whose AFP is recorded as AFETOPROTEIN : 2,276
-    AFETOPROTEIN-only patients invisible to v9     : 1,640
-    => v9 queried a single component_base_name and silently lost 67% of AFP-tested patients.
-    v9 reported 19.7% decision-point AFP; reproduced here as 12.0% with the same
-    AFPTM-only definition, versus 72.0% once all tumour-marker synonyms are included.
+Do not scan enormous text tables blindly.
 
-  CHECK A (invariant): strict vs wide-net coverage must be nearly identical,
-  otherwise the gain came from maternal/amniotic contamination rather than real tumour markers.
-    strict -14d 72.0%  vs  wide-net -14d 72.0%  |delta| = 0.0 pp  -> PASS
-    maternal/amniotic/CSF AFP rows present in the HCC universe at all: 9 across 8 patients -> immaterial
+First identify candidate tables/columns from metadata.
 
-  CHECK B (independent source): do the AFP values behave like HCC tumour markers?
-    median 6.5 ng/mL | IQR 3.2-61.2 | max 984,000
-    share >400 ng/mL (the ramucirumab / poor-prognosis threshold): 15.0%
-    share <=10 ng/mL (normal): 59.6%   -> bimodal, consistent with a real HCC tumour-marker distribution
+# ============================================================
+# PART A1 — CREATE A COMPLETE HCC DATA DOMAIN ATLAS
+# ============================================================
 
-  PATIENT-LEVEL AFP EVER (strict definition):
-    all HCC universe          2451/3999  =  61.3%
-    high-confidence HCC       1880/2544  =  73.9%
-    systemic-treated           502/571   =  87.9%
-    validated 1L               500/569   =  87.9%
-    validated 2L               162/165   =  98.2%
+Search for data belonging to ALL of the following domains.
 
-========================================================================================================
-3F/3G — REVISED AFP VERDICT (supersedes v9 "TOO SPARSE")
-========================================================================================================
-  v9 claim                      : 19.7% of decision points  -> "TOO SPARSE"
-  v10 corrected (strict, -14 d) : 72.0%
-  v10 corrected (strict, -30 d) : 78.9%
-  v10 corrected (strict, -90 d) : 84.6%
-  v10 corrected (any prior AFP) : 88.0%
-  note-derived AFP extraction PPV: 42.5%  -> REJECTED as a data source
-     (only +6.2 pp coverage and <50% agreement with the lab value; structured labs suffice)
+## Demographics / background
+- age
+- sex
+- race/ethnicity
+- BMI
+- weight
+- smoking
+- alcohol
+- insurance if present
+- socioeconomic variables if present
 
-  >>> AFP CLASSIFICATION: RESEARCH-GRADE
-  >>> v9's "AFP too sparse" conclusion is a FALSE NEGATIVE caused by an incomplete
-      component_base_name list, not by missing data. AFP-stratified projects are FEASIBLE.
+## Liver disease etiology
+- HBV
+- HCV
+- MASLD/MASH/NAFLD
+- alcohol-related liver disease
+- autoimmune liver disease
+- hemochromatosis
+- Wilson disease
+- other
 
-Elapsed 172s
-v10 PART 4 - Conservative radiology rebuild with negation handling + precision AND recall
-v10 PART 4 - Conservative radiology rebuild with negation handling + precision AND recall
-v10 High-Assurance Audit — Final Summary
-Mandate honoured: no comparative treatment effects were estimated. All counts are feasibility counts.
+## Liver reserve
+- albumin
+- bilirubin
+- INR
+- sodium
+- creatinine
+- platelets
+- ALBI
+- mALBI
+- MELD
+- MELD-Na
+- Child-Pugh
+- ascites
+- hepatic encephalopathy
+- SBP
+- hepatorenal syndrome
+- portal hypertension
+- varices
+- prior variceal hemorrhage
+- paracentesis
 
-Four corrections that change the v9 conclusions
-#	v9 said	v10 found	Mechanism
-1	569 first-line episodes	only 282 (49.6%) are true-1L high confidence; 43.4% could have had prior systemic therapy outside REACH	v9 equated "first observed in REACH" with "first line"
-2	ICI-combo vs ICI-mono is the top node (285 vs 132)	not feasible — 8 vs 3 in the overlap window	the ICI-monotherapy arm is trial/off-label use (NIVO_MONO 1L: 80/85 pre-approval, 52/85 research-suspected)
-3	AFP available at 19.7% of decision points → "too sparse"	72.0% at −14 d, 88.0% ever → research-grade	v9 filtered component_base_name='AFPTM'; the dominant representation is AFETOPROTEIN, losing 67% of AFP-tested patients
-4	radiology flags 96% precise	naive parser is 73% precise, inflating prevalence by up to +9.7 pp	precision was measured only on flag-positive reports, which cannot detect a permissive parser
-The one surviving comparative project
-Atezolizumab/Bevacizumab vs STRIDE as first-line therapy — 51 vs 41 patients from 2023-04-21, index-year SMD 0.043, all six gates pass (research-protocol share in the STRIDE arm, 25%, is the one marginal item).
+## Tumor biomarkers
+- AFP
+- AFP-L3 / AFP-L3%
+- PIVKA-II / DCP if present
+- CRP
+- NLR components
+- other tumor markers
 
-v9 reached a similar recommendation by an invalid route: it reported SMD 0.03 across all 144 vs 80 episodes and then blocked the node on positivity. On the usable non-research subset the unrestricted SMD is −0.977 — severe imbalance, because STRIDE's early adopters are trial patients. Calendar balance exists only inside the overlap window, and inside that window positivity passes.
+For every biomarker discovered:
+- exact table
+- component/procedure names
+- LOINCs
+- units
+- patient N
+- systemic-treatment N
+- longitudinal density
 
-Top three non-comparative projects (immune to the equipoise failures)
-Dynamic ALBI trajectory on systemic therapy — 585 episodes with ≥3 on-treatment measurements (median 6); within-patient design, so the date shift is exact. Strongest available project.
-AFP kinetics as an early response signal — 542 episodes with baseline plus on-treatment AFP. Newly unlocked by correction 3.
-Discontinuation reasons and consequences — 92.7% recorded, 82.4% informative; time-to-discontinuation is shift-invariant.
-Date-shift framework
-Every patient's dates move by one fixed offset ≤ 6 months, so within-patient intervals are exact (verified: 0 days of drift across 50 jitter draws) while absolute calendar claims are bounded. Episodes are classified DEFINITELY_PRE / DATE_SHIFT_UNCERTAIN / DEFINITELY_POST against each approval anchor; 88–90% land in a definite category and the 10–12% uncertain band is unresolvable by any method and must be reported as its own stratum.
+## Tumor stage / tumor burden
+Search structured data AND text for:
+- BCLC
+- AJCC/TNM
+- tumor count
+- largest tumor diameter
+- total tumor diameter
+- bilobar disease
+- multifocal disease
+- infiltrative disease
+- macrovascular invasion
+- PVTT
+- hepatic vein invasion
+- extrahepatic metastases
+- nodal disease
+- LR-TIV
+- LI-RADS
+- LR-TR
+- RECIST
+- mRECIST
+- "response"
+- "partial response"
+- "complete response"
+- "stable disease"
+- "progression"
 
-Five items this phase could not self-certify
-Human adjudication of ≥100 radiology reports per flag before any flag is used as an endpoint.
-Human abstraction of treatment-rationale free text — the 97.9% "documented rationale" rate is template inflation (ECOG appears in 91% of notes); only bevacizumab-contraindication (6.0%) and autoimmune-avoidance (2.1%) discriminate.
-Chart review of the 10 unexplained line-assignment discordances.
-Chart review of the 16 Nivo/Ipi first-line pre-approval episodes with no trial evidence.
-Confirmation of the three approval anchor dates against the institutional formulary.
-Known deviation: ptnotes_text costs > 15 min to scan on this single-node cluster regardless of key count, so the persisted v9 note corpus (−45..0 d) was reused. This truncates the Part 10 rationale window from −60 d to −45 d and makes the Part 3D note-based AFP figure a lower bound. Neither affects a conclusion, because note-derived AFP was rejected anyway (extraction PPV 42.5%).
+## Oncology treatment
+- Beacon plans
+- medication orders
+- administrations
+- doses
+- dose reductions
+- cycle numbers
+- treatment holds
+- discontinued components
+- discontinuation reason
+- treatment intent
+- trial/research protocol
+- regimen changes
 
-18 tables persisted to reach_users.xzhao81 with _v10 suffix; all read-back verified. 17/17 checklist items PASS or CONDITIONAL, 0 FAIL.
+## Locoregional therapy
+- conventional TACE
+- DEB-TACE
+- bland embolization
+- Y90/TARE
+- RFA
+- microwave ablation
+- cryoablation
+- SBRT
+- proton therapy
+- other liver radiation
 
+## Surgery / transplant
+- partial hepatectomy
+- segmentectomy
+- lobectomy
+- transplant
+- transplant evaluation
+- waitlisting if present
+- bridging/downstaging procedures
+
+## Endoscopy / portal hypertension
+- EGD
+- variceal banding
+- NSBB use
+- carvedilol
+- propranolol/nadolol
+- anticoagulation
+- portal hypertensive gastropathy
+
+## Supportive liver medications
+- lactulose
+- rifaximin
+- spironolactone
+- furosemide
+- other diuretics
+- SBP prophylaxis
+
+## Toxicity data
+- blood pressure
+- proteinuria / urine protein
+- UPCR
+- AKI
+- VTE
+- arterial thrombosis
+- GI bleed
+- immune-related adverse-event diagnoses
+- systemic steroids
+- mycophenolate
+- infliximab if present
+- treatment holds
+
+## Utilization / outcomes
+- inpatient admission
+- ICU
+- ED
+- hospice
+- palliative care
+- death
+- last contact
+
+## Free text
+Identify:
+- oncology notes
+- hepatology notes
+- IR notes
+- operative notes
+- tumor-board notes
+- transplant notes
+- radiology text
+- pathology text
+
+Specifically search note metadata for:
+- tumor board
+- multidisciplinary
+- liver tumor conference
+- HCC conference
+- GI oncology
+- liver oncology
+
+## Pathology
+Search pathology text for:
+- HCC histology
+- differentiation/grade
+- microvascular invasion
+- macrovascular invasion
+- satellite nodules
+- tumor size
+- margin
+- fibrosis/cirrhosis
+- steatohepatitic HCC
+- fibrolamellar HCC
+
+## Molecular / genomic data
+Search schemas/columns for:
+- genomic
+- genetics
+- somatic
+- sequencing
+- NGS
+- molecular pathology
+- Tempus
+- Foundation
+- FoundationOne
+- Guardant
+- Caris
+- ctDNA
+- tumor sequencing
+
+Do not assume these exist.
+
+Report if absent.
+
+# ============================================================
+# PART A2 — DATA-ATLAS OUTPUT
+# ============================================================
+
+Create a table with one row per data domain/variable:
+
+- domain
+- variable
+- table
+- column/component
+- all-HCC coverage
+- high-confidence-HCC coverage
+- systemic-treated coverage
+- TACE coverage
+- true-1L coverage
+- longitudinal yes/no
+- median measurements/patient
+- timestamp reliability
+- validation status
+- major caveat
+
+Persist:
+
+`reach_users.xzhao81.hcc_full_data_atlas_v11`
+
+This table should become the canonical map of what REACH contains for HCC.
+
+# ============================================================
+# PHASE B — CREATE A PATIENT-JOURNEY EVENT TABLE
+# ============================================================
+
+Build a canonical patient-level event stream for every high-confidence HCC patient.
+
+One row per clinically meaningful event.
+
+Possible event types:
+
+- HCC diagnosis
+- surgery
+- transplant
+- ablation
+- first TACE
+- repeat TACE
+- Y90
+- SBRT
+- first systemic treatment
+- true 1L systemic start
+- systemic treatment stop
+- systemic line change
+- hepatic decompensation
+- hospitalization
+- radiographic progression
+- conversion/local treatment after systemic therapy
+- hospice
+- death
+
+Fields:
+
+- patient ID
+- event type
+- event subtype
+- date
+- source
+- source confidence
+- treatment intent if known
+- research/trial flag
+- evidence text pointer if text-derived
+
+Use ONLY clinically meaningful deduplicated events.
+
+Persist:
+
+`hcc_patient_journey_events_v11`
+
+Print common trajectory patterns.
+
+Do NOT model outcomes yet.
+
+# ============================================================
+# PHASE C — SYSTEMIC THERAPY: "DYNAMIC THERAPEUTIC OPPORTUNITY"
+# ============================================================
+
+This is Candidate Project 1.
+
+The generic questions:
+
+"Does AFP predict survival?"
+"Does ALBI predict survival?"
+"Does early AFP response plus baseline ALBI predict survival?"
+
+are NOT sufficiently novel.
+
+Those already have literature.
+
+The more interesting question is:
+
+**How do tumor-control dynamics and hepatic-reserve dynamics jointly determine WHY patients leave first-line therapy and WHAT treatment opportunities remain afterward?**
+
+Possible conceptual title:
+
+"Dynamic therapeutic opportunity in hepatocellular carcinoma: competing effects of tumor control and hepatic reserve on subsequent treatment access."
+
+# ============================================================
+# PART C1 — TRUE FIRST-LINE SYSTEMIC COHORT
+# ============================================================
+
+Construct:
+
+### Primary cohort
+`true_1L_high_confidence_flag = TRUE`
+
+AND:
+- high-confidence HCC
+- non-research routine care
+- sufficient pre-index observation
+- actual exposure confirmed
+
+### Secondary sensitivity
+high-confidence + probable true 1L.
+
+Report regimen composition.
+
+Do not pool extremely obsolete regimens blindly.
+
+Create:
+- all true-1L systemic
+- modern ICI-containing true-1L
+- Atezo/Bev subset
+- STRIDE subset
+
+# ============================================================
+# PART C2 — FIXED LANDMARKS
+# ============================================================
+
+Avoid immortal-time bias.
+
+Create candidate fixed landmarks at:
+
+### 6 weeks
+day 42 after treatment start
+
+acceptable biomarker windows:
+- baseline: −14 through +3 days
+- week 6: days 28–56
+
+### 12 weeks
+day 84
+
+window:
+- days 70–98
+
+At each landmark require:
+- alive
+- still observable
+- not already transitioned to 2L before the landmark
+
+Report counts.
+
+Do NOT condition on having ≥3 laboratory measurements.
+
+# ============================================================
+# PART C3 — TUMOR-BIOLOGY SIGNAL
+# ============================================================
+
+For AFP:
+
+Calculate only from strict structured AFP.
+
+Report counts for baseline AFP:
+
+- <20
+- 20–199
+- 200–399
+- ≥400
+
+Evaluate continuous:
+
+`log(AFP + 1)`
+
+and:
+
+`log(followup AFP + 1) - log(baseline AFP + 1)`
+
+For patients with meaningfully elevated AFP, quantify:
+
+- ≥20% decline
+- ≥50% decline
+- stable
+- increase
+
+DO NOT force relative-change analysis on near-zero AFP.
+
+Create an:
+`AFP_NONSECRETOR_OR_LOW_BASELINE`
+category where appropriate.
+
+Also determine whether a validated radiographic tumor-response signal can supplement AFP in low-AFP patients.
+
+Do not assume it can.
+
+# ============================================================
+# PART C4 — HEPATIC-RESERVE SIGNAL
+# ============================================================
+
+Calculate:
+
+- continuous ALBI
+- delta ALBI
+- mALBI change
+- persistent ALBI deterioration
+- new ascites
+- new encephalopathy
+- new decompensation
+
+For "persistent deterioration," test clinically sensible definitions such as:
+
+- ALBI worsens by ≥0.3
+- mALBI grade worsens
+- worsening persists at ≥2 measurements separated by at least 14 days
+
+These are feasibility definitions only.
+
+Do not optimize thresholds against outcomes yet.
+
+# ============================================================
+# PART C5 — DEFINE CLINICALLY MEANINGFUL POST-1L STATES
+# ============================================================
+
+Do NOT define "no 2L" as failure automatically.
+
+A patient may not receive 2L because:
+- 1L is still working
+- treatment was stopped after durable response
+- curative/local conversion occurred
+- death occurred
+- liver function deteriorated
+- hospice occurred
+- follow-up ended
+
+Build competing post-1L transition states.
+
+Candidate states:
+
+1. still on 1L
+2. systemic 2L initiated
+3. curative-intent/local conversion
+4. death without subsequent anticancer therapy
+5. hospice/best supportive care
+6. discontinuation for tumor progression
+7. discontinuation for toxicity
+8. discontinuation for hepatic dysfunction/decompensation
+9. discontinuation for response/strategy change
+10. censored/unknown
+
+Reconcile Beacon discontinuation reason with:
+- medication status
+- notes
+- subsequent treatment
+- decompensation events
+- death.
+
+# ============================================================
+# PART C6 — "LOSS OF TREATMENT OPPORTUNITY"
+# ============================================================
+
+Do not invent one endpoint immediately.
+
+Construct and report feasibility for several definitions.
+
+### Definition A
+Among patients who discontinue 1L for progression:
+
+2L started within 90d
+vs
+death/hospice without 2L.
+
+### Definition B
+Among all patients reaching 1L discontinuation:
+
+subsequent anticancer therapy within 90d
+vs
+death/hospice/no therapy.
+
+### Definition C
+Clinical ineligibility phenotype at discontinuation:
+
+- Child-Pugh C OR
+- severe decompensation OR
+- ECOG ≥3 if available OR
+- hospice OR
+- death within 30d
+
+versus preserved therapeutic opportunity.
+
+Do not call C validated until note/chart review confirms it.
+
+Report exact Ns.
+
+# ============================================================
+# PART C7 — MULTI-STATE FEASIBILITY
+# ============================================================
+
+Assess whether the data support a multi-state framework such as:
+
+TRUE 1L
+→ progression-driven stop
+→ 2L
+
+TRUE 1L
+→ hepatic-dysfunction stop
+→ death/hospice
+
+TRUE 1L
+→ response
+→ local/curative conversion
+
+TRUE 1L
+→ other toxicity
+→ alternative therapy
+
+Report transition counts.
+
+Do NOT fit transition models yet.
+
+# ============================================================
+# PART C8 — CRITICAL NOVELTY TEST
+# ============================================================
+
+The study should NOT become merely:
+
+"AFP and ALBI predict survival."
+
+Determine whether REACH can instead answer:
+
+- whether tumor-response and liver-reserve signals predict DIFFERENT causes of treatment failure;
+- whether hepatic deterioration specifically predicts loss of subsequent-treatment access;
+- whether AFP response with preserved ALBI identifies a distinct high-opportunity state;
+- whether AFP response with worsening ALBI identifies patients whose cancer responds but whose liver eliminates future options.
+
+Report N for a conceptual 2×2 phenotype:
+
+tumor signal favorable / unfavorable
+
+×
+hepatic reserve preserved / deteriorated.
+
+Do not model outcomes yet.
+
+# ============================================================
+# PHASE D — POST-TACE CLINICAL DECISION NODE
+# ============================================================
+
+This is Candidate Project 2.
+
+A generic:
+"ALBI worsens after TACE"
+study is NOT sufficiently novel.
+
+A generic:
+"ALBI predicts survival after TACE"
+study is NOT sufficiently novel.
+
+The clinically important question is:
+
+**After an initial TACE, among patients with residual/recurrent intrahepatic disease who could plausibly receive either strategy, when should clinicians repeat TACE versus transition to modern systemic therapy?**
+
+# ============================================================
+# PART D1 — FIRST-TACE COHORT
+# ============================================================
+
+Start from validated TACE episodes.
+
+Confirm:
+
+- true unique TACE episode
+- HCC indication
+- actual procedure
+- no TACE-associated chemotherapy misclassified as systemic therapy
+
+Report:
+
+- patients
+- episodes
+- first TACE
+- repeat TACE
+- TACE technique if measurable
+
+Try to distinguish:
+- conventional TACE
+- DEB-TACE
+- selective/subselective
+- lobar/nonselective
+
+using:
+- procedure codes
+- image procedure names
+- IR procedure text
+
+If selectivity cannot be measured, state this.
+
+# ============================================================
+# PART D2 — POST-FIRST-TACE REASSESSMENT
+# ============================================================
+
+Define a clinically meaningful reassessment after first TACE.
+
+Candidate window:
+28–90 days after TACE.
+
+Find the nearest:
+- CT
+- MRI
+- oncology/hepatology note
+- ALBI
+- AFP
+
+Determine N with:
+- imaging report
+- ALBI
+- AFP
+- subsequent treatment decision
+
+# ============================================================
+# PART D3 — REQUIRED TUMOR-BURDEN VARIABLES
+# ============================================================
+
+A repeat-TACE-vs-systemic analysis cannot be credible without tumor burden.
+
+Assess feasibility of extracting:
+
+- residual viable tumor
+- number of active lesions
+- largest viable lesion
+- unilobar vs bilobar
+- infiltrative pattern
+- new lesions
+- PVTT
+- extrahepatic spread
+- response to first TACE
+- up-to-7
+- up-to-11 if derivable
+
+Search:
+- radiology report
+- oncology note
+- IR note
+- tumor-board note
+
+Do not use the old permissive regex.
+
+For each proposed variable:
+- algorithm definition
+- model-assisted audit sample
+- evidence snippets
+- expected need for human review.
+
+# ============================================================
+# PART D4 — DEFINE POST-TACE EQUIPOISE POPULATION
+# ============================================================
+
+Build progressively restricted candidate populations.
+
+### Cohort D-A
+All patients with post-first-TACE reassessment.
+
+### Cohort D-B
+Residual/recurrent HCC after first TACE.
+
+### Cohort D-C
+Residual/recurrent liver-dominant disease with:
+- no clear extrahepatic spread
+- no major macrovascular invasion
+- adequate hepatic reserve
+
+### Cohort D-D
+Patients for whom BOTH:
+- repeat TACE
+and
+- systemic therapy
+appear clinically plausible.
+
+Do not assume equipoise from codes alone.
+
+Report branch counts at each restriction.
+
+# ============================================================
+# PART D5 — TREATMENT STRATEGIES
+# ============================================================
+
+At the post-TACE decision point identify:
+
+A. repeat TACE
+B. transition to systemic therapy
+C. TACE + systemic therapy
+D. Y90
+E. ablation/SBRT
+F. no further active therapy
+
+For systemic transition report exact regimen.
+
+Specifically distinguish:
+- modern ICI-based systemic therapy
+- historical TKI-only systemic therapy.
+
+The clinically most relevant comparison would be:
+
+repeat TACE
+vs
+modern ICI-based systemic therapy
+
+if N permits.
+
+# ============================================================
+# PART D6 — ALBI DETERIORATION SUBGROUP
+# ============================================================
+
+A recent literature question is whether persistent hepatic deterioration after first TACE identifies patients who should NOT receive repeat TACE.
+
+REACH should only pursue this if it can materially extend the question into the modern systemic era.
+
+Report:
+
+- baseline ALBI
+- post-TACE ALBI
+- persistent deterioration
+- post-TACE tumor burden
+- repeat-TACE N
+- modern-systemic-switch N
+
+especially among patients with persistent ALBI deterioration.
+
+Do not compare outcomes yet.
+
+# ============================================================
+# PART D7 — CAUSAL FEASIBILITY
+# ============================================================
+
+For repeat TACE vs systemic transition:
+
+Before outcomes, assess:
+
+- propensity-score distributions
+- common support
+- overlap weighting
+- ESS
+- raw balance
+- weighted balance
+
+Confounders should include:
+
+- post-TACE ALBI
+- AFP
+- ECOG
+- Child-Pugh
+- BCLC
+- ascites
+- encephalopathy
+- platelet count
+- tumor burden
+- response to TACE
+- PVTT
+- extrahepatic disease
+- prior TACE history
+- age
+- etiology
+- comorbidity
+
+If tumor response/burden cannot be measured adequately:
+label:
+
+`CAUSAL COMPARISON NOT DEFENSIBLE WITHOUT MANUAL IMAGING ABSTRACTION`
+
+# ============================================================
+# PHASE E — SYSTEMIC-TO-LOCAL / CURATIVE CONVERSION
+# ============================================================
+
+This is Candidate Project 3.
+
+A generic:
+"some patients undergo conversion after immunotherapy"
+study is already known.
+
+The more useful question is:
+
+**Which longitudinal changes in tumor activity and hepatic reserve create a window for curative/local conversion after initially non-curative systemic treatment?**
+
+# ============================================================
+# PART E1 — IDENTIFY CONVERSION EVENTS
+# ============================================================
+
+After systemic therapy initiation identify subsequent:
+
+Potentially curative:
+- resection
+- ablation
+- liver transplantation
+
+Potentially consolidative/noncurative:
+- TACE
+- Y90
+- SBRT
+
+Do NOT call all locoregional therapy "conversion."
+
+Use notes/tumor board/operative documentation to classify:
+
+- CURATIVE_INTENT
+- CONSOLIDATIVE
+- PALLIATIVE
+- UNKNOWN
+
+# ============================================================
+# PART E2 — COUNT THE EVENTS
+# ============================================================
+
+Report:
+
+- systemic-treated denominator
+- true-1L denominator
+- patients with any post-systemic local therapy
+- curative-intent conversion N
+- resection N
+- ablation N
+- transplant N
+- drug-free treatment-free interval ≥6 months
+- ≥12 months
+
+If curative conversion N <30:
+do not recommend a multivariable causal study.
+
+It may remain a descriptive/exploratory project.
+
+# ============================================================
+# PART E3 — PRE-CONVERSION TRAJECTORY
+# ============================================================
+
+For patients with and without conversion report availability of:
+
+- baseline AFP
+- AFP change
+- ALBI change
+- ECOG
+- Child-Pugh
+- BCLC
+- PVTT
+- extrahepatic spread
+- radiographic response
+- treatment duration
+- regimen
+
+No outcome comparisons yet.
+
+# ============================================================
+# PHASE F — CHILD-PUGH B / IMPAIRED LIVER FUNCTION
+# ============================================================
+
+This is Candidate Project 4.
+
+Prospective systemic-therapy evidence in Child-Pugh B HCC remains limited.
+
+Determine whether REACH has enough patients for a high-quality project.
+
+Among high-confidence true systemic starts classify:
+
+- CP A5
+- A6
+- B7
+- B8
+- B9
+- C
+
+Use note-derived numeric Child-Pugh where available.
+
+Report by regimen:
+
+- N
+- treatment duration
+- discontinuation reasons
+- decompensation events
+- subsequent therapy N
+
+Do not compare regimens causally unless genuine overlap exists.
+
+Potential question:
+
+**Which objective baseline features distinguish Child-Pugh B patients who retain treatment tolerance and subsequent therapeutic opportunity?**
+
+Assess feasibility only.
+
+# ============================================================
+# PHASE G — ATEZO/BEV VS STRIDE, NOW AS A BENCHMARK
+# ============================================================
+
+This is Candidate Project 5, NOT the default winner.
+
+Important external context:
+
+Large 2025–2026 real-world AB-vs-STRIDE comparative studies now exist.
+
+Therefore a generic:
+"AB vs STRIDE survival"
+study from Hopkins is low novelty.
+
+The Hopkins cohort is worth pursuing only if it offers substantially richer clinical phenotyping or a distinctive question.
+
+# ============================================================
+# PART G1 — FINAL CLEAN ROUTINE-CARE COHORT
+# ============================================================
+
+Take v10's approximately:
+
+51 AB vs 41 STRIDE
+
+candidate overlap cohort.
+
+Exclude:
+- research-protocol treatment
+- uncertain HCC indication
+- uncertain true 1L
+- clear outside-prior systemic therapy
+- date-shift-incompatible cases
+
+Report final N.
+
+Then rerun:
+
+- PS support
+- overlap ESS
+- weighted SMD
+- event count
+- detectable effect
+
+Do NOT inherit the previous "all gates pass" verdict after removing research patients.
+
+# ============================================================
+# PART G2 — UNIQUE ANGLES
+# ============================================================
+
+Determine whether Hopkins can uniquely study:
+
+- physician treatment-selection rationale
+- portal-hypertension/bleeding contraindications
+- autoimmune/immunosuppression contraindications
+- Child-Pugh B real-world use
+- cause-specific discontinuation
+- dynamic AFP/ALBI differences
+- subsequent treatment access
+
+If not:
+deprioritize AB vs STRIDE.
+
+# ============================================================
+# PHASE H — POST-ICI SECOND-LINE QUESTION
+# ============================================================
+
+This remains one of the most clinically important questions:
+
+**After first-line ICI-based therapy, what should be given next?**
+
+REACH was previously too small.
+
+Recalculate using:
+- corrected true line assignment
+- AFP correction
+- robust dates
+- nonresearch patients
+
+Branches:
+- TKI
+- Nivo/Ipi
+- STRIDE
+- ramucirumab where AFP ≥400
+- other
+
+Report counts.
+
+If still underpowered:
+label:
+
+`HIGH-IMPACT MULTICENTER PROJECT — REACH ALONE INSUFFICIENT`
+
+Do not force a single-center comparison.
+
+# ============================================================
+# PHASE I — OTHER HIGH-VALUE OPPORTUNITIES
+# ============================================================
+
+Using the complete data atlas, actively search for opportunities we have not considered.
+
+Specifically evaluate feasibility for:
+
+### ICI liver injury and rechallenge
+- validated biochemical phenotype
+- steroid treatment
+- ICI hold
+- rechallenge
+- recurrence
+
+### Bevacizumab component interruption
+- bev hold
+- atezo continuation
+- toxicity cause
+- restart
+
+### Local therapy for oligoprogression while continuing systemic treatment
+- systemic regimen ongoing
+- focal SBRT/TACE/Y90/ablation
+- systemic continuation after local therapy
+
+### Recurrence after curative-intent treatment
+- resection/ablation
+- recurrence detection
+- salvage treatment pattern
+
+### Post-systemic conversion/downstaging
+already covered above, but search broadly.
+
+### Tumor-board decision research
+If tumor-board notes exist and contain explicit recommendations:
+quantify availability and whether these can identify clinical decision rationale.
+
+### Molecular/genomic HCC
+Only if meaningful N exists.
+
+# ============================================================
+# PHASE J — DATA-QUALITY SAFETY SYSTEM
+# ============================================================
+
+Every candidate project must pass these checks.
+
+## J1 — Population identity
+- high-confidence HCC
+- competing malignancies excluded appropriately
+- true treatment indication established
+
+## J2 — Exposure identity
+- order
+- Beacon
+- administration/refill
+triangulated where appropriate.
+
+## J3 — True treatment line
+Do not infer true 1L from first observed REACH exposure alone.
+
+## J4 — Temporal validity
+All baseline variables precede index.
+
+All landmark variables occur before outcome follow-up begins.
+
+## J5 — No immortal-time construction
+No cohort may require future information in order to enter at baseline.
+
+## J6 — No informative "no treatment" assumption
+No subsequent therapy ≠ treatment failure automatically.
+
+## J7 — Missingness
+Evaluate missingness by treatment/outcome severity.
+
+## J8 — Trial contamination
+Research-protocol patients separately characterized.
+
+## J9 — Date shift
+Within-patient time valid.
+Cross-patient era bounded ±6 months.
+
+## J10 — Source provenance
+Every derived field must retain source/provenance.
+
+# ============================================================
+# IMPORTANT: AUDIT PACKETS
+# ============================================================
+
+For every leading project create an audit packet.
+
+Do NOT call it human validation.
+
+For each finalist randomly sample, with fixed seed:
+
+- 20 typical patients
+- 20 edge cases
+- 20 algorithm-discordant/ambiguous cases where available
+
+Display concise chronological evidence:
+
+- diagnosis
+- treatment
+- labs
+- imaging
+- notes
+- next treatment
+- outcome state
+
+This will be reviewed by the human investigator after the run.
+
+# ============================================================
+# PHASE K — NOVELTY / CLINICAL-IMPACT PENALTIES
+# ============================================================
+
+Do not automatically rank a project highly because it has large N.
+
+Apply the following literature-informed penalties.
+
+### Already saturated / low novelty unless substantially extended
+
+1. Generic AFP response → OS/PFS.
+2. Generic baseline ALBI → OS.
+3. Baseline ALBI + early AFP → OS/PFS.
+4. Generic AB vs STRIDE OS comparison.
+5. Generic ALBI deterioration after TACE.
+6. Generic statement that preserved liver function predicts access to 2L.
+7. Generic descriptive "conversion therapy occurs after immunotherapy."
+
+These questions may still be components of a stronger project.
+
+They should not be the entire paper.
+
+### Higher-value extensions
+
+Prioritize questions that establish:
+
+- WHY treatment opportunity is lost;
+- WHEN to change treatment strategy;
+- competing tumor vs liver causes of failure;
+- when local therapy creates/restores curative opportunity;
+- a real clinical decision between plausible strategies;
+- modern ICI-era treatment decisions.
+
+# ============================================================
+# PHASE L — FINALIST FEASIBILITY TABLE
+# ============================================================
+
+Create one row for each serious project.
+
+Required candidates:
+
+1. Dynamic therapeutic opportunity after true 1L systemic therapy
+2. Joint AFP/ALBI trajectory and cause-specific treatment failure
+3. Repeat TACE vs modern systemic transition after first TACE
+4. Persistent post-TACE ALBI deterioration decision study
+5. Systemic-to-curative/local conversion
+6. Child-Pugh B systemic-treatment trajectory
+7. Routine-care AB vs STRIDE
+8. Post-ICI second-line strategy
+9. ICI liver injury/rechallenge
+10. Oligoprogression local therapy while continuing systemic therapy
+
+For each report:
+
+- clinically exact question
+- target population
+- index event
+- N
+- exposure N
+- comparator N if applicable
+- outcome/event counts
+- biomarker coverage
+- ECOG coverage
+- Child-Pugh coverage
+- BCLC coverage
+- radiology requirement
+- note requirement
+- longitudinal density
+- common support if comparative
+- overlap ESS
+- max weighted SMD
+- expected manual abstraction burden
+- date-shift dependence
+- trial contamination
+- main bias threat
+- novelty penalty
+- clinical-impact grade
+- single-center feasibility
+- whether multicenter expansion is needed
+
+# ============================================================
+# PHASE M — PROJECT SCORING
+# ============================================================
+
+Score each finalist on a 100-point feasibility/impact framework.
+
+Do NOT use observed effect size.
+
+### Clinical importance — 20
+Does it change a real management decision or explain treatment failure?
+
+### Novelty — 15
+Is the exact question meaningfully beyond already-published work?
+
+### REACH-specific data advantage — 15
+Does REACH provide something claims/TriNetX cannot easily provide?
+
+Examples:
+- serial biomarkers
+- detailed treatment chronology
+- discontinuation reason
+- radiology
+- notes
+- locoregional/systemic integration
+
+### Cohort/event size — 10
+
+### Phenotype/exposure validity — 10
+
+### Confounder measurement — 10
+
+### Positivity/equipoise — 10
+For causal comparisons only.
+For noncomparative designs, replace with longitudinal design validity.
+
+### Endpoint validity — 5
+
+### Date-shift robustness — 5
+
+Print component scores.
+
+Do not inflate scores to make a winner.
+
+# ============================================================
+# PHASE N — FINAL REPORT
+# ============================================================
+
+Return:
+
+## 1. COMPLETE HCC DATA MAP
+
+What REACH contains that can materially support HCC research.
+
+Explicitly identify any important NEW tables/data sources discovered in v11.
+
+## 2. PATIENT-JOURNEY MAP
+
+Show the major observed transitions:
+
+diagnosis
+→ curative/local treatment
+→ recurrence
+→ systemic therapy
+→ later line
+→ conversion
+→ decompensation
+→ death
+
+with counts.
+
+## 3. TOP 5 PROJECTS
+
+Rank by the 100-point framework.
+
+For each provide:
+
+- exact research question
+- why clinicians would care
+- what makes it distinct from existing literature
+- exact cohort
+- exact index
+- exact outcome
+- N/event counts
+- key data strengths
+- major unresolved bias
+- what human abstraction is still required
+- whether it is ready now.
+
+## 4. THE BEST SINGLE PROJECT
+
+Choose ONE only if the evidence genuinely distinguishes it.
+
+Explain why it beats the alternatives.
+
+If two remain essentially tied, explicitly say so rather than manufacturing a winner.
+
+## 5. BEST BACKUP PROJECT
+
+Specify one backup.
+
+## 6. MULTICENTER-ONLY PROJECT
+
+Identify the highest-impact question that REACH cannot answer alone but for which this phenotype pipeline could be exported to other institutions.
+
+## 7. REJECTED PROJECTS
+
+List attractive ideas that should not be pursued and the exact reason.
+
+# ============================================================
+# PERSISTENCE
+# ============================================================
+
+Persist:
+
+- `hcc_full_data_atlas_v11`
+- `hcc_patient_journey_events_v11`
+- `hcc_true1l_landmark_v11`
+- `hcc_dynamic_opportunity_states_v11`
+- `hcc_tace_decision_cohort_v11`
+- `hcc_tace_equipoise_diagnostics_v11`
+- `hcc_conversion_events_v11`
+- `hcc_childpughB_feasibility_v11`
+- `hcc_ab_stride_final_feasibility_v11`
+- `hcc_postici_2l_feasibility_v11`
+- `hcc_project_finalists_v11`
+- `hcc_audit_packets_v11`
+
+Do not overwrite v8–v10.
+
+# ============================================================
+# COMPLETION RULE
+# ============================================================
+
+Do not stop because one analysis is difficult.
+
+Do not substitute prose for an unexecuted analysis.
+
+If a data source cannot be queried:
+state the exact technical failure.
+
+At the end print:
+
+Full schema/data exhaust: COMPLETE / INCOMPLETE
+HCC data atlas: COMPLETE / INCOMPLETE
+Patient journey event map: COMPLETE / INCOMPLETE
+True-1L landmark cohort: COMPLETE / INCOMPLETE
+Dynamic opportunity cohort: COMPLETE / INCOMPLETE
+TACE decision cohort: COMPLETE / INCOMPLETE
+Conversion cohort: COMPLETE / INCOMPLETE
+Child-Pugh B feasibility: COMPLETE / INCOMPLETE
+AB-vs-STRIDE final feasibility: COMPLETE / INCOMPLETE
+Post-ICI 2L feasibility: COMPLETE / INCOMPLETE
+Other-opportunity search: COMPLETE / INCOMPLETE
+Audit packets prepared: COMPLETE / INCOMPLETE
+Top-project ranking: COMPLETE / INCOMPLETE
+
+STOP before fitting final comparative-effectiveness or prognostic outcome models.
+
+The purpose of v11 is to select the paper, not to generate the paper's answer.
