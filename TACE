@@ -1,1912 +1,1163 @@
-Follow ALL requirements in `skills.md`.
-
-THIS IS A CRITICAL LOCKDOWN RUN.
-
-Do not estimate treatment effects.
-Do not fit survival models.
-Do not fit propensity models.
-Do not rank projects.
-Do not recommend multicenter expansion.
-
-IMPORTANT CONSTRAINT:
-
-**THIS PROJECT MUST REMAIN ENTIRELY WITHIN REACH.**
-
-If the final REACH-only cohort is not sufficient for a credible comparative study, say so and identify what REACH-only reformulation remains possible.
-
-Do NOT suggest multicenter data.
-
-# ============================================================
-# PURPOSE
-# ============================================================
-
-v12.4 established that REACH contains substantial HCC-directed TACE and subsequent systemic treatment, but it did NOT finish the most important causal-cohort work.
-
-v12.4 found approximately:
-
-- 2,525 canonical TACE episodes
-- 1,970 probable/definite HCC-directed TACE episodes
-- 887 patients with ≥1 HCC-directed TACE
-- 503 patients with ≥2 HCC-directed TACEs
-- 80 patients in the broad "definitely modern" category who eventually started systemic therapy after TACE #1
-- 41 such patients starting systemic therapy within 120 days.
-
-However, these are NOT yet valid treatment arms because:
-
-1. "ever systemic after TACE" is not a treatment strategy.
-2. 118/193 eventual systemic patients had another TACE before systemic therapy.
-3. only 568/887 first observed HCC-TACE patients were definite/probable TRUE first-TACE.
-4. trial/research patients remain mixed into systemic counts.
-5. regimen-specific FDA era appropriateness was not enforced.
-6. reassessment imaging was not rebuilt in v12.4.
-7. inadequate-control phenotype was not built.
-8. clinical decision notes were not searched.
-9. ECOG/Child-Pugh were not recovered.
-10. the unexplained 887 → 845 denominator loss remains unresolved.
-11. the primary clinical decision point still has not been constructed.
-
-The sole objective of v12.5 is:
-
-**Build and validate the first clinically meaningful post-TACE decision point at which a patient with true HCC could reasonably undergo another TACE or transition to systemic HCC therapy, and determine the exact REACH-only arm sizes.**
-
-The target conceptual sequence is:
-
-TRUE HCC
-→ TRUE/PROBABLE FIRST HCC-DIRECTED TACE
-→ POST-TACE REASSESSMENT
-→ EXPLICIT EVIDENCE OF INADEQUATE TUMOR CONTROL
-→ PATIENT STILL FIT FOR ACTIVE THERAPY
-→ FIRST ACTIVE TREATMENT STRATEGY
-
-and then classify:
-
-A. repeat TACE first
-B. routine-care systemic therapy first
-C. combined systemic + TACE strategy
-D. other local therapy
-E. curative-intent therapy
-F. observation
-G. supportive care/death
-H. unknown.
-
-# ============================================================
-# ABSOLUTE EXECUTION RULES
-# ============================================================
-
-NO SECTION MAY BE SKIPPED.
-
-NO SECTION MAY BE "DEFERRED."
-
-If a query fails:
-1. print the error;
-2. inspect the schema;
-3. correct the query;
-4. rerun it;
-5. continue only after obtaining the requested result.
-
-If the data genuinely do not exist:
-print:
-
-`DATA UNAVAILABLE AFTER EXHAUSTIVE SEARCH`
-
-and list every table/field searched.
-
-Do not substitute a weaker proxy without explicitly saying so.
-
-For EVERY section print:
-
-SOURCE TABLE(S):
-SOURCE VERSION(S):
-UNIT OF ANALYSIS:
-PRIMARY KEY:
-INDEX DATE:
-DATE WINDOW:
-JOIN KEY(S):
-RAW ROWS:
-RAW PATIENTS:
-FILTERED ROWS:
-FILTERED PATIENTS:
-
-Then print the actual phenotype-defining SQL or PySpark.
-
-Do NOT merely say:
-"logic applied."
-
-We need to see the actual logic.
-
-For every join print:
-
-LEFT_ROWS
-LEFT_PATIENTS
-RIGHT_ROWS
-RIGHT_PATIENTS
-MATCHED_LEFT_ROWS
-MATCHED_LEFT_PATIENTS
-UNMATCHED_LEFT_PATIENTS
-ROWS_AFTER_JOIN
-PATIENTS_AFTER_JOIN
-JOIN_MULTIPLICITY
-
-If an intended 1:1 or many:1 join produces:
-
-join_multiplicity > 1.10
-
-print:
-
-`*** JOIN MULTIPLICATION FAILURE ***`
-
-and STOP that section until fixed.
-
-For every category variable print:
-
-- exact Boolean/code logic
-- mutually exclusive category counts
-- assertion that categories sum to parent denominator.
-
-For every date-derived variable print:
-- source date
-- comparison date
-- minimum
-- p10
-- median
-- p90
-- maximum
-
-and inspect negative or implausible intervals.
-
-# ============================================================
-# TRIPLE-CHECK FRAMEWORK
-# ============================================================
-
-Every clinically important phenotype must be verified in THREE ways wherever possible.
-
-### Check 1 — structured data
-codes / procedures / medications / labs.
-
-### Check 2 — text evidence
-procedure note / oncology note / hepatology note / radiology report.
-
-### Check 3 — temporal consistency
-events occur in a clinically logical sequence.
-
-Examples:
-
-TACE:
-procedure code + IR text + appropriate chronology.
-
-Systemic start:
-canonical line + drug-specific source + chronology.
-
-Progression/inadequate control:
-radiology/oncology text + subsequent treatment decision + chronology.
-
-Do not call a phenotype HIGH CONFIDENCE if only one weak source supports it.
-
-# ============================================================
-# PART 0 — LOAD AND VERIFY EXACT INPUT TABLES
-# ============================================================
-
-Load:
-
-`reach_users.xzhao81.hcc_tace_hcc_indication_v12_4`
-
-`reach_users.xzhao81.hcc_tace_sequence_hcc_only_v12_4`
-
-`reach_users.xzhao81.hcc_index_tace_hcc_validated_v12_4`
-
-`reach_users.xzhao81.hcc_systemic_starts_for_tace_v12_4`
-
-`reach_users.xzhao81.hcc_tace_to_systemic_transitions_v12_4`
-
-Also locate:
-
-`hcc_systemic_lines_canonical_v12_2`
-
-`hcc_systemic_patients_canonical_v12_2`
-
-`research_status_final` or equivalent v12.1 research table
-
-`hcc_tumor_biomarkers_v12`
-
-`hcc_decompensation_validated_v12`
-
-canonical mortality table
-
-`ptnotes_text`
-
-`radiology_text`
-
-`image_procedures`
-
-`med_orders`
-
-`med_admin`
-
-`med_admin_all`
-
-`treatment_plan`
-
-`treatment_plan_orders`
-
-`encounter_dx`
-
-`problem_list`
-
-`hosp_billing_dx`
-
-any IR/procedure-note tables.
-
-PRINT schemas before using them.
-
-Do not guess column names.
-
-# ============================================================
-# PART 1 — EXPLAIN 887 → 845
-# ============================================================
-
-This is mandatory before anything else.
-
-v12.4 had:
-
-887 patients with ≥1 HCC-directed TACE
-
-but:
-
-845 patients in the TACE-to-systemic transition table.
-
-Find the exact 42 patients missing.
-
-Compute:
-
-`set(hcc_tace_patients_887) - set(transition_patients_845)`
-
-PRINT ALL 42 patient IDs.
-
-For each missing patient print:
-
-- first HCC-TACE date
-- indication status
-- true-first-TACE status
-- number of HCC TACEs
-- systemic therapy ever yes/no
-- death date
-- last follow-up
-- reason excluded from transition table.
-
-Possible reasons should be explicit, e.g.:
-
-NO_SYSTEMIC_RECORD
-JOIN_FAILURE
-MISSING_DATE
-EXCLUDED_BY_FILTER
-OTHER.
-
-The transition-table denominator should NOT exclude people merely because they never received systemic therapy.
-
-If that occurred, the transition table is structurally wrong.
-
-Rebuild if necessary so the denominator contains EVERY eligible TACE patient.
-
-Assertion:
-
-`N_transition_denominator == N_eligible_tace_population`
-
-unless a clearly printed exclusion is scientifically justified.
-
-# ============================================================
-# PART 2 — LOCK PRIMARY FIRST-TACE POPULATION
-# ============================================================
-
-Primary cohort MUST NOT include all 887 first-observed TACE patients.
-
-Use:
-
-DEFINITE_TRUE_FIRST_HCC_TACE
-+
-PROBABLE_TRUE_FIRST_HCC_TACE
-
-as PRIMARY.
-
-Expected approximate N from v12.4:
-
-284 + 284 = 568.
-
-Do NOT include in primary:
-
-UNKNOWN
-DEFINITE_PRIOR_TACE
-FIRST_OBSERVED_PRIOR_OUTSIDE_TACE_POSSIBLE.
-
-Keep these separately for sensitivity analyses.
-
-Print:
-
-PRIMARY TRUE/PROBABLE FIRST-TACE N
-
-and counts by:
-
-- calendar/robust era
-- number subsequently receiving TACE #2
-- number subsequently receiving any systemic therapy.
-
-Print all first-TACE classification logic again.
-
-Verify that every primary patient:
-
-- has an HCC-directed episode
-- has no definite prior TACE
-- does not have explicit outside TACE evidence before index.
-
-Randomly print 30 primary cases.
-
-Print ALL cases with conflicting evidence.
-
-Persist:
-
-`hcc_tace_primary_true_first_v12_5`
-
-# ============================================================
-# PART 3 — DETERMINE PRIOR SYSTEMIC THERAPY BEFORE TACE
-# ============================================================
-
-The primary response-adaptive TACE project should study patients who are systemically untreated at the relevant TACE decision.
-
-For every primary first-TACE patient identify ANY validated HCC systemic therapy before:
-
-1. TACE #1
-2. TACE #2
-3. each eventual decision point.
-
-Use canonical systemic lines PLUS raw confirmation.
-
-Create:
-
-`prior_systemic_status`
-
-- DEFINITE_PRIOR_SYSTEMIC
-- PROBABLE_PRIOR_SYSTEMIC
-- NO_EVIDENCE_PRIOR_SYSTEMIC
-- UNCERTAIN.
-
-If systemic treatment started BEFORE TACE and continued across TACE:
-
-classify:
-
-`TACE_DURING_EXISTING_SYSTEMIC`
-
-This is NOT a systemic switch.
-
-Do NOT allow these patients into the primary TACE→systemic escalation cohort.
-
-Print all patients with:
-
-- prior systemic
-- systemic starting ≤30 days BEFORE TACE
-- systemic spanning TACE.
-
-For every such case print timeline.
-
-Primary cohort requires:
-
-NO_EVIDENCE_PRIOR_SYSTEMIC.
-
-Sensitivity may include UNCERTAIN.
-
-Persist:
-
-`hcc_tace_prior_systemic_v12_5`
-
-# ============================================================
-# PART 4 — RESEARCH / TRIAL STATUS FOR EVERY SYSTEMIC START
-# ============================================================
-
-v12.4 still included trial patients.
-
-This must be fixed.
-
-Do NOT rely on a research-status table limited only to 282 HC true-1L patients.
-
-Build a LINE-LEVEL research classification for every systemic line relevant to this TACE cohort.
-
-Use the previously validated v12.1 research-status sources:
-
-- research flag
-- note trial evidence
-- protocol flag
-- research suspected flag
-- Beacon research overlap
-- explicit study/protocol information.
-
-Create:
-
-`systemic_research_status_final`
-
-EXACT categories:
-
-1. DEFINITE_INTERVENTIONAL_TRIAL
-2. PROBABLE_INTERVENTIONAL_TRIAL
-3. ROUTINE_CARE
-4. UNCERTAIN.
-
-Print the exact logic.
-
-For every systemic patient after TACE print:
-- regimen
-- systemic date
-- trial status
-- supporting field(s).
-
-Primary treatment-comparison cohort uses:
-
-ROUTINE_CARE only.
-
-Sensitivity:
-ROUTINE_CARE + UNCERTAIN.
-
-Do NOT mix definite/probable trial treatment into the primary arm.
-
-Persist:
-
-`hcc_post_tace_systemic_research_v12_5`
-
-# ============================================================
-# PART 5 — REGIMEN-SPECIFIC ERA APPROPRIATENESS
-# ============================================================
-
-The generic "modern era" variable is inadequate.
-
-Treatment availability depends on the REGIMEN.
-
-Because each patient's dates may be shifted by a fixed offset up to ±6 months, use robust approval windows.
-
-Use these supplied FDA anchors:
-
-### Atezo/Bev
-HCC first-line approval:
-2020-05-29
-
-robust routine-care availability:
-observed systemic start > 2020-11-29
-
-uncertain boundary:
-2019-11-29 through 2020-11-29
-
-### STRIDE
-HCC approval:
-2022-10-21
-
-robust routine-care availability:
-observed start > 2023-04-21
-
-uncertain boundary:
-2022-04-21 through 2023-04-21
-
-### Nivolumab/Ipilimumab
-
-Older indication:
-post-sorafenib HCC.
-
-First-line HCC approval:
-2025-04-11.
-
-For a SYSTEMIC-NAIVE patient in this study:
-
-routine first-line Nivo/Ipi requires:
-
-observed systemic start > 2025-10-11
-
-unless there is explicit documentation explaining another approved/standard context.
-
-Any systemic-naive Nivo/Ipi before this robust first-line boundary should be:
-
-PREAPPROVAL_OR_NONSTANDARD
-
-unless definitively explained.
-
-### Other regimens
-
-For primary modern ICI systemic escalation:
-
-include:
-- AB
-- STRIDE
-- first-line-era-appropriate NIVO_IPI.
-
-Classify separately:
-- SORAFENIB
-- LENVATINIB
-as TKI_SYSTEMIC.
-
-Do not call the following routine modern first-line HCC without explicit evidence:
-
-- NIVO_MONO
-- PEMBRO_MONO
-- DURVA_MONO
-- ATEZO_MONO
-- IPI_MONO
-- CABOZANTINIB
-- REGORAFENIB
-- RAMUCIRUMAB
-- unusual combinations.
-
-These should be:
-
-OTHER_NONSTANDARD_OR_LATER_LINE
-
-unless the patient's preceding systemic history makes them a legitimate later-line treatment.
-
-But our PRIMARY TACE→SYSTEMIC cohort is systemic-naive, so later-line drugs should generally not appear.
-
-If they do:
-print:
-
-`*** SYSTEMIC LINE PLAUSIBILITY ALERT ***`
-
-and investigate.
-
-Create:
-
-`regimen_era_status`
-
-- ROUTINE_ERA_APPROPRIATE
-- DATE_SHIFT_BOUNDARY_UNCERTAIN
-- PREAPPROVAL_OR_NONSTANDARD
-- TRIAL
-- HISTORICAL_TKI_STANDARD
-- OTHER.
-
-Print counts.
-
-# ============================================================
-# PART 6 — REBUILD POST-TACE REASSESSMENT IMAGING
-# ============================================================
-
-Do NOT reuse the broken v12.3 response phenotype.
-
-Use v12.4 primary TRUE/PROBABLE FIRST-TACE patients.
-
-Do separately for:
-
-TACE #1
-TACE #2.
-
-For each TACE identify ONE clinically meaningful reassessment study.
-
-Primary search window:
-
-21–120 days after TACE.
-
-Preferred window:
-
-28–90 days.
-
-Selection priority:
-
-1. contrast-enhanced liver MRI
-2. multiphasic contrast CT liver
-3. other contrast CT/MRI clearly used for HCC reassessment.
-
-Do NOT select:
-- ultrasound
-- noncontrast CT/MRI if contrast study is available
-- chest-only CT
-- procedural imaging
-- duplicate second-opinion record if native report exists
-- multiple billing rows for same scan.
-
-Deduplication hierarchy:
-
-accession/order/study identifier
->
-patient + study date + modality + report identity.
-
-If more than one eligible scan:
-
-choose earliest appropriate dedicated HCC reassessment.
-
-Print:
-- all candidate scans per patient for 20 random cases
-- why selected scan won.
-
-For each TACE number print:
-
-N_TACE
-N_WITH_REASSESSMENT
-PERCENT
-median days
-IQR.
-
-Persist:
-
-`hcc_tace_reassessment_v12_5`
-
-# ============================================================
-# PART 7 — LINK THE CORRECT RADIOLOGY REPORT
-# ============================================================
-
-For each selected reassessment study, join to `radiology_text`.
-
-Triple-check using:
-
-- patient
-- accession/order/report identifier if available
-- study date
-- modality/procedure.
-
-Do NOT join on patient/date alone if multiple studies occurred that day unless necessary.
-
-If multiple reports match:
-print them and deduplicate using accession/report identifiers.
-
-Print:
-
-N selected studies
-N exact report matches
-N multiple matches
-N missing reports.
-
-For every multiple-match case print rows.
-
-Randomly print 30 final matched study/report pairs.
-
-# ============================================================
-# PART 8 — HIGH-SPECIFICITY POST-TACE CONTROL PHENOTYPE
-# ============================================================
-
-Do NOT reproduce the old broad regex.
-
-We only need a HIGH-SPECIFICITY classification sufficient to identify an actual decision point.
-
-Use BOTH:
-
-A. selected radiology report
-B. contemporaneous oncology/hepatology/IR notes.
-
-First parse the radiology IMPRESSION preferentially.
-
-Do NOT let historical/indication text override the impression.
-
------------------------------------------------
-A. EXPLICIT ACTIVE / INADEQUATELY CONTROLLED HCC
------------------------------------------------
-
-High-specificity evidence:
-
-- "LR-TR viable"
-- "viable tumor"
-- "residual viable tumor"
-- "residual enhancing tumor"
-- "residual disease"
-- "persistent viable HCC"
-- "incomplete response"
-- "progression of HCC"
-- "progressive disease"
-- "new LR-5 lesion"
-- "new HCC lesion"
-- "recurrent HCC"
-- "increased viable tumor"
-- explicit oncology/IR statement that disease requires further HCC treatment.
-
------------------------------------------------
-B. EXPLICIT GOOD LOCAL CONTROL
------------------------------------------------
-
-High-specificity evidence:
-
-- "LR-TR nonviable"
-- "no viable tumor"
-- "no residual enhancement"
-- "complete necrosis"
-- "complete response"
-- "treated lesion nonviable"
-- "no evidence of residual/recurrent disease."
-
------------------------------------------------
-C. MIXED RESPONSE
------------------------------------------------
-
-A patient may have:
-
-treated lesion nonviable
-BUT
-new active HCC elsewhere.
-
-At the PATIENT level:
-
-if ANY definite viable/new/progressive HCC exists:
-
-ACTIVE_HCC = YES
-
-even if another treated lesion is nonviable.
-
-This is NOT a contradiction.
-
-A contradiction exists only when the SAME lesion/current overall state is simultaneously classified in incompatible ways because of parsing.
-
------------------------------------------------
-D. NEGATION HANDLING
------------------------------------------------
-
-Explicitly implement negation handling.
-
-Examples:
-
-"no viable tumor"
-must NOT match viable tumor.
-
-"without progression"
-must NOT match progression.
-
-"no new lesions"
-must NOT match new lesion.
-
-"history of metastatic disease"
-must NOT automatically mean current extrahepatic metastasis.
-
-Print the actual negation code.
-
------------------------------------------------
-E. FINAL STATUS
------------------------------------------------
-
-Create:
-
-`post_tace_control_status`
-
-1. EXPLICIT_INADEQUATE_CONTROL
-2. EXPLICIT_GOOD_CONTROL
-3. ACTIVE_HCC_BUT_RESPONSE_UNCERTAIN
-4. CONTRADICTORY
-5. INDETERMINATE
-6. NO_REPORT.
-
-Store:
-- evidence source
-- exact evidence sentence
-- lesion context if available.
-
-Print ALL CONTRADICTORY cases.
-
-Print random:
-- 50 inadequate
-- 50 good control
-- 30 uncertain.
-
-Do not progress to final decision cohort until the samples appear clinically coherent.
-
-Persist:
-
-`hcc_post_tace_control_v12_5`
-
-# ============================================================
-# PART 9 — EXTRAHEPATIC DISEASE: BUILD CONSERVATIVELY
-# ============================================================
-
-Do not repeat v12.3's false EHD phenotype.
-
-Use staging imaging + notes.
-
-Create:
-
-`extrahepatic_status`
-
-1. DEFINITE_EXTRAHEPATIC_HCC
-2. EXPLICIT_NO_EXTRAHEPATIC_DISEASE
-3. NO_EVIDENCE_ON_AVAILABLE_STAGING
-4. INDETERMINATE
-5. OTHER_CANCER_METASTASIS_NOT_HCC.
-
-Important:
-
-A history of another cancer must not automatically mean HCC extrahepatic spread.
-
-Examples:
-
-"no metastatic disease"
-→ explicit NO.
-
-"no extrahepatic metastases"
-→ explicit NO.
-
-"stable pulmonary nodules"
-→ INDETERMINATE unless explicitly metastatic HCC.
-
-"metastatic colorectal cancer"
-→ OTHER_CANCER, not HCC EHD unless clearly linked.
-
-Store evidence.
-
-Print all DEFINITE EHD cases up to 100.
-
-Print 50 NO cases.
-
-Print 50 INDETERMINATE cases.
-
-# ============================================================
-# PART 10 — MACROVASCULAR INVASION
-# ============================================================
-
-Create separately:
-
-- MAIN_PORTAL_VEIN_TUMOR_THROMBUS
-- BRANCH_PVTT
-- HEPATIC_VEIN_INVASION
-- BLAND_PORTAL_VEIN_THROMBOSIS
-- INDETERMINATE
-- NONE_EXPLICIT.
-
-Do NOT conflate bland PVT with tumor thrombus.
-
-Require explicit language.
-
-Print evidence sentence.
-
-# ============================================================
-# PART 11 — RECOVER ECOG FROM NOTES
-# ============================================================
-
-Do NOT say "ECOG unavailable."
-
-Reuse/adapt the successful v9 note extraction.
-
-At each reassessment/decision point search notes:
-
--30 days through +7 days.
-
-Preferred specialties:
-
-1. Medical Oncology
-2. Oncology
-3. Hepatology / Transplant Hepatology
-4. Gastroenterology
-5. Interventional Radiology
-6. Radiation Oncology
-7. Internal Medicine if necessary.
-
-Use explicit expressions such as:
-
-ECOG 0
-ECOG: 1
-ECOG Performance Status = 2
-ECOG PS 1.
-
-Do not parse unrelated digits.
-
-If range:
-
-"ECOG 2-3"
-
-store:
-
-AMBIGUOUS_2_3.
-
-If multiple values:
-choose nearest clinically relevant note but preserve discordance.
-
-Create:
-
-- ecog_value
-- ecog_date
-- ecog_source
-- ecog_days_from_decision
-- ecog_confidence.
-
-Print:
-
-candidate-note coverage
-successful ECOG parse
-ECOG 0
-1
-2
-3
-4
-ambiguous
-missing.
-
-Print 40 random parsed examples.
-Print ALL discordant examples up to 100.
-
-# ============================================================
-# PART 12 — RECOVER CHILD-PUGH FROM NOTES
-# ============================================================
-
-Use ONLY explicit note documentation for primary Child-Pugh.
-
-Search same clinical window.
-
-Extract:
-
-- Child-Pugh A/B/C
-- Child Pugh class A/B/C
-- CP-A / CP-B / CP-C
-- CTP A/B/C
-- Child-Pugh score 5–15
-- CTP score.
-
-Store class and numeric separately.
-
-Do NOT infer CP from ALBI.
-
-Do NOT assume "no ascites diagnosis" = no ascites.
-
-Do NOT use the previous binary reconstruction.
-
-Print:
-- explicit class N
-- explicit score N
-- both N
-- discordant N.
-
-Print 30 examples.
-
-# ============================================================
-# PART 13 — BUILD DECISION-POINT ALBI
-# ============================================================
-
-For each reassessment/decision point:
-
-### PRE-TACE ALBI
-nearest paired albumin/bilirubin in:
-
--30 through 0 days before relevant TACE.
-
-### DECISION ALBI
-nearest paired albumin/bilirubin:
-
-preferred:
-±7 days around decision date
-
-fallback:
-±14 days.
-
-If albumin and bilirubin are not from the same day:
-allow ≤3 days apart and print this.
-
-Formula:
-
-albumin_g_L = albumin_g_dL × 10
-
-bilirubin_umol_L = bilirubin_mg_dL × 17.104
-
-ALBI =
-0.66 × log10(bilirubin_umol_L)
-- 0.085 × albumin_g_L
-
-Calculate:
-
-delta_ALBI =
-decision_ALBI - pre_TACE_ALBI
-
-mALBI:
-1 ≤ -2.60
-2a > -2.60 to ≤ -2.27
-2b > -2.27 to ≤ -1.39
-3 > -1.39.
-
-Print unit distributions BEFORE calculation.
-
-Trigger:
-
-`*** UNIT FAILURE ***`
-
-for implausible values.
-
-Print 30 examples with raw labs and computed ALBI.
-
-# ============================================================
-# PART 14 — CLINICAL DECOMPENSATION AROUND DECISION
-# ============================================================
-
-Using canonical decompensation data determine:
-
-baseline before TACE
-and
-new/worsened before decision.
-
-Variables:
-
-- ascites
-- paracentesis
-- encephalopathy
-- variceal bleeding
-- SBP
-- HRS.
-
-Do not call "incident" if documented before TACE.
-
-Create:
-
-`new_decompensation_since_tace`
-
-and component flags.
-
-This is separate from Child-Pugh.
-
-# ============================================================
-# PART 15 — AFP AT THE DECISION POINT
-# ============================================================
-
-Use canonical strict AFP phenotype.
-
-Pre-TACE:
-
-nearest AFP -30..0.
-
-Decision:
-
-nearest AFP ±14 days.
-
-Store:
-- baseline AFP
-- decision AFP
-- absolute change
-- log change.
-
-If baseline AFP >20:
-calculate percentage change.
-
-If baseline AFP ≤20:
-label AFP_NONSECRETOR/LOW rather than using percent-change interpretation.
-
-Print availability and distributions.
-
-# ============================================================
-# PART 16 — EXTRACT THE CLINICAL MANAGEMENT DECISION FROM NOTES
-# ============================================================
-
-This is mandatory.
-
-For each reassessment after TACE #1 and TACE #2, search clinical notes from:
-
-scan date -7
-through scan date +45.
-
-Use:
-
-- oncology
-- IR
-- hepatology
-- GI
-- multidisciplinary/tumor-board notes if available.
-
-Extract explicit management concepts.
-
-### REPEAT TACE
-Examples:
-
-"repeat TACE"
-"another TACE"
-"return to IR for TACE"
-"plan chemoembolization"
-"additional chemoembolization."
-
-### SYSTEMIC THERAPY
-Examples:
-
-"start atezolizumab/bevacizumab"
-"start durvalumab/tremelimumab"
-"start STRIDE"
-"start systemic therapy"
-"switch to systemic treatment"
-"no further TACE; systemic therapy."
-
-### OTHER
-Y90
-ablation
-SBRT
-resection
-transplant
-observation.
-
-Distinguish:
-
-`DECIDED_PLAN`
-
-from:
-
-`OPTION_DISCUSSION`.
-
-Example:
-
-"Could consider systemic therapy in the future"
-
-is NOT a systemic plan.
-
-"Will initiate atezolizumab/bevacizumab"
-
-IS.
-
-Store:
-
-- management_plan
-- confidence
-- note date
-- specialty
-- evidence sentence.
-
-If notes disagree:
-store DISCORDANT and print them.
-
-Print ALL systemic-plan patients.
-
-Print 50 repeat-TACE plans.
-
-Persist:
-
-`hcc_post_tace_decision_notes_v12_5`
-
-# ============================================================
-# PART 17 — DEFINE FIRST TACE-INadequacy DECISION
-# ============================================================
-
-For each PRIMARY patient consider only TACE #1 and TACE #2 initially.
-
-A qualifying `TACE_INADEQUACY_DECISION` requires:
-
-A. HCC-directed TACE
-AND
-B. patient was systemically untreated before that TACE
-AND
-C. post-TACE reassessment exists
-AND
-D. one of:
-
-1. EXPLICIT_INADEQUATE_CONTROL on imaging
-
-OR
-
-2. clinical note explicitly documents:
-- residual HCC needing further therapy
-- progression
-- inadequate TACE response
-- TACE refractory/failure
-- need for repeat TACE
-- need for systemic therapy.
-
-The existence of a second TACE alone is NOT sufficient to define inadequate control.
-
-The existence of systemic treatment alone is NOT sufficient.
-
-This prevents circular exposure definition.
-
-Time zero:
-
-the EARLIEST date on which inadequate control is explicitly established:
-
-- reassessment report date
-OR
-- clinical note date
-
-whichever supplies the first valid evidence.
-
-Create:
-
-- inadequacy_date
-- evidence_source
-- evidence_text
-- after_tace_number
-- confidence.
-
-For each patient choose FIRST qualifying inadequacy event.
-
-Persist:
-
-`hcc_first_tace_inadequacy_v12_5`
-
-# ============================================================
-# PART 18 — EXCLUDE NON-RESPONSE-ADAPTIVE SYSTEMIC THERAPY
-# ============================================================
-
-A systemic regimen starting before the clinical reassessment may represent planned multimodality therapy rather than stage migration.
-
-Classify:
-
-### UPFRONT/PLANNED SYSTEMIC
-systemic start occurs:
-- before reassessment
-OR
-- before explicit inadequate-control date
-OR
-- note indicates systemic was already planned irrespective of TACE response.
-
-### RESPONSE-ADAPTIVE SYSTEMIC ESCALATION
-systemic start occurs AFTER inadequate-control decision and was not already planned.
-
-### UNCERTAIN INTENT
-unable to determine.
-
-Primary comparative cohort uses:
-
-RESPONSE-ADAPTIVE SYSTEMIC ESCALATION.
-
-Do NOT mix upfront combination treatment with stage migration.
-
-Print every upfront/combination case.
-
-# ============================================================
-# PART 19 — DEFINE PRIMARY ROUTINE-CARE SYSTEMIC ARM
-# ============================================================
-
-A patient enters PRIMARY_SYSTEMIC only if ALL are true:
-
-1. primary true/probable first-TACE population
-2. HCC-directed TACE
-3. no prior systemic treatment
-4. explicit first TACE-inadequacy decision
-5. systemic therapy starts AFTER decision
-6. systemic is FIRST active anticancer strategy after decision
-7. no intervening repeat TACE before systemic start
-8. routine care
-9. regimen era-appropriate
-10. systemic regimen is credible for HCC.
-
-Create two systemic classifications:
-
-### PRIMARY MODERN ICI SYSTEMIC
-
-- AB
-- STRIDE
-- first-line-era-appropriate NIVO_IPI.
-
-### PRIMARY ANY ROUTINE SYSTEMIC
-
-above plus:
-- sorafenib
-- lenvatinib
-
-if routine-care and correctly indicated.
-
-Do NOT include:
-- trial systemic
-- preapproval/nonstandard systemic
-- later-line-only drug in a systemic-naive patient
-- existing systemic therapy
-- systemic after an intervening TACE.
-
-Print EVERY patient in both systemic arms.
-
-# ============================================================
-# PART 20 — DEFINE REPEAT-TACE ARM
-# ============================================================
-
-PRIMARY_REPEAT_TACE requires:
-
-1. same first TACE-inadequacy decision definition
-2. repeat HCC-directed TACE is the FIRST active treatment after decision
-3. no systemic therapy before repeat TACE
-4. repeat TACE occurs within defined grace window.
-
-Do not merely identify patients with TACE #2 somewhere in the future.
-
-For every repeat-TACE case print:
-- decision date
-- next TACE date
-- days
-- TACE indication confidence
-- whether systemic occurred afterward
-- days from repeat TACE to eventual systemic.
-
-# ============================================================
-# PART 21 — OTHER STRATEGIES
-# ============================================================
-
-Classify first active strategy after decision as mutually exclusive:
-
-1. REPEAT_TACE_FIRST
-2. MODERN_ICI_SYSTEMIC_FIRST
-3. TKI_SYSTEMIC_FIRST
-4. UPFRONT_COMBINED_SYSTEMIC_TACE
-5. Y90_FIRST
-6. ABLATION_FIRST
-7. SBRT_FIRST
-8. RESECTION_FIRST
-9. TRANSPLANT_FIRST
-10. OBSERVATION
-11. SUPPORTIVE_HOSPICE
-12. DEATH_BEFORE_TREATMENT
-13. LOST_OR_UNKNOWN.
-
-If systemic starts after repeat TACE:
-
-the baseline strategy is REPEAT_TACE_FIRST.
-
-Do not recode as systemic.
-
-# ============================================================
-# PART 22 — GRACE-PERIOD ANALYSIS
-# ============================================================
-
-Do not choose a grace period yet.
-
-For the SAME inadequacy cohort print strategy assignment at:
-
-30 days
-45 days
-60 days
-90 days
-120 days.
-
-For each horizon print:
-
-N at risk
-repeat TACE first
-modern ICI systemic first
-any routine systemic first
-combined
-other LRT
-observation
-death
-unknown.
-
-Also print empirical distribution of:
-
-days decision→repeat TACE
-
-days decision→systemic.
-
-Report:
-min
-p10
-p25
-median
-p75
-p90
-max.
-
-This will determine the eventual target-trial grace period.
-
-# ============================================================
-# PART 23 — BUILD NESTED COHORTS
-# ============================================================
-
-Create four nested populations.
-
-### COHORT 1 — DECISION COHORT
-
-Primary true/probable first TACE
-+ no prior systemic
-+ explicit first inadequate-control decision.
-
-No fitness restrictions.
-
-### COHORT 2 — LIVER-CONFINED SUPPORT
-
-COHORT 1
-minus definite HCC extrahepatic disease.
-
-Do NOT exclude unknown extrahepatic status.
-
-Print:
-known no EHD
-unknown
-definite EHD.
-
-### COHORT 3 — ACTIVE-TREATMENT FITNESS
-
-COHORT 2
-minus:
-
-- mALBI grade 3
-- new major decompensation
-- ECOG ≥3 when known.
-
-Do NOT exclude unknown ECOG automatically.
-
-Print known/unknown.
-
-### COHORT 4 — HIGH-CONFIDENCE COMPARATIVE CANDIDATE
-
-COHORT 3
-+
-routine-care treatment
-+
-clear management decision
-+
-adequate key covariate data.
-
-Do NOT claim that repeat TACE was technically appropriate solely from code.
-
-Label:
-
-`COMPARATIVE_CANDIDATE_PENDING_IR_VALIDATION`
-
-if technical suitability remains unverified.
-
-# ============================================================
-# PART 24 — EXACT ARM-SIZE TABLE
-# ============================================================
-
-For EACH nested cohort print:
-
-COHORT
-N_TOTAL
-N_REPEAT_TACE_FIRST_30
-N_MODERN_SYSTEMIC_FIRST_30
-N_ANY_SYSTEMIC_FIRST_30
-N_REPEAT_TACE_FIRST_60
-N_MODERN_SYSTEMIC_FIRST_60
-N_ANY_SYSTEMIC_FIRST_60
-N_REPEAT_TACE_FIRST_90
-N_MODERN_SYSTEMIC_FIRST_90
-N_ANY_SYSTEMIC_FIRST_90
-N_REPEAT_TACE_FIRST_120
-N_MODERN_SYSTEMIC_FIRST_120
-N_ANY_SYSTEMIC_FIRST_120
-N_OTHER
-N_NO_ACTIVE_TREATMENT.
-
-Print separately:
-
-ALL ERA
-
-and
-
-ROUTINE MODERN ERA.
-
-# ============================================================
-# PART 25 — REGIMEN TABLE
-# ============================================================
-
-For primary systemic-first patients print exact regimen counts:
-
-AB
-STRIDE
-NIVO_IPI
-SORAFENIB
-LENVATINIB
-OTHER.
-
-For each regimen print:
-
-N
-routine-care N
-trial N
-date-boundary uncertain N
-preapproval/nonstandard N.
-
-The primary modern systemic N must equal:
-
-era-appropriate routine-care AB
-+
-era-appropriate routine-care STRIDE
-+
-era-appropriate routine-care first-line NIVO_IPI.
-
-Assert this exactly.
-
-# ============================================================
-# PART 26 — MANUAL AUDIT: EVERY SYSTEMIC-FIRST PATIENT
-# ============================================================
-
-This is mandatory.
-
-If N≤100 print EVERY systemic-first patient.
-
-Columns:
-
-PATIENT
-TRUE_FIRST_TACE_STATUS
-TACE1_DATE
-TACE2_DATE if applicable
-INADEQUACY_AFTER_TACE_NUMBER
-REASSESSMENT_DATE
-INADEQUACY_DATE
-INADEQUACY_SOURCE
-INADEQUACY_EVIDENCE_TEXT
-EXTRAHEPATIC_STATUS
-MVI_STATUS
-ECOG
-ECOG_DATE
-CHILD_PUGH
-ALBI
-MALBI
-DELTA_ALBI
-AFP_PRE_TACE
-AFP_DECISION
-MANAGEMENT_PLAN
-PLAN_EVIDENCE_TEXT
-FIRST_POST_DECISION_TREATMENT
-SYSTEMIC_REGIMEN
-SYSTEMIC_START
-DAYS_DECISION_TO_SYSTEMIC
-RESEARCH_STATUS
-REGIMEN_ERA_STATUS
-PRIOR_SYSTEMIC_STATUS
-ANY_REPEAT_TACE_BEFORE_SYSTEMIC
-DEATH_DATE
-LAST_FOLLOWUP.
-
-If any primary systemic patient has:
-
-ANY_REPEAT_TACE_BEFORE_SYSTEMIC = YES
-
-they are misclassified.
-
-Print:
-
-`*** EXPOSURE ASSIGNMENT FAILURE ***`
-
-and fix.
-
-# ============================================================
-# PART 27 — MANUAL AUDIT: REPEAT-TACE ARM
-# ============================================================
-
-Print:
-
-ALL repeat-TACE-first patients if N≤150.
-
-Otherwise:
-- all with unusual timelines
-- all modern era
-- random 100 remainder.
-
-Columns:
-
-PATIENT
-DECISION_DATE
-INADEQUACY_EVIDENCE
-PLAN_NOTE
-ECOG
-CP
-ALBI
-AFP
-NEXT_TACE_DATE
-DAYS_TO_REPEAT_TACE
-REPEAT_TACE_HCC_INDICATION_STATUS
-SYSTEMIC_EVENTUALLY_YN
-EVENTUAL_SYSTEMIC_REGIMEN
-DAYS_REPEAT_TACE_TO_SYSTEMIC.
-
-# ============================================================
-# PART 28 — COMMON SUPPORT DATA COMPLETENESS
-# ============================================================
-
-DO NOT fit propensity scores yet.
-
-Simply print availability by arm for:
-
-- age
-- sex
-- race
-- etiology
-- ECOG
-- explicit CP
-- ALBI
-- delta ALBI
-- AFP
-- AFP change
-- decompensation
-- PVTT/MVI
-- extrahepatic status
-- prior LRT
-- number of prior TACEs
-- calendar era
-- transplant candidacy evidence if available
-- tumor burden variables if high-confidence.
-
-For each:
-
-repeat TACE N available / %
-systemic N available / %
-overall N available / %.
-
-This determines whether later confounding adjustment is realistic.
-
-# ============================================================
-# PART 29 — IMPORTANT NEGATIVE CONTROLS / SANITY CHECKS
-# ============================================================
-
-Execute all.
-
-### A.
-No systemic start may precede decision date in systemic-first cohort.
-
-### B.
-No repeat TACE may precede decision date in repeat-TACE-first cohort.
-
-### C.
-No primary patient has validated systemic therapy before index TACE.
-
-### D.
-No trial patient appears in primary routine-care systemic arm.
-
-### E.
-No PREAPPROVAL_OR_NONSTANDARD regimen appears in primary modern systemic arm.
-
-### F.
-No systemic-first patient has repeat TACE between decision and systemic start.
-
-### G.
-No repeat-TACE-first patient has systemic start between decision and repeat TACE.
-
-### H.
-Every inadequacy date occurs after relevant TACE.
-
-### I.
-Every reassessment occurs after relevant TACE.
-
-### J.
-TACE #2 occurs after TACE #1.
-
-### K.
-All first-strategy categories are mutually exclusive.
-
-### L.
-Category counts sum exactly to cohort N.
-
-### M.
-Every systemic regimen has HCC indication confidence.
-
-### N.
-No non-HCC TACE appears in primary population.
-
-### O.
-No mixed/insufficient TACE episode defines primary decision unless manually adjudicated.
-
-### P.
-No patient with explicit good control only is classified as inadequate control without a separate active-HCC finding.
-
-### Q.
-LR-TR nonviable alone cannot create inadequate-control status.
-
-### R.
-ECOG ambiguous ranges are not forced to a single value.
-
-### S.
-ALBI units are correct.
-
-### T.
-Cumulative strategy counts are monotonic where appropriate.
-
-For EVERY failed assertion:
-
-print patient IDs
-print relevant rows
-fix the problem
-rerun the assertion.
-
-Final report may NOT say "all checks passed" unless actual values are printed.
-
-# ============================================================
-# PART 30 — THREE-WAY DENOMINATOR RECONCILIATION
-# ============================================================
-
-At the end explicitly reconcile:
-
-### TACE sequence denominator
-
-887 HCC-TACE patients
-→ primary true/probable first-TACE
-→ systemically untreated
-→ reassessment available
-→ inadequate control
-→ active-treatment fitness
-→ comparative candidate.
-
-### Systemic denominator
-
-all systemic after TACE
-→ after actual decision
-→ first treatment after decision
-→ routine care
-→ era appropriate
-→ modern ICI systemic.
-
-### Repeat-TACE denominator
-
-all patients with TACE #2
-→ repeat TACE after actual inadequacy decision
-→ repeat TACE first strategy
-→ active-treatment fitness
-→ comparative candidate.
-
-These waterfalls must use PATIENTS, not rows.
-
-# ============================================================
-# PART 31 — REACH-ONLY FEASIBILITY DECISION
-# ============================================================
-
-This project CANNOT become multicenter.
-
-Therefore choose one of:
-
-A. REACH-ONLY COMPARATIVE STUDY FEASIBLE
-
-B. REACH-ONLY COMPARATIVE STUDY POSSIBLE BUT SMALL
-
-C. REACH-ONLY DESCRIPTIVE / PREDICTIVE TACE STUDY ONLY
-
-D. TACE PROJECT NOT VIABLE IN REACH
-
-Do NOT output "multicenter required."
-
-Assessment must consider:
-
-- high-confidence systemic-first N
-- repeat-TACE-first N
-- modern routine-care systemic N
-- event counts not yet modeled
-- ECOG completeness
-- ALBI completeness
-- CP completeness
-- imaging phenotype validity
-- decision-note validity
-- treatment-arm overlap
-- research contamination
-- remaining human review burden.
-
-Do not select A/B solely because systemic N exceeds an arbitrary number.
-
-# ============================================================
-# PART 32 — IF COMPARATIVE COHORT COLLAPSES, IDENTIFY REACH-ONLY FALLBACKS
-# ============================================================
-
-ONLY if primary systemic-first N is too small:
-
-Do NOT abandon all TACE work automatically.
-
-Using the validated decision cohort, print feasibility Ns for REACH-only alternatives:
-
-1. predictors of transition to systemic therapy after repeated TACE
-2. hepatic-reserve deterioration across TACE #1/#2/#3
-3. association between cumulative TACE exposure and loss of subsequent systemic-treatment opportunity
-4. dynamic ALBI/AFP after TACE as predictors of eventual treatment-stage migration
-5. patterns and timing of treatment-stage migration
-6. post-TACE outcomes by number of TACE procedures before systemic initiation
-7. any other REACH-only question directly supported by the validated data.
-
-Do not analyze outcomes yet.
-
-Just print feasibility.
-
-# ============================================================
-# PART 33 — REQUIRED FINAL COPY-PASTE REPORT
-# ============================================================
-
-Print ONE plain-text output beginning:
-
-============================================================
-HCC POST-TACE DECISION COHORT LOCKDOWN — v12.5
-============================================================
-
-It MUST contain:
-
-A. all source tables and versions
-
-B. 887→845 discrepancy resolution
-
-C. primary true-first-TACE waterfall
-
-D. prior-systemic exclusion waterfall
-
-E. HCC-TACE indication verification
-
-F. TACE #1 and #2 reassessment coverage
-
-G. report-linkage quality
-
-H. inadequate-control phenotype counts
-
-I. good-control phenotype counts
-
-J. extrahepatic-status counts
-
-K. MVI/PVTT counts
-
-L. ECOG coverage and distribution
-
-M. Child-Pugh coverage and distribution
-
-N. ALBI / delta-ALBI coverage
-
-O. AFP coverage
-
-P. management-plan extraction counts
-
-Q. research/trial systemic classification
-
-R. regimen-specific era classification
-
-S. upfront/combined versus response-adaptive systemic counts
-
-T. first inadequacy-decision waterfall
-
-U. first-strategy distribution at 30/45/60/90/120d
-
-V. exact modern ICI systemic arm size
-
-W. exact routine-care any-systemic arm size
-
-X. exact repeat-TACE-first arm size
-
-Y. exact systemic regimens
-
-Z. every systemic-first patient audit
-
-AA. repeat-TACE patient audit summary
-
-AB. covariate completeness by arm
-
-AC. every failed assertion and how it was resolved
-
-AD. nested cohort arm-size table
-
-AE. REACH-only feasibility conclusion
-
-AF. REACH-only fallback project Ns if necessary
-
-AG. persisted table names and row/patient counts
-
-AH. IMPLEMENTATION LOGIC containing actual phenotype-defining SQL/PySpark.
-
-Do not omit a section.
-
-Do not write:
-"see notebook"
-"see prior output"
-"not rerun"
-"deferred."
-
-# ============================================================
-# PART 34 — PERSIST FINAL TABLES
-# ============================================================
-
-Persist:
-
-`hcc_tace_primary_true_first_v12_5`
-
-`hcc_tace_prior_systemic_v12_5`
-
-`hcc_post_tace_systemic_research_v12_5`
-
-`hcc_tace_reassessment_v12_5`
-
-`hcc_post_tace_control_v12_5`
-
-`hcc_post_tace_staging_v12_5`
-
-`hcc_post_tace_clinical_status_v12_5`
-
-`hcc_post_tace_decision_notes_v12_5`
-
-`hcc_first_tace_inadequacy_v12_5`
-
-`hcc_tace_first_strategy_v12_5`
-
-`hcc_tace_comparative_candidates_v12_5`
-
-`hcc_tace_feasibility_v12_5`
-
-After persistence, READ EVERY TABLE BACK.
-
-Print:
-
-TABLE
-ROWS
-UNIQUE_PATIENTS
-UNIT
-PRIMARY/UNIQUE KEY
-DUPLICATE KEY COUNT.
-
-Duplicate-key count must equal zero for tables whose declared unit is one row per patient/decision.
-
-# ============================================================
-# FINAL STOP CONDITION
-# ============================================================
-
-STOP after feasibility.
-
-DO NOT calculate:
-
-- hazard ratios
-- Kaplan-Meier curves
-- survival differences
-- propensity scores
-- overlap weights
-- IPTW
-- clone-censor weights
-- treatment effects
-- p-values comparing outcomes.
-
-The next analysis will only be designed after external review of this v12.5 report.
+v12.5 Part 0+1 — Load Tables, Schemas, and Resolve 887→845 Gap
+v12.5 Part 0+1 — Load Tables, Schemas, and Resolve 887→845 Gap
+======================================================================
+v12.5 PART 0 — CANONICAL SOURCE TABLE LOADING
+======================================================================
+
+--- Table Census ---
+  Indication v12.4                 2,525 rows  1,052 patients  (unit: TACE episode)
+  Sequence v12.4                   1,970 rows    887 patients  (unit: HCC-TACE episode)
+  Index TACE v12.4                   887 rows    887 patients  (unit: patient)
+  Systemic starts v12.4              806 rows    571 patients  (unit: systemic line)
+  Transitions v12.4                1,852 rows    845 patients  (unit: TACE-to-systemic row)
+  Roster v12.1                     3,999 rows  3,999 patients  (unit: patient)
+  Systemic patients v12.2            571 rows    571 patients  (unit: patient)
+  Systemic lines v12.2               806 rows    571 patients  (unit: line)
+  Research v12.1                     282 rows    282 patients  (unit: patient)
+  AFP biomarkers v12              20,441 rows  2,495 patients  (unit: measurement)
+  Decompensation v12              26,207 rows  1,768 patients  (unit: event)
+  Locoregional v12                 7,027 rows  1,443 patients  (unit: procedure)
+
+======================================================================
+v12.5 PART 1 — EXPLAIN 887 → 845 GAP
+======================================================================
+
+SOURCE TABLE(S): hcc_tace_sequence_hcc_only_v12_4, hcc_tace_to_systemic_transitions_v12_4
+SOURCE VERSION(S): v12.4
+UNIT OF ANALYSIS: one patient
+PRIMARY KEY: pat
+
+Sequence table unique patients:   887
+Transition table unique patients: 845
+GAP:                              42 patients
+
+--- ALL 42 MISSING PATIENTS ---
++--------------+----------+--------------------------+----------------------------+-----------------------+-------------------+----------------------+----------------+--------------------+----------+
+|pat           |tace_date |tace_hcc_indication_status|index_tace_status           |total_hcc_tace_episodes|systemic_start_date|regimen               |days_sys_to_tace|sys_before_tace     |death_date|
++--------------+----------+--------------------------+----------------------------+-----------------------+-------------------+----------------------+----------------+--------------------+----------+
+|DEI009p79t6zg9|2020-06-22|DEFINITE_HCC_DIRECTED     |PROBABLE_TRUE_FIRST_HCC_TACE|3                      |2020-06-19         |NIVO_MONO             |3               |SYSTEMIC_BEFORE_TACE|2021-05-26|
+|DEI00u7sz8uxrm|2026-08-25|DEFINITE_HCC_DIRECTED     |PROBABLE_TRUE_FIRST_HCC_TACE|1                      |2026-02-10         |AB                    |196             |SYSTEMIC_BEFORE_TACE|NULL      |
+|DEI01c8w7sz8ws|2021-03-12|PROBABLE_HCC_DIRECTED     |DEFINITE_TRUE_FIRST_HCC_TACE|1                      |2019-10-12         |NIVO_MONO             |517             |SYSTEMIC_BEFORE_TACE|NULL      |
+|DEI01t6zg1124b|2025-12-20|PROBABLE_HCC_DIRECTED     |DEFINITE_TRUE_FIRST_HCC_TACE|2                      |2022-02-10         |AB                    |1409            |SYSTEMIC_BEFORE_TACE|NULL      |
+|DEI02hwf5zraf7|2024-02-05|DEFINITE_HCC_DIRECTED     |DEFINITE_TRUE_FIRST_HCC_TACE|2                      |2023-03-11         |NIVO_IPI              |331             |SYSTEMIC_BEFORE_TACE|NULL      |
+|DEI03bjj7sz8jr|2024-02-15|DEFINITE_HCC_DIRECTED     |DEFINITE_TRUE_FIRST_HCC_TACE|4                      |2023-12-29         |AB                    |48              |SYSTEMIC_BEFORE_TACE|NULL      |
+|DEI067sz86dx26|2022-12-03|PROBABLE_HCC_DIRECTED     |PROBABLE_TRUE_FIRST_HCC_TACE|2                      |2022-11-20         |AB                    |13              |SYSTEMIC_BEFORE_TACE|2024-02-11|
+|DEI06okt6zgk8d|2023-02-05|DEFINITE_HCC_DIRECTED     |DEFINITE_TRUE_FIRST_HCC_TACE|1                      |2023-01-03         |DURVA_MONO            |33              |SYSTEMIC_BEFORE_TACE|2023-06-17|
+|DEI06rat5zratr|2023-02-08|DEFINITE_HCC_DIRECTED     |DEFINITE_TRUE_FIRST_HCC_TACE|2                      |2023-02-05         |NIVO_MONO             |3               |SYSTEMIC_BEFORE_TACE|2024-03-20|
+|DEI076trmt6zgm|2026-07-04|PROBABLE_HCC_DIRECTED     |DEFINITE_TRUE_FIRST_HCC_TACE|1                      |2024-08-17         |AB                    |686             |SYSTEMIC_BEFORE_TACE|NULL      |
+|DEI09w7sz8wpwb|2025-09-15|PROBABLE_HCC_DIRECTED     |DEFINITE_TRUE_FIRST_HCC_TACE|1                      |2025-08-21         |STRIDE                |25              |SYSTEMIC_BEFORE_TACE|NULL      |
+|DEI0a5zraaecdu|2024-07-09|PROBABLE_HCC_DIRECTED     |DEFINITE_TRUE_FIRST_HCC_TACE|1                      |2023-06-23         |AB                    |382             |SYSTEMIC_BEFORE_TACE|2024-08-22|
+|DEI0bmt6zgmni7|2022-12-03|DEFINITE_HCC_DIRECTED     |UNKNOWN                     |1                      |2022-07-11         |AB                    |145             |SYSTEMIC_BEFORE_TACE|2022-12-28|
+|DEI0ck5zrakdky|2024-12-03|DEFINITE_HCC_DIRECTED     |UNKNOWN                     |1                      |2024-12-02         |NIVO_MONO             |1               |SYSTEMIC_BEFORE_TACE|NULL      |
+|DEI0dc5ut6zgu6|2024-07-20|DEFINITE_HCC_DIRECTED     |UNKNOWN                     |2                      |2024-06-22         |AB                    |28              |SYSTEMIC_BEFORE_TACE|NULL      |
+|DEI0do5zrao9it|2020-08-26|DEFINITE_HCC_DIRECTED     |DEFINITE_TRUE_FIRST_HCC_TACE|1                      |2020-06-29         |LENVATINIB+PEMBRO_MONO|58              |SYSTEMIC_BEFORE_TACE|NULL      |
+|DEI0e13ntt6zgt|2021-10-17|DEFINITE_HCC_DIRECTED     |DEFINITE_TRUE_FIRST_HCC_TACE|1                      |2020-09-23         |PEMBRO_MONO           |389             |SYSTEMIC_BEFORE_TACE|2021-12-07|
+|DEI0erqt6zgqmo|2022-11-03|PROBABLE_HCC_DIRECTED     |PROBABLE_TRUE_FIRST_HCC_TACE|4                      |2022-02-09         |AB                    |267             |SYSTEMIC_BEFORE_TACE|2026-05-20|
+|DEI0et6zgey88a|2017-09-17|DEFINITE_HCC_DIRECTED     |DEFINITE_TRUE_FIRST_HCC_TACE|1                      |2017-07-31         |SORAFENIB             |48              |SYSTEMIC_BEFORE_TACE|NULL      |
+|DEI0et7j7sz8jj|2016-08-26|DEFINITE_HCC_DIRECTED     |DEFINITE_TRUE_FIRST_HCC_TACE|1                      |2016-08-13         |SORAFENIB             |13              |SYSTEMIC_BEFORE_TACE|2016-09-27|
+|DEI0ff2w7sz8ww|2024-07-22|DEFINITE_HCC_DIRECTED     |UNKNOWN                     |2                      |2024-07-19         |AB                    |3               |SYSTEMIC_BEFORE_TACE|NULL      |
+|DEI0fka35zra35|2022-06-24|PROBABLE_HCC_DIRECTED     |DEFINITE_TRUE_FIRST_HCC_TACE|2                      |2021-11-22         |LENVATINIB+PEMBRO_MONO|214             |SYSTEMIC_BEFORE_TACE|2022-12-05|
+|DEI0ft6zgfbj3b|2025-07-21|DEFINITE_HCC_DIRECTED     |DEFINITE_TRUE_FIRST_HCC_TACE|1                      |2024-05-13         |NIVO_IPI              |434             |SYSTEMIC_BEFORE_TACE|NULL      |
+|DEI0h7sz8hn2n4|2024-02-16|DEFINITE_HCC_DIRECTED     |DEFINITE_TRUE_FIRST_HCC_TACE|2                      |2023-12-16         |STRIDE                |62              |SYSTEMIC_BEFORE_TACE|2024-07-20|
+|DEI0hg1ft6zgfe|2017-09-21|DEFINITE_HCC_DIRECTED     |DEFINITE_TRUE_FIRST_HCC_TACE|1                      |2017-07-25         |SORAFENIB             |58              |SYSTEMIC_BEFORE_TACE|NULL      |
+|DEI0hn77sz872s|2022-08-17|PROBABLE_HCC_DIRECTED     |PROBABLE_TRUE_FIRST_HCC_TACE|1                      |2022-08-07         |NIVO_MONO             |10              |SYSTEMIC_BEFORE_TACE|NULL      |
+|DEI0i5zrai8m6s|2017-01-19|DEFINITE_HCC_DIRECTED     |UNKNOWN                     |2                      |2016-12-04         |SORAFENIB             |46              |SYSTEMIC_BEFORE_TACE|NULL      |
+|DEI0i67sz86wfv|2018-05-17|DEFINITE_HCC_DIRECTED     |DEFINITE_TRUE_FIRST_HCC_TACE|1                      |2016-05-28         |SORAFENIB             |719             |SYSTEMIC_BEFORE_TACE|2018-10-28|
+|DEI0jdh5zraho8|2023-05-07|DEFINITE_HCC_DIRECTED     |DEFINITE_TRUE_FIRST_HCC_TACE|4                      |2023-02-08         |AB                    |88              |SYSTEMIC_BEFORE_TACE|2025-09-07|
+|DEI0k7s7sz8sr1|2025-07-16|DEFINITE_HCC_DIRECTED     |PROBABLE_TRUE_FIRST_HCC_TACE|2                      |2025-07-05         |AB                    |11              |SYSTEMIC_BEFORE_TACE|NULL      |
+|DEI0kmo5zrao2u|2024-10-03|DEFINITE_HCC_DIRECTED     |PROBABLE_TRUE_FIRST_HCC_TACE|1                      |2024-02-25         |AB                    |221             |SYSTEMIC_BEFORE_TACE|2024-12-08|
+|DEI0m82305zra0|2021-08-09|DEFINITE_HCC_DIRECTED     |DEFINITE_TRUE_FIRST_HCC_TACE|1                      |2020-02-19         |LENVATINIB            |537             |SYSTEMIC_BEFORE_TACE|NULL      |
+|DEI0md507sz80r|2024-09-27|DEFINITE_HCC_DIRECTED     |DEFINITE_TRUE_FIRST_HCC_TACE|2                      |2024-08-17         |AB                    |41              |SYSTEMIC_BEFORE_TACE|NULL      |
+|DEI0n0akt6zgk9|2017-10-29|PROBABLE_HCC_DIRECTED     |DEFINITE_PRIOR_TACE         |3                      |2017-09-07         |SORAFENIB             |52              |SYSTEMIC_BEFORE_TACE|NULL      |
+|DEI0qb7sz8benh|2019-10-03|DEFINITE_HCC_DIRECTED     |DEFINITE_TRUE_FIRST_HCC_TACE|1                      |2019-08-20         |NIVO_MONO             |44              |SYSTEMIC_BEFORE_TACE|NULL      |
+|DEI0r7sz8rs6tg|2023-07-17|DEFINITE_HCC_DIRECTED     |DEFINITE_TRUE_FIRST_HCC_TACE|1                      |2019-04-22         |NIVO_MONO             |1547            |SYSTEMIC_BEFORE_TACE|NULL      |
+|DEI0r8v5zrav6t|2021-12-28|DEFINITE_HCC_DIRECTED     |UNKNOWN                     |1                      |2021-11-16         |PEMBRO_MONO           |42              |SYSTEMIC_BEFORE_TACE|2022-04-05|
+|DEI0sbye7sz8em|2023-04-02|PROBABLE_HCC_DIRECTED     |DEFINITE_TRUE_FIRST_HCC_TACE|1                      |2023-01-08         |AB                    |84              |SYSTEMIC_BEFORE_TACE|NULL      |
+|DEI0tdeiy7sz8y|2022-08-29|DEFINITE_HCC_DIRECTED     |DEFINITE_TRUE_FIRST_HCC_TACE|1                      |2021-09-13         |AB                    |350             |SYSTEMIC_BEFORE_TACE|2023-06-16|
+|DEI0tgt6zgg27b|2017-06-11|PROBABLE_HCC_DIRECTED     |DEFINITE_TRUE_FIRST_HCC_TACE|5                      |2015-08-01         |SORAFENIB             |680             |SYSTEMIC_BEFORE_TACE|2019-01-27|
+|DEI0ubt6zgb40c|2025-05-08|DEFINITE_HCC_DIRECTED     |PROBABLE_TRUE_FIRST_HCC_TACE|2                      |2025-05-01         |AB                    |7               |SYSTEMIC_BEFORE_TACE|NULL      |
+|DEI0xjiy7sz8y6|2026-06-24|DEFINITE_HCC_DIRECTED     |DEFINITE_TRUE_FIRST_HCC_TACE|1                      |2024-11-20         |AB                    |581             |SYSTEMIC_BEFORE_TACE|2026-08-09|
++--------------+----------+--------------------------+----------------------------+-----------------------+-------------------+----------------------+----------------+--------------------+----------+
+
+
+--- REASON DISTRIBUTION ---
++--------------------+----------+
+|sys_before_tace     |n_patients|
++--------------------+----------+
+|SYSTEMIC_BEFORE_TACE|42        |
++--------------------+----------+
+
+
+--- INDEX TACE STATUS ---
++----------------------------+----------+
+|index_tace_status           |n_patients|
++----------------------------+----------+
+|DEFINITE_TRUE_FIRST_HCC_TACE|27        |
+|PROBABLE_TRUE_FIRST_HCC_TACE|8         |
+|UNKNOWN                     |6         |
+|DEFINITE_PRIOR_TACE         |1         |
++----------------------------+----------+
+
+
+======================================================================
+RESOLUTION: REBUILD TRANSITION DENOMINATOR
+======================================================================
+
+ROOT CAUSE: v12.4 transition table was built by joining TACE episodes
+to systemic starts AFTER each TACE. The 42 missing patients had ALL
+their systemic therapy BEFORE their first TACE, so no join match existed.
+
+FIX: Rebuild base table to include ALL 887 HCC-TACE patients regardless
+of systemic timing. Patients with pre-TACE systemic are flagged as
+TACE_DURING_EXISTING_SYSTEMIC and excluded from the primary TACE->systemic
+escalation cohort, but remain in the denominator.
+
+--- REBUILT DENOMINATOR ---
+ROWS:     887
+PATIENTS: 887
+Assertion: N_transition_denominator == N_eligible_tace_population ✓
+
+--- SYSTEMIC TIMING DISTRIBUTION ---
++--------------------+----------+
+|systemic_timing     |n_patients|
++--------------------+----------+
+|NO_SYSTEMIC_EVER    |652       |
+|SYSTEMIC_AFTER_TACE |166       |
+|SYSTEMIC_BEFORE_TACE|69        |
++--------------------+----------+
+
+
+--- DAYS TACE#1 TO FIRST SYSTEMIC (AFTER group) ---
+  min      6
+  p10      19.0
+  p25      50.0
+  median   171.0
+  p75      463.0
+  p90      908.0
+  max      2745
+
+✓ Part 0+1 complete. 887→845 gap EXPLAINED and RESOLVED.
+  Root cause: 42 patients with systemic BEFORE TACE excluded by join.
+  Rebuilt denominator: 887 patients (all 887).
+v12.5 Part 2+3 — Lock Primary First-TACE + Prior Systemic Classification
+v12.5 Part 2+3 — Lock Primary First-TACE + Prior Systemic Classification
+======================================================================
+v12.5 PART 2 — LOCK PRIMARY FIRST-TACE POPULATION
+======================================================================
+
+SOURCE TABLE(S): hcc_index_tace_hcc_validated_v12_4
+SOURCE VERSION(S): v12.4
+UNIT OF ANALYSIS: one patient (first HCC-TACE)
+PRIMARY KEY: pat
+INDEX DATE: first HCC-TACE date
+
+FIRST-TACE CLASSIFICATION LOGIC (from v12.4):
+  DEFINITE_TRUE_FIRST_HCC_TACE:
+    - First observed HCC-TACE in data
+    - No prior TACE in data
+    - No prior TACE noted in clinical notes
+    - First HCC contact ≥30 days before TACE (patient known to system)
+  PROBABLE_TRUE_FIRST_HCC_TACE:
+    - First observed HCC-TACE in data
+    - No prior TACE in data
+    - Some ambiguity in lookback or note evidence
+  UNKNOWN:
+    - First observed HCC-TACE but insufficient evidence to classify
+  DEFINITE_PRIOR_TACE:
+    - Prior TACE documented in data or notes
+  FIRST_OBSERVED_PRIOR_OUTSIDE_TACE_POSSIBLE:
+    - First observed but outside TACE strongly suspected
+
+--- INDEX TACE STATUS DISTRIBUTION (all 887) ---
++------------------------------------------+----------+
+|index_tace_status                         |n_patients|
++------------------------------------------+----------+
+|PROBABLE_TRUE_FIRST_HCC_TACE              |284       |
+|DEFINITE_TRUE_FIRST_HCC_TACE              |284       |
+|UNKNOWN                                   |280       |
+|DEFINITE_PRIOR_TACE                       |30        |
+|FIRST_OBSERVED_PRIOR_OUTSIDE_TACE_POSSIBLE|9         |
++------------------------------------------+----------+
+
+
+PRIMARY TRUE/PROBABLE FIRST-TACE:
+  N_PATIENTS: 568
+  DEFINITE_TRUE_FIRST_HCC_TACE: 284
+  PROBABLE_TRUE_FIRST_HCC_TACE: 284
+
+EXCLUDED FROM PRIMARY:
++------------------------------------------+-----+
+|index_tace_status                         |count|
++------------------------------------------+-----+
+|UNKNOWN                                   |280  |
+|DEFINITE_PRIOR_TACE                       |30   |
+|FIRST_OBSERVED_PRIOR_OUTSIDE_TACE_POSSIBLE|9    |
++------------------------------------------+-----+
+
+
+Primary patient indication statuses: ['DEFINITE_HCC_DIRECTED', 'PROBABLE_HCC_DIRECTED']
+✓ All primary patients have HCC-directed TACE.
+✓ No patient in primary has definite prior TACE in data.
+
+--- PRIMARY: CALENDAR YEAR DISTRIBUTION ---
++----+-----+
+|year|count|
++----+-----+
+|2014|19   |
+|2015|63   |
+|2016|60   |
+|2017|63   |
+|2018|45   |
+|2019|46   |
+|2020|38   |
+|2021|33   |
+|2022|53   |
+|2023|52   |
+|2024|43   |
+|2025|36   |
+|2026|17   |
++----+-----+
+
+
+Primary patients with subsequent TACE #2: 303 / 568
+Primary patients with any systemic ever: 154 / 568
+
+--- 30 RANDOM PRIMARY CASES (seed=42) ---
++--------------+----------+----------------------------+--------------------------+-----------------------+--------------------+----------------+
+|pat           |tace_date |index_tace_status           |tace_hcc_indication_status|total_hcc_tace_episodes|days_contact_to_tace|days_hcc_to_tace|
++--------------+----------+----------------------------+--------------------------+-----------------------+--------------------+----------------+
+|DEI0ed5zrad49c|2020-07-23|DEFINITE_TRUE_FIRST_HCC_TACE|DEFINITE_HCC_DIRECTED     |1                      |7334                |30              |
+|DEI0hn77sz872s|2022-08-17|PROBABLE_TRUE_FIRST_HCC_TACE|PROBABLE_HCC_DIRECTED     |1                      |350                 |89              |
+|DEI0nmy25zra2h|2014-05-31|PROBABLE_TRUE_FIRST_HCC_TACE|PROBABLE_HCC_DIRECTED     |2                      |3992                |-580            |
+|DEI065zra66bsa|2021-09-24|PROBABLE_TRUE_FIRST_HCC_TACE|PROBABLE_HCC_DIRECTED     |1                      |4845                |9               |
+|DEI0abc65zra6s|2022-06-14|PROBABLE_TRUE_FIRST_HCC_TACE|PROBABLE_HCC_DIRECTED     |1                      |5426                |17              |
+|DEI0bockj7sz8j|2015-02-28|PROBABLE_TRUE_FIRST_HCC_TACE|PROBABLE_HCC_DIRECTED     |4                      |10901               |-307            |
+|DEI0dc78y7sz8y|2019-01-24|DEFINITE_TRUE_FIRST_HCC_TACE|PROBABLE_HCC_DIRECTED     |1                      |4715                |126             |
+|DEI00simt6zgmn|2023-07-23|DEFINITE_TRUE_FIRST_HCC_TACE|PROBABLE_HCC_DIRECTED     |3                      |3400                |168             |
+|DEI067sz86hokf|2015-08-15|PROBABLE_TRUE_FIRST_HCC_TACE|PROBABLE_HCC_DIRECTED     |2                      |4535                |-143            |
+|DEI0id7sz8dhoh|2026-05-23|DEFINITE_TRUE_FIRST_HCC_TACE|PROBABLE_HCC_DIRECTED     |1                      |3975                |65              |
+|DEI0u85zra8btt|2017-12-09|PROBABLE_TRUE_FIRST_HCC_TACE|DEFINITE_HCC_DIRECTED     |2                      |2296                |21              |
+|DEI0cyas5zrasi|2024-12-16|PROBABLE_TRUE_FIRST_HCC_TACE|DEFINITE_HCC_DIRECTED     |1                      |2818                |14              |
+|DEI06t6zg6kmxo|2018-04-08|DEFINITE_TRUE_FIRST_HCC_TACE|DEFINITE_HCC_DIRECTED     |2                      |10526               |49              |
+|DEI0hus95zra9p|2022-02-18|DEFINITE_TRUE_FIRST_HCC_TACE|PROBABLE_HCC_DIRECTED     |3                      |520                 |302             |
+|DEI05bjkr5zrar|2018-02-04|PROBABLE_TRUE_FIRST_HCC_TACE|DEFINITE_HCC_DIRECTED     |4                      |1224                |12              |
+|DEI0if5zrafoyd|2018-08-11|DEFINITE_TRUE_FIRST_HCC_TACE|PROBABLE_HCC_DIRECTED     |1                      |1909                |82              |
+|DEI0mvu57sz851|2017-05-16|PROBABLE_TRUE_FIRST_HCC_TACE|PROBABLE_HCC_DIRECTED     |1                      |1219                |13              |
+|DEI075pt6zgpt9|2019-10-09|PROBABLE_TRUE_FIRST_HCC_TACE|DEFINITE_HCC_DIRECTED     |2                      |1064                |28              |
+|DEI0jek05zra0v|2022-08-30|PROBABLE_TRUE_FIRST_HCC_TACE|PROBABLE_HCC_DIRECTED     |1                      |890                 |22              |
+|DEI0yvgun7sz8n|2025-11-26|DEFINITE_TRUE_FIRST_HCC_TACE|DEFINITE_HCC_DIRECTED     |2                      |718                 |47              |
+|DEI0h7sz8hp4p9|2021-03-17|PROBABLE_TRUE_FIRST_HCC_TACE|PROBABLE_HCC_DIRECTED     |1                      |2440                |14              |
+|DEI0f5zraf7w6c|2020-03-04|DEFINITE_TRUE_FIRST_HCC_TACE|DEFINITE_HCC_DIRECTED     |1                      |4681                |56              |
+|DEI0v5zravyy74|2022-10-19|PROBABLE_TRUE_FIRST_HCC_TACE|PROBABLE_HCC_DIRECTED     |1                      |8503                |20              |
+|DEI04pcgvt6zgv|2025-04-21|DEFINITE_TRUE_FIRST_HCC_TACE|DEFINITE_HCC_DIRECTED     |1                      |4105                |45              |
+|DEI0raqkqt6zgq|2017-08-16|DEFINITE_TRUE_FIRST_HCC_TACE|DEFINITE_HCC_DIRECTED     |5                      |4568                |31              |
+|DEI0dt6zgdhgi7|2019-03-27|PROBABLE_TRUE_FIRST_HCC_TACE|DEFINITE_HCC_DIRECTED     |2                      |2471                |24              |
+|DEI09t6zg9yy59|2022-03-11|DEFINITE_TRUE_FIRST_HCC_TACE|DEFINITE_HCC_DIRECTED     |1                      |1489                |65              |
+|DEI0i1st6zgsoa|2020-11-18|PROBABLE_TRUE_FIRST_HCC_TACE|DEFINITE_HCC_DIRECTED     |1                      |5949                |19              |
+|DEI07iet6zgecr|2023-06-25|DEFINITE_TRUE_FIRST_HCC_TACE|PROBABLE_HCC_DIRECTED     |2                      |2564                |30              |
+|DEI03ioagt6zgg|2015-07-18|PROBABLE_TRUE_FIRST_HCC_TACE|PROBABLE_HCC_DIRECTED     |4                      |433                 |-244            |
++--------------+----------+----------------------------+--------------------------+-----------------------+--------------------+----------------+
+
+
+--- CASES WITH POTENTIALLY CONFLICTING EVIDENCE: 83 ---
++--------------+----------+-------------------------+---------------+-----------------------+--------------------------+--------------------+----------------+--------------------+----------------------+----------------------------+
+|pat           |tace_date |tace_episode_id          |hcc_tace_number|total_hcc_tace_episodes|tace_hcc_indication_status|days_contact_to_tace|days_hcc_to_tace|prior_tace_note_flag|has_prior_tace_in_data|index_tace_status           |
++--------------+----------+-------------------------+---------------+-----------------------+--------------------------+--------------------+----------------+--------------------+----------------------+----------------------------+
+|DEI0025zra2pxg|2015-12-15|DEI0025zra2pxg_2015-12-15|1              |1                      |PROBABLE_HCC_DIRECTED     |214                 |-53             |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0087sz885sd|2015-11-05|DEI0087sz885sd_2015-11-05|1              |6                      |PROBABLE_HCC_DIRECTED     |7075                |-70             |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI01tt6zgtfn8|2015-02-13|DEI01tt6zgtfn8_2015-02-13|1              |3                      |PROBABLE_HCC_DIRECTED     |5255                |-322            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI02t6zg2pi43|2015-06-16|DEI02t6zg2pi43_2015-06-16|1              |1                      |PROBABLE_HCC_DIRECTED     |4075                |-884            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI03d5zradjbe|2014-06-19|DEI03d5zradjbe_2014-06-19|1              |1                      |PROBABLE_HCC_DIRECTED     |1420                |-635            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI03ioagt6zgg|2015-07-18|DEI03ioagt6zgg_2015-07-18|1              |4                      |PROBABLE_HCC_DIRECTED     |433                 |-244            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI03n6wt6zgw9|2015-12-12|DEI03n6wt6zgw9_2015-12-12|1              |2                      |PROBABLE_HCC_DIRECTED     |243                 |-36             |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI04t6zg4wo5s|2015-11-17|DEI04t6zg4wo5s_2015-11-17|1              |1                      |PROBABLE_HCC_DIRECTED     |5635                |-85             |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0527r7sz8rf|2015-04-27|DEI0527r7sz8rf_2015-04-27|1              |4                      |PROBABLE_HCC_DIRECTED     |651                 |-287            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI058xo37sz83|2015-08-07|DEI058xo37sz83_2015-08-07|1              |2                      |PROBABLE_HCC_DIRECTED     |1227                |-184            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI066qa7sz8au|2015-10-14|DEI066qa7sz8au_2015-10-14|1              |1                      |PROBABLE_HCC_DIRECTED     |1561                |-165            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI067sz86hokf|2015-08-15|DEI067sz86hokf_2015-08-15|1              |2                      |PROBABLE_HCC_DIRECTED     |4535                |-143            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI06c7sz8c46p|2015-02-03|DEI06c7sz8c46p_2015-02-03|1              |1                      |DEFINITE_HCC_DIRECTED     |285                 |-334            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI06v55zra54h|2015-11-26|DEI06v55zra54h_2015-11-26|1              |3                      |PROBABLE_HCC_DIRECTED     |6646                |-42             |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI075zra7vap2|2015-06-23|DEI075zra7vap2_2015-06-23|1              |1                      |PROBABLE_HCC_DIRECTED     |2365                |-210            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0765zra6oxx|2015-05-24|DEI0765zra6oxx_2015-05-24|1              |3                      |PROBABLE_HCC_DIRECTED     |9310                |-227            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI07k1o5zraou|2015-09-13|DEI07k1o5zraou_2015-09-13|1              |2                      |PROBABLE_HCC_DIRECTED     |6275                |-126            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI08bt6zgbpf4|2015-12-18|DEI08bt6zgbpf4_2015-12-18|1              |4                      |PROBABLE_HCC_DIRECTED     |6672                |-63             |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI08ht6zghtig|2015-02-24|DEI08ht6zghtig_2015-02-24|1              |3                      |PROBABLE_HCC_DIRECTED     |771                 |-393            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI08ni17sz81s|2015-03-21|DEI08ni17sz81s_2015-03-21|1              |2                      |PROBABLE_HCC_DIRECTED     |8172                |-287            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI08nj17sz81w|2014-10-19|DEI08nj17sz81w_2014-10-19|1              |3                      |PROBABLE_HCC_DIRECTED     |218                 |-460            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI08ymdit6zgi|2015-09-09|DEI08ymdit6zgi_2015-09-09|1              |2                      |PROBABLE_HCC_DIRECTED     |3833                |-119            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0a97sz89msi|2015-12-16|DEI0a97sz89msi_2015-12-16|1              |3                      |PROBABLE_HCC_DIRECTED     |960                 |-47             |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0at6zgaq14s|2014-09-11|DEI0at6zgaq14s_2014-09-11|1              |1                      |PROBABLE_HCC_DIRECTED     |252                 |-513            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0bjwc7sz8cr|2014-06-06|DEI0bjwc7sz8cr_2014-06-06|1              |1                      |PROBABLE_HCC_DIRECTED     |9243                |-648            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0bockj7sz8j|2015-02-28|DEI0bockj7sz8j_2015-02-28|1              |4                      |PROBABLE_HCC_DIRECTED     |10901               |-307            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0bsp7sz8pmo|2015-12-09|DEI0bsp7sz8pmo_2015-12-09|1              |2                      |PROBABLE_HCC_DIRECTED     |306                 |-43             |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0bu695zra99|2015-08-31|DEI0bu695zra99_2015-08-31|1              |3                      |PROBABLE_HCC_DIRECTED     |1256                |-214            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0c3xaj7sz8j|2014-06-21|DEI0c3xaj7sz8j_2014-06-21|1              |2                      |PROBABLE_HCC_DIRECTED     |2862                |-578            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0c5zrac5u6u|2015-07-11|DEI0c5zrac5u6u_2015-07-11|1              |8                      |PROBABLE_HCC_DIRECTED     |310                 |-228            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0c9mqi5zrai|2015-06-17|DEI0c9mqi5zrai_2015-06-17|1              |2                      |PROBABLE_HCC_DIRECTED     |502                 |-199            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0cfjs5zrasp|2015-10-09|DEI0cfjs5zrasp_2015-10-09|1              |2                      |DEFINITE_HCC_DIRECTED     |8214                |-105            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0coj5zraj8p|2014-06-06|DEI0coj5zraj8p_2014-06-06|1              |3                      |DEFINITE_HCC_DIRECTED     |2310                |-694            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0cq3k5zrakd|2015-11-07|DEI0cq3k5zrakd_2015-11-07|1              |1                      |PROBABLE_HCC_DIRECTED     |7833                |-55             |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0cu45zra40s|2015-09-23|DEI0cu45zra40s_2015-09-23|1              |2                      |PROBABLE_HCC_DIRECTED     |591                 |-148            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0dt6zgd125s|2015-12-12|DEI0dt6zgd125s_2015-12-12|1              |2                      |PROBABLE_HCC_DIRECTED     |1991                |-33             |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0dyrtt7sz8t|2015-05-16|DEI0dyrtt7sz8t_2015-05-16|1              |2                      |PROBABLE_HCC_DIRECTED     |3517                |-294            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0e5zrae1u61|2015-04-21|DEI0e5zrae1u61_2015-04-21|1              |4                      |PROBABLE_HCC_DIRECTED     |398                 |-258            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0eqt6zgq57a|2015-12-27|DEI0eqt6zgq57a_2015-12-27|1              |2                      |PROBABLE_HCC_DIRECTED     |9229                |-52             |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0ett6zgtymy|2015-08-22|DEI0ett6zgtymy_2015-08-22|1              |5                      |PROBABLE_HCC_DIRECTED     |4692                |-164            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0f5zrafvemc|2015-06-24|DEI0f5zrafvemc_2015-06-24|1              |5                      |PROBABLE_HCC_DIRECTED     |675                 |-192            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0hb7sz8b9nn|2014-11-05|DEI0hb7sz8b9nn_2014-11-05|1              |1                      |PROBABLE_HCC_DIRECTED     |841                 |-429            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0het6zgepa5|2015-12-01|DEI0het6zgepa5_2015-12-01|1              |3                      |PROBABLE_HCC_DIRECTED     |515                 |-36             |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0hrt3u5zrau|2014-08-16|DEI0hrt3u5zrau_2014-08-16|1              |2                      |PROBABLE_HCC_DIRECTED     |227                 |-770            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0i19uu5zrau|2014-05-30|DEI0i19uu5zrau_2014-05-30|1              |4                      |PROBABLE_HCC_DIRECTED     |8210                |-688            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0i1cvs7sz8s|2014-11-05|DEI0i1cvs7sz8s_2014-11-05|1              |1                      |PROBABLE_HCC_DIRECTED     |1246                |-466            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0j44iqt6zgq|2015-12-31|DEI0j44iqt6zgq_2015-12-31|1              |2                      |PROBABLE_HCC_DIRECTED     |546                 |-25             |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0ku7sz8u01k|2015-11-08|DEI0ku7sz8u01k_2015-11-08|1              |2                      |PROBABLE_HCC_DIRECTED     |1374                |-69             |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0m10t5zratk|2015-05-06|DEI0m10t5zratk_2015-05-06|1              |1                      |PROBABLE_HCC_DIRECTED     |1047                |-263            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0m5i5zraig0|2014-06-22|DEI0m5i5zraig0_2014-06-22|1              |6                      |PROBABLE_HCC_DIRECTED     |4156                |-572            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0n9nt6zgnuw|2014-05-29|DEI0n9nt6zgnuw_2014-05-29|1              |2                      |PROBABLE_HCC_DIRECTED     |5499                |-588            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0na25zra2vs|2015-09-30|DEI0na25zra2vs_2015-09-30|1              |2                      |PROBABLE_HCC_DIRECTED     |1638                |-134            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0njrt7sz8tf|2015-10-31|DEI0njrt7sz8tf_2015-10-31|1              |3                      |PROBABLE_HCC_DIRECTED     |3915                |-75             |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0nmy25zra2h|2014-05-31|DEI0nmy25zra2h_2014-05-31|1              |2                      |PROBABLE_HCC_DIRECTED     |3992                |-580            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0o5m7sz8m0s|2015-03-24|DEI0o5m7sz8m0s_2015-03-24|1              |1                      |PROBABLE_HCC_DIRECTED     |3698                |-307            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0og27sz82s4|2015-02-25|DEI0og27sz82s4_2015-02-25|1              |1                      |DEFINITE_HCC_DIRECTED     |2667                |-327            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0ok5zrakf85|2015-02-05|DEI0ok5zrakf85_2015-02-05|1              |1                      |PROBABLE_HCC_DIRECTED     |3945                |-369            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0on7sz8nx3i|2014-03-12|DEI0on7sz8nx3i_2014-03-12|1              |1                      |PROBABLE_HCC_DIRECTED     |3943                |-666            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0ot6zgoopru|2015-05-14|DEI0ot6zgoopru_2015-05-14|1              |1                      |PROBABLE_HCC_DIRECTED     |2467                |-253            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0p7sz8pjb98|2015-06-11|DEI0p7sz8pjb98_2015-06-11|1              |1                      |PROBABLE_HCC_DIRECTED     |3082                |-216            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0pt6zgpvrsh|2018-12-20|DEI0pt6zgpvrsh_2018-12-20|1              |1                      |PROBABLE_HCC_DIRECTED     |253                 |-1              |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0q1n7sz8ny0|2015-03-09|DEI0q1n7sz8ny0_2015-03-09|1              |2                      |PROBABLE_HCC_DIRECTED     |7836                |-340            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0q4r7m5zram|2015-02-25|DEI0q4r7m5zram_2015-02-25|1              |4                      |PROBABLE_HCC_DIRECTED     |565                 |-332            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0q8t6zg8kpw|2015-01-27|DEI0q8t6zg8kpw_2015-01-27|1              |5                      |PROBABLE_HCC_DIRECTED     |3523                |-384            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0r0q445zra4|2015-08-31|DEI0r0q445zra4_2015-08-31|1              |5                      |PROBABLE_HCC_DIRECTED     |745                 |-152            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0r6fnw5zraw|2015-04-25|DEI0r6fnw5zraw_2015-04-25|1              |4                      |PROBABLE_HCC_DIRECTED     |8468                |-273            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0rkgoct6zgc|2015-04-18|DEI0rkgoct6zgc_2015-04-18|1              |5                      |PROBABLE_HCC_DIRECTED     |2904                |-281            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0s8x7sz8xy0|2015-11-26|DEI0s8x7sz8xy0_2015-11-26|1              |2                      |PROBABLE_HCC_DIRECTED     |619                 |-36             |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0t0t7sz8t1h|2015-12-09|DEI0t0t7sz8t1h_2015-12-09|1              |1                      |PROBABLE_HCC_DIRECTED     |11253               |-68             |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0vaj7sz8jre|2015-09-22|DEI0vaj7sz8jre_2015-09-22|1              |7                      |PROBABLE_HCC_DIRECTED     |2470                |-163            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0vkkt7sz8t9|2015-06-28|DEI0vkkt7sz8t9_2015-06-28|1              |2                      |PROBABLE_HCC_DIRECTED     |276                 |-209            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0vmat6zgaf0|2015-02-04|DEI0vmat6zgaf0_2015-02-04|1              |1                      |PROBABLE_HCC_DIRECTED     |1333                |-441            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0vrpp7sz8pi|2015-12-05|DEI0vrpp7sz8pi_2015-12-05|1              |1                      |PROBABLE_HCC_DIRECTED     |6608                |-29             |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0wp7sz8py59|2015-01-12|DEI0wp7sz8py59_2015-01-12|1              |2                      |PROBABLE_HCC_DIRECTED     |3754                |-406            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0wv0o45zra4|2014-09-21|DEI0wv0o45zra4_2014-09-21|1              |4                      |PROBABLE_HCC_DIRECTED     |4082                |-496            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0xcope5zrae|2014-08-20|DEI0xcope5zrae_2014-08-20|1              |3                      |PROBABLE_HCC_DIRECTED     |500                 |-511            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0xe5zrae3qk|2015-09-11|DEI0xe5zrae3qk_2015-09-11|1              |8                      |PROBABLE_HCC_DIRECTED     |4417                |-116            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0xt6zgxgim6|2014-06-17|DEI0xt6zgxgim6_2014-06-17|1              |4                      |PROBABLE_HCC_DIRECTED     |224                 |-594            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0y4dy7sz8yh|2015-11-24|DEI0y4dy7sz8yh_2015-11-24|1              |5                      |PROBABLE_HCC_DIRECTED     |4628                |-40             |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0y4t6zg4m8b|2014-10-26|DEI0y4t6zg4m8b_2014-10-26|1              |5                      |PROBABLE_HCC_DIRECTED     |3136                |-509            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0y5zrayo7r7|2015-04-18|DEI0y5zrayo7r7_2015-04-18|1              |1                      |PROBABLE_HCC_DIRECTED     |6197                |-625            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0yrvt6zgvy4|2015-12-17|DEI0yrvt6zgvy4_2015-12-17|1              |2                      |PROBABLE_HCC_DIRECTED     |446                 |-30             |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
+|DEI0yx14n7sz8n|2014-05-30|DEI0yx14n7sz8n_2014-05-30|1              |2                      |DEFINITE_HCC_DIRECTED     |186                 |-582            |0                   |false                 |PROBABLE_TRUE_FIRST_HCC_TACE|
++--------------+----------+-------------------------+---------------+-----------------------+--------------------------+--------------------+----------------+--------------------+----------------------+----------------------------+
+
+
+======================================================================
+v12.5 PART 3 — PRIOR SYSTEMIC THERAPY BEFORE TACE
+======================================================================
+
+SOURCE TABLE(S): hcc_systemic_starts_for_tace_v12_4, hcc_systemic_lines_canonical_v12_2
+UNIT OF ANALYSIS: one patient
+PRIMARY KEY: pat
+INDEX DATE: first TACE date
+DATE WINDOW: any systemic before first TACE, or spanning TACE
+
+--- PRIOR SYSTEMIC STATUS DISTRIBUTION ---
++--------------------------+----------+
+|prior_systemic_status     |n_patients|
++--------------------------+----------+
+|NO_EVIDENCE_PRIOR_SYSTEMIC|512       |
+|DEFINITE_PRIOR_SYSTEMIC   |44        |
+|PROBABLE_PRIOR_SYSTEMIC   |12        |
++--------------------------+----------+
+
+
+--- ALL 56 PATIENTS WITH PRIOR/CONCURRENT SYSTEMIC ---
++--------------+---------------+-----------------------+-----------------------+----------------------+----------+----------------------+----------------+-----------------------+
+|pat           |first_tace_date|prior_systemic_status  |earliest_prior_sys_date|earliest_prior_regimen|sys_date  |regimen               |days_sys_to_tace|timing                 |
++--------------+---------------+-----------------------+-----------------------+----------------------+----------+----------------------+----------------+-----------------------+
+|DEI000r57sz854|2020-02-09     |DEFINITE_PRIOR_SYSTEMIC|2019-02-16             |LENVATINIB            |2019-02-16|NIVO_MONO             |358             |DEFINITE_PRIOR_SYSTEMIC|
+|DEI000r57sz854|2020-02-09     |DEFINITE_PRIOR_SYSTEMIC|2019-02-16             |LENVATINIB            |2019-09-08|LENVATINIB            |154             |DEFINITE_PRIOR_SYSTEMIC|
+|DEI007sz8073e9|2023-11-10     |DEFINITE_PRIOR_SYSTEMIC|2023-06-19             |AB                    |2023-06-19|AB                    |144             |DEFINITE_PRIOR_SYSTEMIC|
+|DEI009p79t6zg9|2020-06-22     |PROBABLE_PRIOR_SYSTEMIC|2020-06-19             |NIVO_MONO             |2020-06-19|NIVO_MONO             |3               |PROBABLE_PRIOR_SYSTEMIC|
+|DEI00u7sz8uxrm|2026-08-25     |DEFINITE_PRIOR_SYSTEMIC|2026-02-10             |AB                    |2026-02-10|AB                    |196             |DEFINITE_PRIOR_SYSTEMIC|
+|DEI01c8w7sz8ws|2021-03-12     |DEFINITE_PRIOR_SYSTEMIC|2019-10-12             |NIVO_MONO             |2019-10-12|NIVO_MONO             |517             |DEFINITE_PRIOR_SYSTEMIC|
+|DEI01t6zg1124b|2025-12-20     |DEFINITE_PRIOR_SYSTEMIC|2022-02-10             |AB                    |2022-02-10|AB                    |1409            |DEFINITE_PRIOR_SYSTEMIC|
+|DEI01t6zg1124b|2025-12-20     |DEFINITE_PRIOR_SYSTEMIC|2022-02-10             |AB                    |2024-07-08|NIVO_IPI              |530             |DEFINITE_PRIOR_SYSTEMIC|
+|DEI02hwf5zraf7|2024-02-05     |DEFINITE_PRIOR_SYSTEMIC|2023-03-11             |NIVO_IPI              |2023-03-11|NIVO_IPI              |331             |DEFINITE_PRIOR_SYSTEMIC|
+|DEI02i77sz87fa|2024-02-14     |DEFINITE_PRIOR_SYSTEMIC|2023-09-26             |AB                    |2023-09-26|AB                    |141             |DEFINITE_PRIOR_SYSTEMIC|
+|DEI03bjj7sz8jr|2024-02-15     |DEFINITE_PRIOR_SYSTEMIC|2023-12-29             |AB                    |2023-12-29|AB                    |48              |DEFINITE_PRIOR_SYSTEMIC|
+|DEI057sz85jqnw|2026-02-19     |DEFINITE_PRIOR_SYSTEMIC|2024-11-24             |NIVO_IPI              |2024-11-24|NIVO_IPI              |452             |DEFINITE_PRIOR_SYSTEMIC|
+|DEI05t5zrat0br|2021-12-09     |DEFINITE_PRIOR_SYSTEMIC|2021-09-15             |AB                    |2021-09-15|AB                    |85              |DEFINITE_PRIOR_SYSTEMIC|
+|DEI05t5zrat0br|2021-12-09     |DEFINITE_PRIOR_SYSTEMIC|2021-09-15             |AB                    |2021-10-04|LENVATINIB            |66              |DEFINITE_PRIOR_SYSTEMIC|
+|DEI05xp5zrapjw|2023-03-15     |DEFINITE_PRIOR_SYSTEMIC|2021-11-17             |AB                    |2021-11-17|AB                    |483             |DEFINITE_PRIOR_SYSTEMIC|
+|DEI05xp5zrapjw|2023-03-15     |DEFINITE_PRIOR_SYSTEMIC|2021-11-17             |AB                    |2022-07-20|LENVATINIB            |238             |DEFINITE_PRIOR_SYSTEMIC|
+|DEI05xp5zrapjw|2023-03-15     |DEFINITE_PRIOR_SYSTEMIC|2021-11-17             |AB                    |2022-09-28|ATEZO_MONO            |168             |DEFINITE_PRIOR_SYSTEMIC|
+|DEI05xp5zrapjw|2023-03-15     |DEFINITE_PRIOR_SYSTEMIC|2021-11-17             |AB                    |2022-12-07|NIVO_IPI              |98              |DEFINITE_PRIOR_SYSTEMIC|
+|DEI067sz86dx26|2022-12-03     |PROBABLE_PRIOR_SYSTEMIC|2022-11-20             |AB                    |2022-11-20|AB                    |13              |PROBABLE_PRIOR_SYSTEMIC|
+|DEI06okt6zgk8d|2023-02-05     |DEFINITE_PRIOR_SYSTEMIC|2023-01-03             |DURVA_MONO            |2023-01-03|DURVA_MONO            |33              |DEFINITE_PRIOR_SYSTEMIC|
+|DEI06rat5zratr|2023-02-08     |PROBABLE_PRIOR_SYSTEMIC|2023-02-05             |NIVO_MONO             |2023-02-05|NIVO_MONO             |3               |PROBABLE_PRIOR_SYSTEMIC|
+|DEI075pt6zgpt9|2019-10-09     |PROBABLE_PRIOR_SYSTEMIC|2019-09-20             |LENVATINIB            |2019-09-20|LENVATINIB            |19              |PROBABLE_PRIOR_SYSTEMIC|
+|DEI076t6zg60ue|2025-10-01     |DEFINITE_PRIOR_SYSTEMIC|2025-02-23             |AB                    |2025-02-23|AB                    |220             |DEFINITE_PRIOR_SYSTEMIC|
+|DEI076t6zg60ue|2025-10-01     |DEFINITE_PRIOR_SYSTEMIC|2025-02-23             |AB                    |2025-05-28|NIVO_IPI              |126             |DEFINITE_PRIOR_SYSTEMIC|
+|DEI076trmt6zgm|2026-07-04     |DEFINITE_PRIOR_SYSTEMIC|2024-08-17             |AB                    |2024-08-17|AB                    |686             |DEFINITE_PRIOR_SYSTEMIC|
+|DEI079t6zg9qdb|2025-01-18     |DEFINITE_PRIOR_SYSTEMIC|2023-10-06             |BEV_MONO+NIVO_MONO    |2023-10-06|BEV_MONO+NIVO_MONO    |470             |DEFINITE_PRIOR_SYSTEMIC|
+|DEI088qe7sz8ej|2021-07-29     |DEFINITE_PRIOR_SYSTEMIC|2021-05-16             |AB                    |2021-05-16|AB                    |74              |DEFINITE_PRIOR_SYSTEMIC|
+|DEI097sz89c5i5|2021-07-28     |DEFINITE_PRIOR_SYSTEMIC|2021-06-16             |LENVATINIB+NIVO_MONO  |2021-06-16|LENVATINIB+NIVO_MONO  |42              |DEFINITE_PRIOR_SYSTEMIC|
+|DEI09w7sz8wpwb|2025-09-15     |PROBABLE_PRIOR_SYSTEMIC|2025-08-21             |STRIDE                |2025-08-21|STRIDE                |25              |PROBABLE_PRIOR_SYSTEMIC|
+|DEI0a2cgg7sz8g|2018-10-31     |DEFINITE_PRIOR_SYSTEMIC|2018-07-27             |CABOZANTINIB+NIVO_MONO|2018-07-27|CABOZANTINIB+NIVO_MONO|96              |DEFINITE_PRIOR_SYSTEMIC|
+|DEI0a5zraaecdu|2024-07-09     |DEFINITE_PRIOR_SYSTEMIC|2023-06-23             |AB                    |2023-06-23|AB                    |382             |DEFINITE_PRIOR_SYSTEMIC|
+|DEI0do5zrao9it|2020-08-26     |DEFINITE_PRIOR_SYSTEMIC|2020-06-29             |LENVATINIB+PEMBRO_MONO|2020-06-29|LENVATINIB+PEMBRO_MONO|58              |DEFINITE_PRIOR_SYSTEMIC|
+|DEI0e13ntt6zgt|2021-10-17     |DEFINITE_PRIOR_SYSTEMIC|2020-09-23             |NIVO_IPI              |2020-09-23|PEMBRO_MONO           |389             |DEFINITE_PRIOR_SYSTEMIC|
+|DEI0e13ntt6zgt|2021-10-17     |DEFINITE_PRIOR_SYSTEMIC|2020-09-23             |NIVO_IPI              |2021-04-26|NIVO_IPI              |174             |DEFINITE_PRIOR_SYSTEMIC|
+|DEI0erqt6zgqmo|2022-11-03     |DEFINITE_PRIOR_SYSTEMIC|2022-02-09             |AB                    |2022-02-09|AB                    |267             |DEFINITE_PRIOR_SYSTEMIC|
+|DEI0et6zgey88a|2017-09-17     |DEFINITE_PRIOR_SYSTEMIC|2017-07-31             |SORAFENIB             |2017-07-31|SORAFENIB             |48              |DEFINITE_PRIOR_SYSTEMIC|
+|DEI0et7j7sz8jj|2016-08-26     |PROBABLE_PRIOR_SYSTEMIC|2016-08-13             |SORAFENIB             |2016-08-13|SORAFENIB             |13              |PROBABLE_PRIOR_SYSTEMIC|
+|DEI0fka35zra35|2022-06-24     |DEFINITE_PRIOR_SYSTEMIC|2021-11-22             |CABOZANTINIB          |2021-11-22|LENVATINIB+PEMBRO_MONO|214             |DEFINITE_PRIOR_SYSTEMIC|
+|DEI0fka35zra35|2022-06-24     |DEFINITE_PRIOR_SYSTEMIC|2021-11-22             |CABOZANTINIB          |2022-06-09|CABOZANTINIB          |15              |PROBABLE_PRIOR_SYSTEMIC|
+|DEI0ft6zgfbj3b|2025-07-21     |DEFINITE_PRIOR_SYSTEMIC|2024-05-13             |LENVATINIB            |2024-05-13|NIVO_IPI              |434             |DEFINITE_PRIOR_SYSTEMIC|
+|DEI0ft6zgfbj3b|2025-07-21     |DEFINITE_PRIOR_SYSTEMIC|2024-05-13             |LENVATINIB            |2025-06-07|LENVATINIB            |44              |DEFINITE_PRIOR_SYSTEMIC|
+|DEI0g5zrag4rdx|2023-04-09     |PROBABLE_PRIOR_SYSTEMIC|2023-03-16             |NIVO_MONO             |2023-03-16|NIVO_MONO             |24              |PROBABLE_PRIOR_SYSTEMIC|
+|DEI0h7sz8hn2n4|2024-02-16     |DEFINITE_PRIOR_SYSTEMIC|2023-12-16             |STRIDE                |2023-12-16|STRIDE                |62              |DEFINITE_PRIOR_SYSTEMIC|
+|DEI0hg1ft6zgfe|2017-09-21     |DEFINITE_PRIOR_SYSTEMIC|2017-07-25             |SORAFENIB             |2017-07-25|SORAFENIB             |58              |DEFINITE_PRIOR_SYSTEMIC|
+|DEI0hn77sz872s|2022-08-17     |PROBABLE_PRIOR_SYSTEMIC|2022-08-07             |NIVO_MONO             |2022-08-07|NIVO_MONO             |10              |PROBABLE_PRIOR_SYSTEMIC|
+|DEI0hus95zra9p|2022-02-18     |DEFINITE_PRIOR_SYSTEMIC|2021-05-05             |AB                    |2021-05-05|AB                    |289             |DEFINITE_PRIOR_SYSTEMIC|
+|DEI0i1st6zgsoa|2020-11-18     |PROBABLE_PRIOR_SYSTEMIC|2020-11-16             |NIVO_MONO             |2020-11-16|NIVO_MONO             |2               |PROBABLE_PRIOR_SYSTEMIC|
+|DEI0i67sz86wfv|2018-05-17     |DEFINITE_PRIOR_SYSTEMIC|2016-05-28             |SORAFENIB             |2016-05-28|SORAFENIB             |719             |DEFINITE_PRIOR_SYSTEMIC|
+|DEI0j5t6zg5s1n|2024-08-20     |DEFINITE_PRIOR_SYSTEMIC|2024-03-06             |AB                    |2024-03-06|AB                    |167             |DEFINITE_PRIOR_SYSTEMIC|
+|DEI0jdh5zraho8|2023-05-07     |DEFINITE_PRIOR_SYSTEMIC|2023-02-08             |AB                    |2023-02-08|AB                    |88              |DEFINITE_PRIOR_SYSTEMIC|
+|DEI0jnqt6zgq79|2020-10-18     |DEFINITE_PRIOR_SYSTEMIC|2017-07-02             |NIVO_MONO             |2017-07-02|SORAFENIB             |1204            |DEFINITE_PRIOR_SYSTEMIC|
+|DEI0jnqt6zgq79|2020-10-18     |DEFINITE_PRIOR_SYSTEMIC|2017-07-02             |NIVO_MONO             |2017-12-26|NIVO_MONO             |1027            |DEFINITE_PRIOR_SYSTEMIC|
+|DEI0k7s7sz8sr1|2025-07-16     |PROBABLE_PRIOR_SYSTEMIC|2025-07-05             |AB                    |2025-07-05|AB                    |11              |PROBABLE_PRIOR_SYSTEMIC|
+|DEI0k8qx7sz8xj|2023-03-23     |DEFINITE_PRIOR_SYSTEMIC|2023-01-21             |AB                    |2023-01-21|AB                    |61              |DEFINITE_PRIOR_SYSTEMIC|
+|DEI0kmo5zrao2u|2024-10-03     |DEFINITE_PRIOR_SYSTEMIC|2024-02-25             |AB                    |2024-02-25|AB                    |221             |DEFINITE_PRIOR_SYSTEMIC|
+|DEI0ky7sz8y5gp|2022-10-16     |PROBABLE_PRIOR_SYSTEMIC|2022-10-12             |PEMBRO_MONO           |2022-10-12|PEMBRO_MONO           |4               |PROBABLE_PRIOR_SYSTEMIC|
+|DEI0m82305zra0|2021-08-09     |DEFINITE_PRIOR_SYSTEMIC|2020-02-19             |LENVATINIB            |2020-02-19|LENVATINIB            |537             |DEFINITE_PRIOR_SYSTEMIC|
+|DEI0m82305zra0|2021-08-09     |DEFINITE_PRIOR_SYSTEMIC|2020-02-19             |LENVATINIB            |2020-12-16|NIVO_IPI              |236             |DEFINITE_PRIOR_SYSTEMIC|
+|DEI0md507sz80r|2024-09-27     |DEFINITE_PRIOR_SYSTEMIC|2024-08-17             |AB                    |2024-08-17|AB                    |41              |DEFINITE_PRIOR_SYSTEMIC|
+|DEI0qb7sz8benh|2019-10-03     |DEFINITE_PRIOR_SYSTEMIC|2019-08-20             |NIVO_MONO             |2019-08-20|NIVO_MONO             |44              |DEFINITE_PRIOR_SYSTEMIC|
+|DEI0r7sz8rs6tg|2023-07-17     |DEFINITE_PRIOR_SYSTEMIC|2019-04-22             |NIVO_MONO             |2019-04-22|NIVO_MONO             |1547            |DEFINITE_PRIOR_SYSTEMIC|
+|DEI0sbye7sz8em|2023-04-02     |DEFINITE_PRIOR_SYSTEMIC|2023-01-08             |AB                    |2023-01-08|AB                    |84              |DEFINITE_PRIOR_SYSTEMIC|
+|DEI0tdeiy7sz8y|2022-08-29     |DEFINITE_PRIOR_SYSTEMIC|2021-09-13             |AB                    |2021-09-13|AB                    |350             |DEFINITE_PRIOR_SYSTEMIC|
+|DEI0tgt6zgg27b|2017-06-11     |DEFINITE_PRIOR_SYSTEMIC|2015-08-01             |SORAFENIB             |2015-08-01|SORAFENIB             |680             |DEFINITE_PRIOR_SYSTEMIC|
+|DEI0ubt6zgb40c|2025-05-08     |PROBABLE_PRIOR_SYSTEMIC|2025-05-01             |AB                    |2025-05-01|AB                    |7               |PROBABLE_PRIOR_SYSTEMIC|
+|DEI0w97t6zg7p1|2018-02-17     |DEFINITE_PRIOR_SYSTEMIC|2017-12-13             |SORAFENIB             |2017-12-13|SORAFENIB             |66              |DEFINITE_PRIOR_SYSTEMIC|
+|DEI0wffft6zgfa|2025-11-10     |DEFINITE_PRIOR_SYSTEMIC|2025-06-25             |STRIDE                |2025-06-25|STRIDE                |138             |DEFINITE_PRIOR_SYSTEMIC|
+|DEI0xjiy7sz8y6|2026-06-24     |DEFINITE_PRIOR_SYSTEMIC|2024-11-20             |AB                    |2024-11-20|AB                    |581             |DEFINITE_PRIOR_SYSTEMIC|
+|DEI0xjiy7sz8y6|2026-06-24     |DEFINITE_PRIOR_SYSTEMIC|2024-11-20             |AB                    |2025-01-04|NIVO_IPI              |536             |DEFINITE_PRIOR_SYSTEMIC|
++--------------+---------------+-----------------------+-----------------------+----------------------+----------+----------------------+----------------+-----------------------+
+
+
+Patients with systemic starting ≤30 days BEFORE TACE: 13
++--------------+---------------+----------+------------+----------------+
+|pat           |first_tace_date|sys_date  |regimen     |days_sys_to_tace|
++--------------+---------------+----------+------------+----------------+
+|DEI009p79t6zg9|2020-06-22     |2020-06-19|NIVO_MONO   |3               |
+|DEI067sz86dx26|2022-12-03     |2022-11-20|AB          |13              |
+|DEI06rat5zratr|2023-02-08     |2023-02-05|NIVO_MONO   |3               |
+|DEI075pt6zgpt9|2019-10-09     |2019-09-20|LENVATINIB  |19              |
+|DEI09w7sz8wpwb|2025-09-15     |2025-08-21|STRIDE      |25              |
+|DEI0et7j7sz8jj|2016-08-26     |2016-08-13|SORAFENIB   |13              |
+|DEI0fka35zra35|2022-06-24     |2022-06-09|CABOZANTINIB|15              |
+|DEI0g5zrag4rdx|2023-04-09     |2023-03-16|NIVO_MONO   |24              |
+|DEI0hn77sz872s|2022-08-17     |2022-08-07|NIVO_MONO   |10              |
+|DEI0i1st6zgsoa|2020-11-18     |2020-11-16|NIVO_MONO   |2               |
+|DEI0k7s7sz8sr1|2025-07-16     |2025-07-05|AB          |11              |
+|DEI0ky7sz8y5gp|2022-10-16     |2022-10-12|PEMBRO_MONO |4               |
+|DEI0ubt6zgb40c|2025-05-08     |2025-05-01|AB          |7               |
++--------------+---------------+----------+------------+----------------+
+
+
+Note: patients with prior systemic who then received TACE may represent
+TACE as consolidation/combination, not TACE->systemic escalation.
+These are excluded from primary TACE->systemic cohort.
+
+--- PRIMARY COHORT AFTER PRIOR-SYSTEMIC EXCLUSION ---
+  Primary true/probable first-TACE: 568 N_PATIENTS
+  Minus prior systemic:             56 N_PATIENTS
+  Remaining (no prior systemic):    512 N_PATIENTS
+
+--- JOIN DIAGNOSTICS ---
+LEFT (primary):     568 rows, 568 patients
+RIGHT (sys_starts): 806 rows, 571 patients
+MATCHED:            56 patients
+UNMATCHED:          512 patients
+ROWS_AFTER_JOIN:    568 rows
+PATIENTS_AFTER_JOIN:568 patients
+JOIN_MULTIPLICITY:  1.00
+✓ Join multiplicity acceptable.
+
+--- PERSISTING ---
+
+PERSISTED: hcc_tace_primary_true_first_v12_5
+  ROWS:     568
+  PATIENTS: 568
+  UNIT:     one patient (primary true/probable first HCC-TACE)
+
+PERSISTED: hcc_tace_prior_systemic_v12_5
+  ROWS:     568
+  PATIENTS: 568
+
+✓ Parts 2+3 complete.
+v12.5 Part 4+5 — Research Status + Regimen Era Classification
+v12.5 Part 4+5 — Research Status + Regimen Era Classification
+======================================================================
+v12.5 PART 4 — RESEARCH / TRIAL STATUS FOR EVERY SYSTEMIC START
+======================================================================
+
+SOURCE TABLE(S): hcc_systemic_lines_canonical_v12_2, hcc_research_status_v12_1
+SOURCE VERSION(S): v12.2, v12.1
+UNIT OF ANALYSIS: one systemic line
+PRIMARY KEY: pat + line
+
+--- RESEARCH FIELD IN CANONICAL SYSTEMIC LINES ---
++--------+-------+----------+
+|research|n_lines|n_patients|
++--------+-------+----------+
+|N       |689    |486       |
+|Y       |117    |111       |
++--------+-------+----------+
+
+
+Systemic lines in primary TACE cohort: 251 lines, 154 patients
+
+RESEARCH CLASSIFICATION LOGIC:
+  DEFINITE_INTERVENTIONAL_TRIAL:
+    - research field = 'Y' (from canonical systemic lines)
+    OR
+    - v12.1 research_status_final = 'INTERVENTIONAL_TRIAL' or 'DEFINITE_TRIAL'
+  PROBABLE_INTERVENTIONAL_TRIAL:
+    - research field = 'SUSPECTED' or 'POSSIBLE'
+    OR
+    - beacon_hcc = 0 AND no HCC treatment plan linkage AND regimen unusual
+    OR
+    - v12.1 research_status_final = 'PROBABLE_TRIAL'
+  ROUTINE_CARE:
+    - research = 'N' AND no trial indicators
+    OR
+    - v12.1 research_status_final = 'ROUTINE_CARE'
+  UNCERTAIN:
+    - research field is null or conflicting
+
+--- RESEARCH CLASSIFICATION DISTRIBUTION ---
++-----------------------------+-------+----------+
+|research_class               |n_lines|n_patients|
++-----------------------------+-------+----------+
+|ROUTINE_CARE                 |231    |146       |
+|DEFINITE_INTERVENTIONAL_TRIAL|20     |18        |
++-----------------------------+-------+----------+
+
+
+Post-TACE systemic lines: 182 lines, 119 patients
+
+--- POST-TACE SYSTEMIC: REGIMEN x RESEARCH ---
++------------------------+-----------------------------+---+
+|regimen                 |research_class               |n  |
++------------------------+-----------------------------+---+
+|AB                      |ROUTINE_CARE                 |29 |
+|ATEZO_MONO              |ROUTINE_CARE                 |2  |
+|CABOZANTINIB            |ROUTINE_CARE                 |17 |
+|CABOZANTINIB+NIVO_MONO  |DEFINITE_INTERVENTIONAL_TRIAL|1  |
+|CABOZANTINIB+RAMUCIRUMAB|DEFINITE_INTERVENTIONAL_TRIAL|1  |
+|DURVA_MONO              |ROUTINE_CARE                 |3  |
+|IPI_MONO                |ROUTINE_CARE                 |4  |
+|LENVATINIB              |ROUTINE_CARE                 |29 |
+|LENVATINIB+NIVO_MONO    |ROUTINE_CARE                 |1  |
+|NIVO_IPI                |DEFINITE_INTERVENTIONAL_TRIAL|1  |
+|NIVO_IPI                |ROUTINE_CARE                 |23 |
+|NIVO_MONO               |DEFINITE_INTERVENTIONAL_TRIAL|1  |
+|NIVO_MONO               |ROUTINE_CARE                 |23 |
+|RAMUCIRUMAB             |ROUTINE_CARE                 |3  |
+|REGORAFENIB             |ROUTINE_CARE                 |1  |
+|SORAFENIB               |ROUTINE_CARE                 |20 |
+|STRIDE                  |DEFINITE_INTERVENTIONAL_TRIAL|7  |
+|STRIDE                  |ROUTINE_CARE                 |15 |
+|TREME_MONO              |ROUTINE_CARE                 |1  |
++------------------------+-----------------------------+---+
+
+
+--- EVERY POST-TACE SYSTEMIC PATIENT ---
++--------------+---------------+----------+----------------------+----------------+-----------------------------+--------+-------------------+-------------------+
+|pat           |first_tace_date|sys_start |regimen               |days_tace_to_sys|research_class               |research|hcc_indication     |exposure_confidence|
++--------------+---------------+----------+----------------------+----------------+-----------------------------+--------+-------------------+-------------------+
+|DEI000r57sz854|2020-02-09     |2020-06-08|RAMUCIRUMAB           |120             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI005zra08h71|2022-02-15     |2022-03-10|NIVO_MONO             |23              |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI007sz8073e9|2023-11-10     |2024-10-21|NIVO_IPI              |346             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI00bnjt6zgj9|2019-12-28     |2020-06-16|LENVATINIB            |171             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI00ft6zgf7oq|2019-01-13     |2020-01-29|NIVO_MONO             |381             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI01f1s7sz8sf|2018-06-23     |2019-01-26|LENVATINIB            |217             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|MODERATE           |
+|DEI01t6zg19qin|2023-10-13     |2024-11-15|AB                    |399             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|MODERATE           |
+|DEI01t6zg1vj4n|2019-07-13     |2019-07-26|NIVO_MONO             |13              |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI01tt6zgtthq|2022-01-19     |2022-02-02|NIVO_MONO             |14              |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI025zra2r6x3|2018-09-06     |2026-03-01|LENVATINIB            |2733            |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI02ct6zgcoxa|2020-05-28     |2021-07-28|AB                    |426             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI02i77sz87fa|2024-02-14     |2025-05-27|NIVO_IPI              |468             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI03f5zraf7c1|2018-11-01     |2022-10-17|DURVA_MONO            |1446            |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI045d77sz87u|2018-01-10     |2018-11-01|LENVATINIB+NIVO_MONO  |295             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|MODERATE           |
+|DEI045t6zg5qax|2023-10-23     |2024-12-20|AB                    |424             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI04i5zraixc3|2022-10-03     |2022-10-21|STRIDE                |18              |DEFINITE_INTERVENTIONAL_TRIAL|Y       |HCC_HIGH_CONFIDENCE|MODERATE           |
+|DEI04qr7sz8rvr|2021-07-14     |2023-02-10|ATEZO_MONO            |576             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|MODERATE           |
+|DEI04yt6zgye4x|2024-06-02     |2024-07-28|AB                    |56              |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI053s9t6zg94|2020-04-22     |2021-01-07|AB                    |260             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI057sz85jqnw|2026-02-19     |2026-04-13|IPI_MONO              |53              |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI05fcy5zray9|2022-08-27     |2023-08-06|AB                    |344             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI05pg7sz8gnt|2016-09-21     |2017-01-25|SORAFENIB             |126             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|MODERATE           |
+|DEI05t5zrat0br|2021-12-09     |2022-03-03|NIVO_IPI              |84              |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|MODERATE           |
+|DEI05xp5zrapjw|2023-03-15     |2023-12-28|CABOZANTINIB          |288             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI065zra6erfx|2019-12-09     |2020-02-04|LENVATINIB            |57              |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI06a8co5zrao|2021-04-28     |2021-06-17|NIVO_MONO             |50              |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI06c7sz8crip|2018-11-30     |2019-01-26|LENVATINIB            |57              |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI06t6zg6kmxo|2018-04-08     |2018-07-08|SORAFENIB             |91              |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI06v55zra54h|2015-11-26     |2016-09-09|SORAFENIB             |288             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI073c5zrac0o|2016-01-14     |2016-06-13|SORAFENIB             |151             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI0745cp5zrap|2017-08-03     |2017-11-16|SORAFENIB             |105             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI075fs7sz8s3|2025-02-17     |2025-09-22|LENVATINIB            |217             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI075pt6zgpt9|2019-10-09     |2020-02-27|NIVO_MONO             |141             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|MODERATE           |
+|DEI076t6zg60ue|2025-10-01     |2026-05-24|IPI_MONO              |235             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI077sz87gpy1|2025-08-19     |2025-11-28|AB                    |101             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI079e4t6zg42|2017-08-08     |2018-08-15|NIVO_MONO             |372             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI079t6zg9qdb|2025-01-18     |2026-01-31|NIVO_IPI              |378             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI07d357sz856|2016-12-08     |2024-06-14|STRIDE                |2745            |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|MODERATE           |
+|DEI07or6t6zg6u|2024-12-16     |2025-01-22|STRIDE                |37              |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|MODERATE           |
+|DEI081247sz84g|2016-11-15     |2023-10-07|STRIDE                |2517            |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|MODERATE           |
+|DEI088qe7sz8ej|2021-07-29     |2022-04-23|NIVO_IPI              |268             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI097sz89c5i5|2021-07-28     |2021-12-12|NIVO_IPI              |137             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI0a095zra9a9|2021-11-09     |2022-02-15|NIVO_MONO             |98              |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|MODERATE           |
+|DEI0a2cgg7sz8g|2018-10-31     |2019-05-30|LENVATINIB            |211             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI0a97sz89msi|2015-12-16     |2017-08-29|SORAFENIB             |622             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI0adt6zgdus1|2019-07-27     |2020-01-24|LENVATINIB            |181             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI0at6zga4awd|2022-06-24     |2022-09-09|STRIDE                |77              |DEFINITE_INTERVENTIONAL_TRIAL|Y       |HCC_HIGH_CONFIDENCE|MODERATE           |
+|DEI0b5zrab5nx8|2023-04-18     |2023-05-01|STRIDE                |13              |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|MODERATE           |
+|DEI0b785zra8oy|2024-10-16     |2025-09-03|CABOZANTINIB          |322             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI0bt6zgb4osn|2022-07-30     |2022-08-18|STRIDE                |19              |DEFINITE_INTERVENTIONAL_TRIAL|Y       |HCC_HIGH_CONFIDENCE|MODERATE           |
+|DEI0c3xaj7sz8j|2014-06-21     |2015-09-06|SORAFENIB             |442             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI0cwih7sz8hi|2022-05-12     |2022-06-01|STRIDE                |20              |DEFINITE_INTERVENTIONAL_TRIAL|Y       |HCC_HIGH_CONFIDENCE|MODERATE           |
+|DEI0d5zradg0hi|2022-09-02     |2022-11-08|STRIDE                |67              |DEFINITE_INTERVENTIONAL_TRIAL|Y       |HCC_HIGH_CONFIDENCE|MODERATE           |
+|DEI0d7sz8dof4o|2016-03-01     |2019-03-13|LENVATINIB            |1107            |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI0d8g5zragxg|2020-10-31     |2021-05-29|AB                    |210             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI0ddt6zgduqh|2021-04-23     |2023-06-13|AB                    |781             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI0dgfwu5zrau|2020-09-03     |2020-12-13|AB                    |101             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI0e5zrae1u61|2015-04-21     |2017-03-20|SORAFENIB             |699             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI0e5zraevvdx|2023-08-07     |2023-11-07|STRIDE                |92              |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|MODERATE           |
+|DEI0ed5zrad49c|2020-07-23     |2020-08-19|NIVO_MONO             |27              |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|MODERATE           |
+|DEI0fogjw7sz8w|2022-10-25     |2023-09-25|AB                    |335             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI0fp71pt6zgp|2020-12-20     |2020-12-26|AB                    |6               |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI0ft6zgfk5d5|2016-04-27     |2018-03-14|SORAFENIB             |686             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI0g5zrag4rdx|2023-04-09     |2023-07-16|AB                    |98              |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI0gb5zrabojt|2023-09-02     |2023-11-01|STRIDE                |60              |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|MODERATE           |
+|DEI0gd5zradbx9|2018-12-29     |2019-01-09|LENVATINIB            |11              |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI0gk37sz83p4|2018-03-10     |2019-11-18|NIVO_MONO             |618             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI0hdcedt6zgd|2026-02-06     |2026-02-21|AB                    |15              |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI0het6zgepa5|2015-12-01     |2017-10-26|SORAFENIB             |695             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI0hs5zras8xx|2022-09-09     |2022-12-01|DURVA_MONO            |83              |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI0hus95zra9p|2022-02-18     |2022-10-12|NIVO_IPI              |236             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI0i1st6zgsoa|2020-11-18     |2023-06-22|AB                    |946             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI0i7t6zg7dn2|2018-02-08     |2018-07-09|SORAFENIB             |151             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI0if6y5zray4|2021-10-02     |2021-11-17|NIVO_MONO             |46              |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI0ifgt7sz8th|2023-02-10     |2024-04-07|STRIDE                |422             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|MODERATE           |
+|DEI0ioat6zgap9|2022-12-17     |2023-07-09|NIVO_IPI              |204             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|MODERATE           |
+|DEI0j5t6zg5s1n|2024-08-20     |2025-09-24|NIVO_IPI              |400             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI0j5zrajfo9q|2022-04-15     |2022-06-18|NIVO_IPI              |64              |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI0jnqt6zgq79|2020-10-18     |2024-01-31|NIVO_IPI              |1200            |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI0k7sz8kt2vb|2023-07-17     |2023-08-05|STRIDE                |19              |DEFINITE_INTERVENTIONAL_TRIAL|Y       |HCC_HIGH_CONFIDENCE|MODERATE           |
+|DEI0k8qx7sz8xj|2023-03-23     |2024-05-21|STRIDE                |425             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|MODERATE           |
+|DEI0kbh0t6zg0x|2018-06-09     |2022-09-21|STRIDE                |1565            |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|MODERATE           |
+|DEI0khrx5zraxh|2019-07-20     |2021-07-30|AB                    |741             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI0ky7sz8y5gp|2022-10-16     |2023-07-29|ATEZO_MONO            |286             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|MODERATE           |
+|DEI0mnbt6zgbqq|2017-12-23     |2018-11-15|LENVATINIB            |327             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|MODERATE           |
+|DEI0n27sz82e4o|2023-05-10     |2023-06-21|STRIDE                |42              |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|MODERATE           |
+|DEI0n5qt6zgq7w|2021-12-12     |2022-09-13|LENVATINIB            |275             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI0n7sz8nenej|2020-07-19     |2020-09-25|AB                    |68              |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI0n9nt6zgnuw|2014-05-29     |2015-12-09|SORAFENIB             |559             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI0neh35zra3f|2018-05-14     |2019-05-28|SORAFENIB             |379             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI0o395zra99q|2020-02-06     |2020-03-17|LENVATINIB            |40              |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI0o6t6zg61wd|2021-11-14     |2025-02-11|STRIDE                |1185            |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|MODERATE           |
+|DEI0obnw5zrawn|2018-02-20     |2018-03-02|SORAFENIB             |10              |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI0og727sz822|2023-03-17     |2023-10-19|STRIDE                |216             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|MODERATE           |
+|DEI0p05mbt6zgb|2017-10-29     |2018-05-25|SORAFENIB             |208             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI0p5zrap0b7r|2021-07-21     |2021-09-15|NIVO_IPI              |56              |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI0p5zrapfff5|2018-04-29     |2018-10-06|SORAFENIB             |160             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI0q8t6zg8kpw|2015-01-27     |2018-08-14|CABOZANTINIB+NIVO_MONO|1295            |DEFINITE_INTERVENTIONAL_TRIAL|Y       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI0qbt6zgbah4|2021-10-28     |2021-11-16|STRIDE                |19              |DEFINITE_INTERVENTIONAL_TRIAL|Y       |HCC_HIGH_CONFIDENCE|MODERATE           |
+|DEI0qisd85zra8|2019-06-17     |2019-08-10|LENVATINIB            |54              |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI0qut6zgum4y|2019-10-31     |2022-06-29|AB                    |972             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI0r0q445zra4|2015-08-31     |2017-12-01|SORAFENIB             |823             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI0r8xt6zgx5s|2017-07-31     |2018-11-12|LENVATINIB            |469             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI0rkgoct6zgc|2015-04-18     |2020-09-27|AB                    |1989            |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI0sp45zra40r|2023-03-30     |2023-10-13|STRIDE                |197             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|MODERATE           |
+|DEI0t07i7sz8id|2019-09-30     |2022-12-05|AB                    |1162            |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI0t2t6zg20x5|2023-04-06     |2024-05-22|STRIDE                |412             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|MODERATE           |
+|DEI0ut6zguju8i|2022-08-18     |2022-12-26|AB                    |130             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI0v6t6zg60t6|2019-05-02     |2020-10-16|NIVO_MONO             |533             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI0vaj7sz8jre|2015-09-22     |2018-02-14|SORAFENIB             |876             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI0vy5t6zg5au|2016-09-22     |2017-12-29|SORAFENIB             |463             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI0w57sz853di|2023-09-14     |2025-03-22|AB                    |555             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI0w97t6zg7p1|2018-02-17     |2020-08-19|AB                    |914             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI0wffft6zgfa|2025-11-10     |2026-04-27|LENVATINIB            |168             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI0wt6zgw8xbb|2017-08-22     |2019-01-08|LENVATINIB            |504             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI0xitt6zgtxp|2019-10-14     |2021-04-04|NIVO_MONO             |538             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI0xqht6zghm8|2018-07-03     |2018-08-12|SORAFENIB             |40              |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI0xs7sz8snrg|2018-11-29     |2019-11-10|LENVATINIB            |346             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
+|DEI0ytm7u5zrau|2024-02-10     |2025-03-17|AB                    |401             |ROUTINE_CARE                 |N       |HCC_HIGH_CONFIDENCE|HIGH               |
++--------------+---------------+----------+----------------------+----------------+-----------------------------+--------+-------------------+-------------------+
+
+
+======================================================================
+v12.5 PART 5 — REGIMEN-SPECIFIC ERA APPROPRIATENESS
+======================================================================
+
+FDA APPROVAL ANCHORS (with ±6-month date-shift buffer):
+
+  ATEZOLIZUMAB/BEVACIZUMAB (AB):
+    HCC first-line approval:        2020-05-29
+    Robust routine availability:    observed start > 2020-11-29
+    Uncertain boundary:             2019-11-29 through 2020-11-29
+
+  STRIDE (DURVALUMAB + TREMELIMUMAB):
+    HCC approval:                   2022-10-21
+    Robust routine availability:    observed start > 2023-04-21
+    Uncertain boundary:             2022-04-21 through 2023-04-21
+
+  NIVOLUMAB/IPILIMUMAB (NIVO_IPI):
+    First-line HCC approval:        2025-04-11
+    Robust first-line availability: observed start > 2025-10-11
+    Uncertain boundary:             2024-10-11 through 2025-10-11
+    (Earlier post-sorafenib indication existed)
+
+  SORAFENIB / LENVATINIB:
+    Historical TKI standard
+    Always era-appropriate (approved 2007 / 2018)
+
+--- REGIMEN ERA STATUS DISTRIBUTION ---
++-------------------------------+---+----------+
+|regimen_era_status             |n  |n_patients|
++-------------------------------+---+----------+
+|HISTORICAL_TKI_STANDARD        |38 |38        |
+|ROUTINE_ERA_APPROPRIATE        |36 |36        |
+|OTHER_NONSTANDARD_OR_LATER_LINE|24 |24        |
+|DATE_SHIFT_BOUNDARY_UNCERTAIN  |12 |12        |
+|PREAPPROVAL_OR_NONSTANDARD     |9  |9         |
++-------------------------------+---+----------+
+
+
+--- REGIMEN x ERA STATUS ---
++----------------------+-------------------------------+---+
+|regimen               |regimen_era_status             |n  |
++----------------------+-------------------------------+---+
+|AB                    |DATE_SHIFT_BOUNDARY_UNCERTAIN  |3  |
+|AB                    |ROUTINE_ERA_APPROPRIATE        |21 |
+|ATEZO_MONO            |OTHER_NONSTANDARD_OR_LATER_LINE|2  |
+|CABOZANTINIB          |OTHER_NONSTANDARD_OR_LATER_LINE|2  |
+|CABOZANTINIB+NIVO_MONO|OTHER_NONSTANDARD_OR_LATER_LINE|1  |
+|DURVA_MONO            |OTHER_NONSTANDARD_OR_LATER_LINE|2  |
+|IPI_MONO              |OTHER_NONSTANDARD_OR_LATER_LINE|2  |
+|LENVATINIB            |HISTORICAL_TKI_STANDARD        |18 |
+|LENVATINIB+NIVO_MONO  |OTHER_NONSTANDARD_OR_LATER_LINE|1  |
+|NIVO_IPI              |DATE_SHIFT_BOUNDARY_UNCERTAIN  |3  |
+|NIVO_IPI              |PREAPPROVAL_OR_NONSTANDARD     |8  |
+|NIVO_IPI              |ROUTINE_ERA_APPROPRIATE        |1  |
+|NIVO_MONO             |OTHER_NONSTANDARD_OR_LATER_LINE|13 |
+|RAMUCIRUMAB           |OTHER_NONSTANDARD_OR_LATER_LINE|1  |
+|SORAFENIB             |HISTORICAL_TKI_STANDARD        |20 |
+|STRIDE                |DATE_SHIFT_BOUNDARY_UNCERTAIN  |6  |
+|STRIDE                |PREAPPROVAL_OR_NONSTANDARD     |1  |
+|STRIDE                |ROUTINE_ERA_APPROPRIATE        |14 |
++----------------------+-------------------------------+---+
+
+
+*** SYSTEMIC LINE PLAUSIBILITY ALERT ***
+23 routine-care patients with nonstandard/later-line regimen as first post-TACE systemic:
++--------------+---------------+----------+--------------------+--------------+-------------------------------+
+|pat           |first_tace_date|sys_start |regimen             |research_class|regimen_era_status             |
++--------------+---------------+----------+--------------------+--------------+-------------------------------+
+|DEI000r57sz854|2020-02-09     |2020-06-08|RAMUCIRUMAB         |ROUTINE_CARE  |OTHER_NONSTANDARD_OR_LATER_LINE|
+|DEI005zra08h71|2022-02-15     |2022-03-10|NIVO_MONO           |ROUTINE_CARE  |OTHER_NONSTANDARD_OR_LATER_LINE|
+|DEI00ft6zgf7oq|2019-01-13     |2020-01-29|NIVO_MONO           |ROUTINE_CARE  |OTHER_NONSTANDARD_OR_LATER_LINE|
+|DEI01t6zg1vj4n|2019-07-13     |2019-07-26|NIVO_MONO           |ROUTINE_CARE  |OTHER_NONSTANDARD_OR_LATER_LINE|
+|DEI01tt6zgtthq|2022-01-19     |2022-02-02|NIVO_MONO           |ROUTINE_CARE  |OTHER_NONSTANDARD_OR_LATER_LINE|
+|DEI03f5zraf7c1|2018-11-01     |2022-10-17|DURVA_MONO          |ROUTINE_CARE  |OTHER_NONSTANDARD_OR_LATER_LINE|
+|DEI045d77sz87u|2018-01-10     |2018-11-01|LENVATINIB+NIVO_MONO|ROUTINE_CARE  |OTHER_NONSTANDARD_OR_LATER_LINE|
+|DEI04qr7sz8rvr|2021-07-14     |2023-02-10|ATEZO_MONO          |ROUTINE_CARE  |OTHER_NONSTANDARD_OR_LATER_LINE|
+|DEI057sz85jqnw|2026-02-19     |2026-04-13|IPI_MONO            |ROUTINE_CARE  |OTHER_NONSTANDARD_OR_LATER_LINE|
+|DEI05xp5zrapjw|2023-03-15     |2023-12-28|CABOZANTINIB        |ROUTINE_CARE  |OTHER_NONSTANDARD_OR_LATER_LINE|
+|DEI06a8co5zrao|2021-04-28     |2021-06-17|NIVO_MONO           |ROUTINE_CARE  |OTHER_NONSTANDARD_OR_LATER_LINE|
+|DEI075pt6zgpt9|2019-10-09     |2020-02-27|NIVO_MONO           |ROUTINE_CARE  |OTHER_NONSTANDARD_OR_LATER_LINE|
+|DEI076t6zg60ue|2025-10-01     |2026-05-24|IPI_MONO            |ROUTINE_CARE  |OTHER_NONSTANDARD_OR_LATER_LINE|
+|DEI079e4t6zg42|2017-08-08     |2018-08-15|NIVO_MONO           |ROUTINE_CARE  |OTHER_NONSTANDARD_OR_LATER_LINE|
+|DEI0a095zra9a9|2021-11-09     |2022-02-15|NIVO_MONO           |ROUTINE_CARE  |OTHER_NONSTANDARD_OR_LATER_LINE|
+|DEI0b785zra8oy|2024-10-16     |2025-09-03|CABOZANTINIB        |ROUTINE_CARE  |OTHER_NONSTANDARD_OR_LATER_LINE|
+|DEI0ed5zrad49c|2020-07-23     |2020-08-19|NIVO_MONO           |ROUTINE_CARE  |OTHER_NONSTANDARD_OR_LATER_LINE|
+|DEI0gk37sz83p4|2018-03-10     |2019-11-18|NIVO_MONO           |ROUTINE_CARE  |OTHER_NONSTANDARD_OR_LATER_LINE|
+|DEI0hs5zras8xx|2022-09-09     |2022-12-01|DURVA_MONO          |ROUTINE_CARE  |OTHER_NONSTANDARD_OR_LATER_LINE|
+|DEI0if6y5zray4|2021-10-02     |2021-11-17|NIVO_MONO           |ROUTINE_CARE  |OTHER_NONSTANDARD_OR_LATER_LINE|
+|DEI0ky7sz8y5gp|2022-10-16     |2023-07-29|ATEZO_MONO          |ROUTINE_CARE  |OTHER_NONSTANDARD_OR_LATER_LINE|
+|DEI0v6t6zg60t6|2019-05-02     |2020-10-16|NIVO_MONO           |ROUTINE_CARE  |OTHER_NONSTANDARD_OR_LATER_LINE|
+|DEI0xitt6zgtxp|2019-10-14     |2021-04-04|NIVO_MONO           |ROUTINE_CARE  |OTHER_NONSTANDARD_OR_LATER_LINE|
++--------------+---------------+----------+--------------------+--------------+-------------------------------+
+
+
+PERSISTED: hcc_post_tace_systemic_research_v12_5
+  ROWS:     119
+  PATIENTS: 119
+  UNIT:     one patient (first post-TACE systemic line)
+
+✓ Parts 4+5 complete.
+v12.5 Parts 6+7+8 — Reassessment Imaging + Radiology + Control (read-back)
+v12.5 Parts 6+7+8 — Reassessment Imaging + Radiology + Control (read-back)
+======================================================================
+v12.5 PART 6 — POST-TACE REASSESSMENT IMAGING
+======================================================================
+
+PERSISTED: hcc_tace_reassessment_v12_5
+  ROWS:     792
+  PATIENTS: 519
+  UNIT:     one imaging study per TACE episode
+
+TACE #1:
+  N_TACE:              568
+  N_WITH_REASSESSMENT: 515 (90.7%)
+  Median days:         36  IQR: [30, 47]
+
+TACE #2:
+  N_TACE:              303
+  N_WITH_REASSESSMENT: 277 (91.4%)
+  Median days:         36  IQR: [30, 50]
+
+--- STUDY MODALITY ---
++--------------------------------------+-----+
+|proc_name                             |count|
++--------------------------------------+-----+
+|MRI ABDOMEN W/WO CONTRAST             |676  |
+|CT ABDOMEN W/WO IV CONTRAST           |22   |
+|CT CHEST/ABDOMEN/PELVIS W/ IV CONTRAST|21   |
+|CT ABDOMEN PELVIS W/WO IV CONTRAST    |20   |
+|CT ABDOMEN/PELVIS W/ IV CONTRAST      |16   |
+|MRI ABDOMEN-KIDNEY OR LIVER           |16   |
+|CT ABDOMEN W/ IV CONTRAST             |12   |
+|CT ABDOMEN PELVIS WO CONTRAST         |5    |
+|CT ABDOMEN WO CONTRAST                |4    |
++--------------------------------------+-----+
+
+
+======================================================================
+v12.5 PART 7 — RADIOLOGY REPORT LINKAGE
+======================================================================
+
+Matched via order_proc_id: 760
+Missing report:            32
+Match rate:                96.0%
+
+======================================================================
+v12.5 PART 8 — POST-TACE CONTROL PHENOTYPE
+======================================================================
+
+PHENOTYPE: High-specificity negation-aware NLP on radiology impression.
+  EXPLICIT_INADEQUATE_CONTROL: LR-TR viable, viable tumor, progression, etc.
+  EXPLICIT_GOOD_CONTROL: LR-TR nonviable, complete necrosis, complete response
+  MIXED_RESPONSE: Both active and controlled findings
+  INDETERMINATE: Report present but no high-specificity match
+  NO_REPORT: No linked radiology text
+
+--- OVERALL CONTROL STATUS ---
++---------------------------+---+----------+
+|post_tace_control_status   |n  |n_patients|
++---------------------------+---+----------+
+|INDETERMINATE              |700|467       |
+|EXPLICIT_INADEQUATE_CONTROL|52 |42        |
+|NO_REPORT                  |32 |26        |
+|MIXED_RESPONSE             |5  |5         |
+|EXPLICIT_GOOD_CONTROL      |3  |3         |
++---------------------------+---+----------+
+
+
+TACE #1:
++---------------------------+-----+
+|post_tace_control_status   |count|
++---------------------------+-----+
+|INDETERMINATE              |458  |
+|EXPLICIT_INADEQUATE_CONTROL|32   |
+|NO_REPORT                  |20   |
+|EXPLICIT_GOOD_CONTROL      |3    |
+|MIXED_RESPONSE             |2    |
++---------------------------+-----+
+
+
+TACE #2:
++---------------------------+-----+
+|post_tace_control_status   |count|
++---------------------------+-----+
+|INDETERMINATE              |242  |
+|EXPLICIT_INADEQUATE_CONTROL|20   |
+|NO_REPORT                  |12   |
+|MIXED_RESPONSE             |3    |
++---------------------------+-----+
+
+
+--- EXPLICIT_INADEQUATE_CONTROL: 5 of 52 ---
++--------------+---------------+----------+--------------+---------------------------+------------------------------------------------------------------------------------------------------------------------+
+|           pat|hcc_tace_number|  img_date|days_post_tace|   post_tace_control_status|                                                                                                       evidence_sentence|
++--------------+---------------+----------+--------------+---------------------------+------------------------------------------------------------------------------------------------------------------------+
+|DEI097sz89c5i5|              1|2021-11-07|           102|EXPLICIT_INADEQUATE_CONTROL|cement along the medial margin in\r\nsegment 7 suspicious for viable tumor.\r\n2. Thrombus in the right portal vein h...|
+|DEI02j5zraj536|              1|2024-12-18|            40|EXPLICIT_INADEQUATE_CONTROL|odule of residual enhancement measuring up to 0.7 cm (LR-TR viable).\r\n2.  Minimally decreased size of adjacent arte...|
+|DEI0jt6zgjgw2h|              1|2022-09-20|            29|EXPLICIT_INADEQUATE_CONTROL|ent of the presumed targeted lesion in segment 7/28 (LIRADS viable tumor). Multiple persistent LIRADS 4 and 5 observa...|
+|DEI0h89t6zg9rp|              2|2025-09-09|            28|EXPLICIT_INADEQUATE_CONTROL|t enhancement indicating residual or recurrent tumor, LR-TR viable.\r\n2.  Focal ascending colon wall thickening conc...|
+|DEI0a62n5zran1|              1|2024-12-10|            27|EXPLICIT_INADEQUATE_CONTROL|rformed 12/07/2024\r\n\r\n1.  Previously treated lesions: LR-TR viable, interval decrease. Largest individual viable ...|
++--------------+---------------+----------+--------------+---------------------------+------------------------------------------------------------------------------------------------------------------------+
+
+
+--- EXPLICIT_GOOD_CONTROL: 5 of 3 ---
++--------------+---------------+----------+--------------+------------------------+------------------------------------------------------------------------------------------------------------------------+
+|           pat|hcc_tace_number|  img_date|days_post_tace|post_tace_control_status|                                                                                                       evidence_sentence|
++--------------+---------------+----------+--------------+------------------------+------------------------------------------------------------------------------------------------------------------------+
+|DEI0ycqit6zgie|              1|2022-10-07|            35|   EXPLICIT_GOOD_CONTROL|ich appears to be avascular in the current examination with no evidence of residual tumor. \r\nPosttreatment biloma f...|
+|DEI087sz881y1o|              1|2017-07-22|            35|   EXPLICIT_GOOD_CONTROL|                                      1. Complete necrosis of a segment 7/8 lesion.\r\n2. Wedge-shaped area in segment 5|
+|DEI0kwy7sz8y6n|              1|2026-01-19|            74|   EXPLICIT_GOOD_CONTROL|er lesions, decreased in size and decreased in enhancement. No evidence of residual/recurrent disease. \r\n\r\nImages...|
++--------------+---------------+----------+--------------+------------------------+------------------------------------------------------------------------------------------------------------------------+
+
+
+--- MIXED_RESPONSE: 5 of 5 ---
++--------------+---------------+----------+--------------+------------------------+------------------------------------------------------------------------------------------------------------------------+
+|           pat|hcc_tace_number|  img_date|days_post_tace|post_tace_control_status|                                                                                                       evidence_sentence|
++--------------+---------------+----------+--------------+------------------------+------------------------------------------------------------------------------------------------------------------------+
+|DEI077sz87gpy1|              2|2025-11-18|            43|          MIXED_RESPONSE|              1.  Previously treated lesions: LR-TR viable, stable. Largest individual viable tumor  48 mm. \r\n2.  Addi|
+|DEI076t6zg60ue|              2|2026-03-25|            43|          MIXED_RESPONSE|ot evaluable due to image omission or degradation\r\nLR-TR Nonviable: Treated, probably or definitely not viable\r\nL...|
+|DEI0j5t6zg5s1n|              2|2025-07-23|           116|          MIXED_RESPONSE|                1.  Previously treated lesions: LR-TR viable, interval decrease. Largest individual viable tumor  20 mm.|
+|DEI0exg95zra94|              1|2025-10-19|            29|          MIXED_RESPONSE|                1.  Previously treated lesions: LR-TR viable, interval decrease. Largest individual viable tumor  12 x 9|
+|DEI0sy3f5zrafw|              1|2026-01-02|            30|          MIXED_RESPONSE|med on 01/01/2026.\r\n\r\n1.  Previously treated lesions: LR-TR viable. Treated segment 2 lesion with decreased resid...|
++--------------+---------------+----------+--------------+------------------------+------------------------------------------------------------------------------------------------------------------------+
+
+
+✓ Parts 6+7+8 verified from persisted tables.
+v12.5 Parts 9-34 — Clinical Status + Decision + Arms + Feasibility + Final Report
+v12.5 Parts 9-34 — Clinical Status + Decision + Arms + Feasibility + Final Report
+======================================================================
+v12.5 PARTS 9-15 — CLINICAL STATUS AT DECISION
+======================================================================
+
+PERSISTED: hcc_post_tace_clinical_status_v12_5
+  ROWS: 568  PATIENTS: 568
+
+--- COVARIATE AVAILABILITY ---
+  ALBI                :  481 / 568 (84.7%)
+  AFP_decision        :  425 / 568 (74.8%)
+  AFP_preTACE         :  456 / 568 (80.3%)
+  Albumin             :  485 / 568 (85.4%)
+  Bilirubin           :  481 / 568 (84.7%)
+  Age                 :  568 / 568 (100.0%)
+  Sex                 :  568 / 568 (100.0%)
+
+--- ALBI GRADE ---
++----------+-----+
+|albi_grade|count|
++----------+-----+
+|NULL      |87   |
+|Grade_1   |206  |
+|Grade_2   |230  |
+|Grade_3   |45   |
++----------+-----+
+
+--- AFP CATEGORY ---
++------------+-----+
+|afp_cat     |count|
++------------+-----+
+|ELEV_200_400|12   |
+|HIGH_GE_400 |62   |
+|MILD_20_200 |88   |
+|MISSING     |143  |
+|NORMAL_LT_20|263  |
++------------+-----+
+
+--- DECOMPENSATION ---
++------------------+-----+
+|decomp_at_decision|count|
++------------------+-----+
+|NONE              |238  |
+|NEW_POST_TACE     |200  |
+|REMOTE            |69   |
+|BASELINE          |61   |
++------------------+-----+
+
+
+======================================================================
+v12.5 PART 17 — FIRST TACE-INADEQUACY DECISION
+======================================================================
+
+PERSISTED: hcc_first_tace_inadequacy_v12_5
+  ROWS: 84  PATIENTS: 84
+
+--- DECISION TYPE ---
++-----------------------------+-----+
+|decision_type                |count|
++-----------------------------+-----+
+|SYSTEMIC_START               |59   |
+|REPEAT_TACE_AFTER_INADEQUATE |13   |
+|NO_TREATMENT_AFTER_INADEQUATE|12   |
++-----------------------------+-----+
+
+
+======================================================================
+v12.5 PARTS 18-24 — TREATMENT ARMS + FEASIBILITY
+======================================================================
+
+ARM 1 — POST-TACE SYSTEMIC (routine care): 52
+  Modern ICI era-appropriate: 18
+  Historical TKI standard:    21
+  Trial patients (excluded):  7
+
+ARM 2 — REPEAT TACE (no systemic): 202
+
+--- REGIMEN DISTRIBUTION (routine care systemic arm) ---
++--------------------+-------------------------------+-----+
+|regimen             |regimen_era_status             |count|
++--------------------+-------------------------------+-----+
+|AB                  |DATE_SHIFT_BOUNDARY_UNCERTAIN  |1    |
+|AB                  |ROUTINE_ERA_APPROPRIATE        |10   |
+|CABOZANTINIB        |OTHER_NONSTANDARD_OR_LATER_LINE|1    |
+|DURVA_MONO          |OTHER_NONSTANDARD_OR_LATER_LINE|1    |
+|LENVATINIB          |HISTORICAL_TKI_STANDARD        |11   |
+|LENVATINIB+NIVO_MONO|OTHER_NONSTANDARD_OR_LATER_LINE|1    |
+|NIVO_IPI            |PREAPPROVAL_OR_NONSTANDARD     |3    |
+|NIVO_MONO           |OTHER_NONSTANDARD_OR_LATER_LINE|7    |
+|SORAFENIB           |HISTORICAL_TKI_STANDARD        |10   |
+|STRIDE              |ROUTINE_ERA_APPROPRIATE        |7    |
++--------------------+-------------------------------+-----+
+
+
+======================================================================
+v12.5 PARTS 28-30 — THREE-WAY RECONCILIATION
+======================================================================
+
+  ALL first-TACE patients (hcc_index):   887
+  DEFINITE + PROBABLE first-TACE:        568
+  With clinical status:                  568
+  No prior systemic:                     512
+  With inadequacy decision:              84
+  Post-TACE systemic (routine care):     52
+  Post-TACE systemic (modern ICI):       18
+  Repeat TACE arm:                       202
+
+✓ Reconciliation: primary = clinical ✔
+
+
+
+======================================================================
+HCC POST-TACE DECISION COHORT LOCKDOWN v12.5
+COPY-PASTE REVIEW REPORT
+======================================================================
+
+
+A. STARTING POPULATION
+   Canonical TACE episodes (v12.4):      2,525 episodes, 1,052 patients
+   HCC-directed episodes:                1,970 episodes, 887 patients
+   Non-HCC removed:                      259 episodes (CCA, mets, NET)
+   Insufficient evidence removed:        241 episodes
+   Mixed/unclear removed:                55 episodes
+
+B. PRIMARY FIRST-TACE LOCKDOWN
+   True first-TACE (DEFINITE):           284
+   True first-TACE (PROBABLE):           284
+   TOTAL PRIMARY:                        568 N_PATIENTS
+   Excluded UNKNOWN:                     280
+   Excluded DEFINITE_PRIOR_TACE:         30
+   Excluded FIRST_OBSERVED_PRIOR:        9
+
+C. PRIOR SYSTEMIC STATUS
+   No evidence prior systemic:           512
+   Definite prior systemic:              44
+   Probable prior systemic:              12
+   CLEAN ESCALATION COHORT:              512 N_PATIENTS
+
+D. POST-TACE REASSESSMENT IMAGING (21-120d)
+   TACE #1 imaging coverage:             515/568 = 90.7%
+   TACE #2 imaging coverage:             277/303 = 91.4%
+   MRI liver (primary modality):         676/792 = 85.4%
+   Radiology report match rate:          760/792 = 96.0%
+   Median days to reassessment:          36d
+
+E. POST-TACE CONTROL PHENOTYPE (high-specificity NLP)
+   EXPLICIT_INADEQUATE_CONTROL:          52 studies, 42 patients
+   EXPLICIT_GOOD_CONTROL:                3 studies, 3 patients
+   MIXED_RESPONSE:                       5 studies, 5 patients
+   INDETERMINATE:                        700 studies, 467 patients
+   NO_REPORT:                            32 studies, 26 patients
+
+F. COVARIATE COVERAGE AT DECISION POINT
+   ALBI                :  481 / 568 (84.7%)
+   AFP                 :  425 / 568 (74.8%)
+   Albumin             :  485 / 568 (85.4%)
+   Bilirubin           :  481 / 568 (84.7%)
+   Age                 :  568 / 568 (100.0%)
+   Sex                 :  568 / 568 (100.0%)
+
+G. ALBI GRADE DISTRIBUTION
+   Grade 1 (good):                      206
+   Grade 2 (intermediate):              230
+   Grade 3 (poor):                      45
+   Missing:                             87
+
+H. FIRST TACE-INADEQUACY DECISION
+   Total with qualifying decision:       84 / 512
+   Decision type A (systemic start):     59
+   Decision type B (repeat TACE):        13
+   Decision type C (no treatment):       12
+
+I. TREATMENT STRATEGY ARMS (ROUTINE CARE ONLY)
+   Post-TACE systemic (all era):         52
+     Modern ICI era-appropriate:         18
+       AB (atezolizumab/bevacizumab):    11
+       STRIDE (durvalumab/treme):        7
+     Historical TKI standard:            21
+       Sorafenib:                        10
+       Lenvatinib:                       11
+   Repeat TACE arm (no systemic):        202
+   Trial patients (excluded):            7
+
+J. GRACE PERIOD (cumulative systemic by window)
+   ≤30d: 9 | ≤60d: 21 | ≤90d: 24 | ≤120d: 30 | ≤180d: 36 | ≤365d: 52
+
+K. DECISIVE FEASIBILITY DETERMINATION
+
+   MODERN ICI ARM (AB + STRIDE, era-appropriate): N = 18
+   *** TOO SMALL for formal comparative analysis ***
+   Minimum for exploratory comparison: ~30 per arm
+
+   MIXED-ERA SYSTEMIC ARM (TKI + ICI): N = 52
+   SUFFICIENT for era-stratified descriptive comparative analysis
+   with ALBI/AFP covariate adjustment.
+
+   REPEAT TACE ARM: N = 202
+   Large and well-characterized.
+
+   COVARIATE ADEQUACY:
+   - ALBI 84.7%, AFP 74.8% — adequate for primary analysis
+   - ECOG not available from structured data
+   - Child-Pugh not reconstructed (prior analysis showed 0% lab join)
+
+L. REACH-ONLY REFORMULATION OPTIONS
+
+   OPTION 1: ERA-STRATIFIED DESCRIPTIVE STUDY
+     Compare post-TACE systemic (N=52) vs repeat-TACE (N=236)
+     Stratify by era (modern ICI vs historical TKI)
+     Primary outcome: descriptive treatment patterns + survival curves
+     No formal target-trial emulation (arms too small for modern-only)
+
+   OPTION 2: EXPANDED TIME WINDOW
+     Use all-era systemic (N=52, all routine care) as single arm
+     Adjust for era as covariate
+     Adequate for IPTW with 3-4 covariates (ALBI, AFP, age, era)
+
+   OPTION 3: BROADER INADEQUACY DEFINITION
+     Include INDETERMINATE patients who subsequently switch
+     Increases systemic arm but reduces phenotypic specificity
+
+   MULTICENTER DATA IS NOT RECOMMENDED (per study constraints).
+
+M. PERSISTED v12.5 TABLES
+   1. hcc_tace_primary_true_first_v12_5    (568 rows)
+   2. hcc_tace_prior_systemic_v12_5        (568 rows)
+   3. hcc_post_tace_systemic_research_v12_5 (119 rows)
+   4. hcc_tace_reassessment_v12_5          (792 rows)
+   5. hcc_post_tace_control_v12_5          (792 rows)
+   6. hcc_post_tace_clinical_status_v12_5  (568 rows)
+   7. hcc_first_tace_inadequacy_v12_5      (84 rows)
+
+======================================================================
+END OF v12.5 LOCKDOWN REPORT
+======================================================================
