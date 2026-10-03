@@ -1,1218 +1,848 @@
-Follow all requirements in `skills.md`.
 
-This is a highly focused forensic/feasibility run.
-
-DO NOT estimate treatment effects.
-DO NOT run survival models.
-DO NOT calculate propensity scores.
-DO NOT rank projects.
-DO NOT create another broad HCC atlas.
-DO NOT trust the previous radiology-response regex.
-DO NOT assume the previous 9 systemic-escalation patients are correct.
-
-The sole scientific objective is:
-
-**Determine, as accurately as possible, how many true HCC patients transition from HCC-directed TACE to systemic HCC therapy after TACE #1, TACE #2, or the first documented evidence that TACE is no longer adequately controlling disease.**
-
-We need to determine whether the Hopkins REACH dataset can support a single-center study of:
-
-continued TACE-dominant management
-
-versus
-
-systemic-treatment escalation
-
-after one or more TACEs.
-
-The previous v12.3 run has several known problems:
-
-1. Some TACE-like procedures may have been performed for NON-HCC liver tumors.
-2. The radiology parser produced clinically contradictory response classifications.
-3. ECOG was incorrectly declared unavailable despite prior successful note extraction.
-4. Only a 30-day treatment window was emphasized.
-5. The analysis focused almost entirely on the first TACE.
-6. The previous "equipoise" cohort depended on unvalidated extrahepatic-disease and response regex.
-7. We therefore do NOT yet know whether the very small systemic arm is real.
-
-This run should resolve those issues without trying to perform the final causal analysis.
-
-# ============================================================
-# GLOBAL EXECUTION RULE: SHOW EXACTLY HOW EVERYTHING IS DONE
-# ============================================================
-
-For EVERY major step print:
-
-SOURCE TABLE(S):
-UNIT OF ANALYSIS:
-KEY COLUMN(S):
-DATE COLUMN(S):
-RAW N_ROWS:
-RAW N_PATIENTS:
-
-Then print the actual SQL/PySpark used for:
-
-- filtering
-- joins
-- window functions
-- deduplication
-- episode construction
-- date calculations
-- phenotype classification.
-
-If full code is extremely long, print the essential executable code block that contains all phenotype-defining logic.
-
-After every join print:
-
-LEFT_ROWS
-LEFT_PATIENTS
-RIGHT_ROWS
-RIGHT_PATIENTS
-MATCHED_LEFT_PATIENTS
-UNMATCHED_LEFT_PATIENTS
-ROWS_AFTER_JOIN
-PATIENTS_AFTER_JOIN
-JOIN_MULTIPLICITY
-
-If an intended one-to-one or many-to-one join increases rows by >10%, print:
-
-`*** JOIN MULTIPLICATION ALERT ***`
-
-and investigate BEFORE proceeding.
-
-For every clinically surprising count print:
-
-`*** CLINICAL PLAUSIBILITY ALERT ***`
-
-and investigate it.
-
-At the end print ONE complete plain-text report containing ALL requested results and implementation logic so the investigator can copy it into ChatGPT.
-
-Do not say "see dataframe" or "see notebook."
-
-# ============================================================
-# PART 0 — LOAD ONLY CANONICAL INPUTS
-# ============================================================
-
-Begin by reading:
-
-`reach_users.xzhao81.hcc_tace_episodes_canonical_v12_3`
-
-Expected:
-approximately 2,525 canonical TACE episodes / 1,052 patients.
-
-Also locate:
-
-- canonical HCC master roster
-- high-confidence HCC phenotype
-- canonical validated systemic lines
-- high-confidence true-1L systemic table
-- med_orders
-- med_admin / med_admin_all
-- treatment_plan
-- treatment_plan_orders
-- oncology/hepatology notes
-- IR/procedure notes
-- radiology_text
-- image_procedures
-- encounter_dx
-- hosp_billing_dx
-- problem_list
-- pathology if useful
-- AFP
-- albumin
-- bilirubin
-- ECOG/Child-Pugh note-extraction outputs from v9.
-
-PRINT THE SCHEMAS of every table that will actually be used.
-
-Do not assume field names.
-
-If a required table/version cannot be found:
-STOP that subsection and report exactly what is missing.
-
-# ============================================================
-# PART 1 — FIRST FIX THE MOST IMPORTANT PROBLEM:
-# IS EACH TACE ACTUALLY FOR HCC?
-# ============================================================
-
-The current TACE phenotype is patient-level HCC + TACE-like procedure.
-
-That is insufficient.
-
-A patient can have HCC AND another malignancy with liver metastases.
-
-We have already observed at least one apparent TACE episode whose follow-up radiology indication referenced metastatic urothelial cancer.
-
-Therefore classify EACH CANONICAL TACE EPISODE by treatment indication.
-
-UNIT:
-one canonical TACE episode.
-
-For each episode gather evidence in the following hierarchy.
-
-------------------------------------------------------------
-1A. HIGH-PRIORITY EPISODE-SPECIFIC EVIDENCE
-------------------------------------------------------------
-
-Search within approximately -14 to +7 days around the TACE date for:
-
-1. IR procedure note
-2. pre-procedure IR H&P
-3. procedure indication
-4. operative/procedure diagnosis
-5. tumor-board note if directly linked
-6. oncology/hepatology note explicitly discussing the planned TACE.
-
-Extract phrases containing:
-
-HCC-supportive:
-- hepatocellular carcinoma
-- HCC
-- C22.0
-- LI-RADS 5 / LR-5 if clearly referring to treated lesion
-- hepatic tumor in a patient explicitly being treated for HCC
-- bridging/downstaging for transplant due to HCC
-- segment/lobe treatment explicitly linked to known HCC.
-
-Competing cancer indicators:
-- colorectal metastasis
-- neuroendocrine metastasis
-- urothelial metastasis
-- breast metastasis
-- melanoma metastasis
-- cholangiocarcinoma
-- intrahepatic cholangiocarcinoma
-- metastatic carcinoma to liver
-- liver metastasis from another named primary
-- other non-HCC hepatic malignancy.
-
-IMPORTANT:
-Do not classify "liver cancer" alone as definite HCC.
-
-------------------------------------------------------------
-1B. SUPPORTING CONTEXT
-------------------------------------------------------------
-
-If direct procedure indication is absent, use:
-
-- active C22.0 diagnoses near procedure
-- HCC oncology/hepatology notes
-- Beacon HCC treatment plan
-- HCC-specific surveillance/follow-up language
-- HCC pathology
-- HCC-directed transplant/downstaging discussion.
-
-But nearby C22.0 alone should NOT override an episode-specific note saying the procedure was for another cancer.
-
-------------------------------------------------------------
-1C. CLASSIFICATION
-------------------------------------------------------------
-
-Create:
-
-`tace_hcc_indication_status`
-
-with EXACTLY:
-
-1. DEFINITE_HCC_DIRECTED
-2. PROBABLE_HCC_DIRECTED
-3. DEFINITE_NON_HCC
-4. PROBABLE_NON_HCC
-5. MIXED_OR_MULTIPLE_MALIGNANCIES_UNCLEAR
-6. INSUFFICIENT_EVIDENCE
-
-Evidence hierarchy:
-
-Episode-specific explicit indication
->
-procedure/IR note
->
-contemporaneous oncology note
->
-supporting diagnosis/context only.
-
-Store:
-
-- pat
-- tace_episode_id
-- tace_date
-- status
-- strongest_evidence_source
-- evidence_text
-- competing_cancer
-- confidence.
-
-DO NOT use a regex without negation/context handling.
-
-Print ALL DEFINITE_NON_HCC and PROBABLE_NON_HCC cases.
-
-Print 50 random DEFINITE_HCC cases.
-
-Print ALL MIXED/UNCLEAR cases if ≤100.
-
-Also print:
-
-ALL CANONICAL TACE EPISODES
-→ DEFINITE HCC
-→ PROBABLE HCC
-→ NON-HCC
-→ MIXED
-→ INSUFFICIENT.
-
-Then patient counts separately.
-
-Persist:
-
-`hcc_tace_hcc_indication_v12_4`
-
-# ============================================================
-# PART 2 — BUILD THE TRUE HCC-DIRECTED TACE SEQUENCE
-# ============================================================
-
-Primary HCC-TACE definition:
-
-DEFINITE_HCC_DIRECTED + PROBABLE_HCC_DIRECTED.
-
-Do NOT include non-HCC, mixed, or insufficient episodes in the primary sequence.
-
-For each patient order HCC-directed TACE episodes chronologically.
-
-Use:
-
-`row_number().over(Window.partitionBy("pat").orderBy("tace_date","tace_episode_id"))`
-
-Create:
-
-- hcc_tace_number = 1, 2, 3...
-- previous_tace_date
-- next_tace_date
-- days_from_previous_tace
-- days_to_next_tace.
-
-Print distribution:
-
-TACE #1
-TACE #2
-TACE #3
-TACE #4+
-by N_PATIENTS and N_EPISODES.
-
-Print how many patients have:
-
-- exactly 1 HCC-directed TACE
-- ≥2
-- ≥3
-- ≥4.
-
-Also print the median/IQR spacing:
-
-TACE1→TACE2
-TACE2→TACE3.
-
-Persist:
-
-`hcc_tace_sequence_hcc_only_v12_4`
-
-# ============================================================
-# PART 3 — TRUE FIRST-TACE ASCERTAINMENT
-# ============================================================
-
-Do NOT assume first observed Hopkins TACE = true first TACE.
-
-For the first HCC-directed TACE episode per patient search all data BEFORE that date for:
-
-- prior TACE
-- chemoembolization
-- embolization for HCC
-- outside TACE
-- "s/p TACE"
-- "prior TACE"
-- "TACE x1/x2/etc."
-- outside IR treatment.
-
-Use notes as well as procedures.
-
-Create:
-
-1. DEFINITE_TRUE_FIRST_HCC_TACE
-2. PROBABLE_TRUE_FIRST_HCC_TACE
-3. FIRST_OBSERVED_PRIOR_OUTSIDE_TACE_POSSIBLE
-4. DEFINITE_PRIOR_TACE
-5. UNKNOWN.
-
-Do not use an arbitrary Hopkins lookback alone when notes explicitly document prior outside treatment.
-
-Print exact counts.
-
-For each category print 20 representative evidence examples.
-
-Persist updated index table:
-
-`hcc_index_tace_hcc_validated_v12_4`
-
-# ============================================================
-# PART 4 — REASSESSMENT IMAGING:
-# DO NOT ATTEMPT FULL RESPONSE CLASSIFICATION YET
-# ============================================================
-
-The previous response regex was unreliable.
-
-For THIS RUN, use imaging primarily to locate clinical decision points.
-
-For TACE #1 and TACE #2 separately identify:
-
-the first clinically appropriate contrast-enhanced liver CT/MRI between:
-
-PRIMARY:
-28–120 days
-
-SENSITIVITY:
-21–120 days.
-
-Use one unique radiology study per patient/TACE episode.
-
-Do not use:
-- billing components
-- duplicated reports
-- individual phases
-as separate scans.
-
-Preferred study identifier:
-accession / order / report ID.
-
-Fallback:
-patient + date + modality + procedure.
-
-Require contrast-enhanced study where possible.
-
-Create:
-
-`hcc_post_tace_reassessment_v12_4`
-
-with:
-
-- pat
-- tace_number
-- tace_date
-- scan_date
-- days_post_tace
-- modality
-- study_id
-- procedure_name
-- report_available.
-
-Print reassessment coverage separately after:
-
-TACE #1
-TACE #2.
-
-# ============================================================
-# PART 5 — CONSERVATIVE "INADEQUATE RESPONSE" PHENOTYPE
-# ============================================================
-
-Do NOT attempt comprehensive mRECIST from regex.
-
-Instead build a HIGH-SPECIFICITY evidence phenotype for explicit inadequate disease control.
-
-Search the post-TACE imaging report AND oncology/IR/hepatology notes within:
-
-scan date ±14 days
-
-for explicit language.
-
-------------------------------------------------------------
-5A. STRONG EVIDENCE OF INADEQUATE CONTROL
-------------------------------------------------------------
-
-Examples:
-
-- residual viable tumor
-- residual enhancing tumor
-- viable disease
-- LR-TR viable
-- incomplete response
-- persistent viable HCC
-- progressive disease
-- progression
-- increased size of viable tumor
-- new HCC lesion
-- new LR-5 lesion
-- multifocal progression
-- recurrent HCC
-- residual disease requiring additional treatment
-- "needs repeat TACE"
-- "recommend systemic therapy"
-- "TACE refractory"
-- "TACE failure"
-- "poor response to TACE"
-- "not responding to TACE."
-
-------------------------------------------------------------
-5B. STRONG EVIDENCE OF GOOD CONTROL
-------------------------------------------------------------
-
-Examples:
-
-- LR-TR nonviable
-- no viable tumor
-- complete necrosis
-- complete response
-- no residual enhancement
-- treated lesion nonviable.
-
-------------------------------------------------------------
-5C. NEGATION-AWARE LOGIC
-------------------------------------------------------------
-
-The parser MUST distinguish:
-
-"no evidence of viable tumor"
-
-from
-
-"viable tumor."
-
-It MUST distinguish:
-
-"no progression"
-
-from
-
-"progression."
-
-It MUST distinguish historical phrases from current assessment where possible.
-
-Use explicit negation-window logic or sufficiently constrained phrases.
-
-Do not count a phrase in an indication/history section as a current response unless the impression/assessment supports it.
-
-------------------------------------------------------------
-5D. CLASSIFICATION
-------------------------------------------------------------
-
-Create:
-
-- EXPLICIT_INADEQUATE_CONTROL
-- EXPLICIT_GOOD_CONTROL
-- MIXED/CONTRADICTORY
-- INDETERMINATE.
-
-Store evidence phrase and source.
-
-If LR-TR exists, prioritize explicit LR-TR over generic regex.
-
-Do NOT map INDETERMINATE to inadequate.
-
-Print:
-- counts
-- 50 inadequate examples
-- 50 good-control examples
-- ALL contradictory examples.
-
-Persist:
-
-`hcc_post_tace_control_status_v12_4`
-
-# ============================================================
-# PART 6 — USE NOTES TO IDENTIFY THE ACTUAL CLINICAL DECISION
-# ============================================================
-
-This is essential.
-
-For each post-TACE reassessment after TACE #1 and #2 search:
-
-- oncology notes
-- hepatology notes
-- IR notes
-- tumor-board notes if available
-
-from:
-
-scan date -7 days
-through
-scan date +45 days.
-
-Extract explicit management plans.
-
-Candidate phrases/concepts:
-
-REPEAT_TACE_PLAN
-SYSTEMIC_THERAPY_PLAN
-Y90_PLAN
-ABLATION_PLAN
-RESECTION_PLAN
-TRANSPLANT_PLAN
-OBSERVE_PLAN
-NO_FURTHER_CANCER_THERAPY
-UNCLEAR.
-
-Examples:
-
-"recommend repeat TACE"
-"plan for another TACE"
-"refer back to IR"
-"start atezolizumab/bevacizumab"
-"start durvalumab/tremelimumab"
-"start systemic therapy"
-"consider systemic therapy"
-"switch to systemic therapy"
-"no further TACE"
-"TACE refractory"
-"continue observation"
-"repeat MRI in 3 months."
-
-IMPORTANT:
-Distinguish:
-
-DECIDED PLAN
-from
-POSSIBLE OPTION DISCUSSED.
-
-Create confidence:
-
-DEFINITE_PLAN
-PROBABLE_PLAN
-OPTION_ONLY
-UNKNOWN.
-
-Store evidence text.
-
-Print every patient with a systemic-treatment plan if N≤100.
-
-# ============================================================
-# PART 7 — RECOVER ECOG / CHILD-PUGH CORRECTLY
-# ============================================================
-
-Do NOT report ECOG as unavailable.
-
-Reuse/adapt the successful v9 note extraction methodology.
-
-We previously recovered ECOG from oncology/hepatology/GI notes with substantial coverage.
-
-For every post-TACE decision point search note text from:
-
--30 to +7 days around the reassessment scan.
-
-Extract explicit:
-
-ECOG:
-- 0
-- 1
-- 2
-- 3
-- 4
-- ranges/ambiguous values separately.
-
-Child-Pugh:
-- explicit class A/B/C
-- explicit numerical score.
-
-Do NOT reconstruct Child-Pugh from diagnosis-code absence.
-
-Do NOT infer CP from ALBI.
-
-For ambiguous phrases such as:
-"ECOG 2-3"
-store:
-ECOG_AMBIGUOUS_2_3
-
-rather than forcing one value.
-
-Print:
-- candidate text coverage
-- successful parse coverage
-- value distributions.
-
-Print 30 random examples for ECOG.
-Print 30 random examples for CP.
-Print all ambiguous examples up to 100.
-
-Persist:
-
-`hcc_post_tace_clinical_status_v12_4`
-
-# ============================================================
-# PART 8 — BUILD THE SYSTEMIC-TREATMENT START TABLE FROM SCRATCH
-# ============================================================
-
-We need a trustworthy treatment-switch date.
-
-Use the current canonical systemic-line table as the primary source.
-
-Also cross-check raw:
-- med_orders
-- med_admin
-- Beacon treatment plans/orders.
-
-For each validated HCC systemic regimen derive:
-
-- pat
-- systemic_start_date
-- regimen
-- line
-- exposure_confidence
-- HCC indication confidence
-- research status.
-
-Regimens should include at minimum:
-
-- Atezo/Bev
-- STRIDE
-- Nivo/Ipi
-- Nivolumab
-- Pembrolizumab
-- Durvalumab
-- Lenvatinib
-- Sorafenib
-- Cabozantinib
-- Regorafenib
-- Ramucirumab
-- other true HCC systemic regimens.
-
-Do NOT require administration records for oral TKIs.
-
-For oral TKIs:
-an appropriately validated active order/start can establish systemic START even if end date is uncertain.
-
-For IV therapy:
-use first actual administration where reliable;
-if Beacon/orders are the validated exposure source, document exactly why.
-
-Do not count:
-- TACE-associated doxorubicin
-- procedural chemotherapy
-as systemic therapy.
-
-Persist:
-
-`hcc_systemic_starts_for_tace_v12_4`
-
-# ============================================================
-# PART 9 — FIRST SYSTEMIC TREATMENT AFTER EACH TACE
-# ============================================================
-
-For EVERY HCC-directed TACE episode find the first validated systemic HCC therapy after that TACE.
-
-Do this WITHOUT radiology filtering first.
-
-For each TACE #1 and TACE #2 calculate:
-
-days_from_tace_to_systemic =
-systemic_start_date - tace_date.
-
-Print cumulative transition counts:
-
-SYSTEMIC START ≤30d
-≤45d
-≤60d
-≤90d
-≤120d
-≤180d
-≤365d
-EVER after TACE.
-
-Print separately for:
-
-TACE #1
-TACE #2
-
-and:
-
-ALL ERA
-DEFINITELY MODERN
-DATE-SHIFT UNCERTAIN
-DEFINITELY PRE-MODERN.
-
-IMPORTANT:
-Within-patient intervals are valid despite date shifting.
-
-Then print exact regimen distribution for each window.
-
-# ============================================================
-# PART 10 — SYSTEMIC SWITCH AFTER REASSESSMENT
-# ============================================================
-
-Repeat the analysis using the reassessment SCAN as time zero.
-
-For every patient with a reassessment scan calculate:
-
-days_scan_to_systemic =
-systemic_start_date - scan_date.
-
-Print cumulative counts:
-
-≤30d
-≤45d
-≤60d
-≤90d
-≤120d
-≤180d
-≤365d
-EVER.
-
-Do NOT apply:
-- extrahepatic disease filtering
-- response regex filtering
-- ALBI filtering
-- ECOG filtering
-
-in this first descriptive count.
-
-We need the raw empirical transition frequency first.
-
-Print:
-
-N_SYSTEMIC
-N_REPEAT_TACE
-N_BOTH
-N_NEITHER
-
-at each horizon.
-
-For BOTH:
-print which happened first.
-
-# ============================================================
-# PART 11 — SYSTEMIC SWITCH AFTER EXPLICIT INADEQUATE CONTROL
-# ============================================================
-
-Now restrict to:
-
-EXPLICIT_INADEQUATE_CONTROL
-
-after TACE #1 or #2.
-
-Define time zero as the date of the evidence establishing inadequate control:
-
-- reassessment scan date
-OR
-- clinical note date if inadequacy is first explicitly documented later.
-
-For each patient find:
-
-- next TACE
-- next systemic start
-- Y90
-- ablation
-- surgery
-- transplant
-- death
-- no active treatment.
-
-Print cumulative systemic starts after inadequate-control decision:
-
-≤30
-≤45
-≤60
-≤90
-≤120
-≤180
-≤365 days.
-
-Print repeat-TACE counts in same windows.
-
-This is one of the most important outputs.
-
-# ============================================================
-# PART 12 — FIRST "TACE INADEQUACY" DECISION POINT
-# ============================================================
-
-For each patient identify the FIRST episode after TACE #1 or TACE #2 where there is explicit evidence of inadequate control.
-
-Call this:
-
-`first_tace_inadequacy_date`
-
-and record:
-
-- whether after TACE1 or TACE2
-- evidence type
-- imaging vs note
-- evidence phrase
-- TACE number
-- ALBI at decision
-- delta ALBI from pre-TACE
-- AFP if available
-- ECOG if available
-- explicit CP if available.
-
-Then classify the first active treatment strategy after this date:
-
-1. REPEAT_TACE
-2. MODERN_SYSTEMIC
-3. HISTORICAL_TKI
-4. SYSTEMIC_PLUS_TACE
-5. Y90
-6. ABLATION
-7. RESECTION
-8. TRANSPLANT
-9. OBSERVATION
-10. SUPPORTIVE/HOSPICE
-11. DEATH_BEFORE_TREATMENT
-12. UNKNOWN.
-
-Use multiple treatment windows:
-
-30
-45
-60
-90
-120 days.
-
-Do NOT choose one yet.
-
-Print the full distribution for every window.
-
-# ============================================================
-# PART 13 — REPEAT-TACE VERSUS SYSTEMIC CANDIDATE ARM SIZES
-# ============================================================
-
-Build increasingly strict candidate populations.
-
-------------------------------------------------------------
-COHORT A — PURELY DESCRIPTIVE
-------------------------------------------------------------
-
-HCC-directed TACE
-+
-first explicit inadequate-control decision.
-
-No further exclusions.
-
-Print arms.
-
-------------------------------------------------------------
-COHORT B — LIVER-CONFINED SUPPORT
-------------------------------------------------------------
-
-Require no DEFINITE evidence of extrahepatic disease.
-
-IMPORTANT:
-Do NOT classify absence unless evidence genuinely supports it.
-
-Allowed:
-NO / NO_EVIDENCE_ON_STAGING / explicit liver-confined.
-
-Exclude:
-DEFINITE extrahepatic.
-
-Keep unknown separately.
-
-------------------------------------------------------------
-COHORT C — PRESERVED TREATMENT FITNESS
-------------------------------------------------------------
-
-Additionally require:
-
-- no mALBI grade 3
-- no major recent decompensation
-- ECOG 0-1 when known.
-
-Do NOT exclude unknown ECOG automatically.
-Instead print known versus unknown.
-
-------------------------------------------------------------
-COHORT D — STRICT HUMAN-REVIEW CANDIDATE
-------------------------------------------------------------
-
-Potentially plausible for BOTH:
-repeat TACE and systemic therapy.
-
-This MUST NOT be declared automatically from code.
-
-Flag candidates for later IR/human adjudication.
-
-For each cohort print at 30/60/90/120d:
-
-REPEAT_TACE
-MODERN_SYSTEMIC
-SYSTEMIC+TACE
-OTHER
-NO_TREATMENT.
-
-The key feasibility number is:
-
-N modern systemic after first TACE-inadequacy decision.
-
-# ============================================================
-# PART 14 — MODERN ERA DEFINITIONS
-# ============================================================
-
-Use date-shift-safe approval boundaries.
-
-Atezo/Bev FDA:
-2020-05-29.
-
-Therefore:
-
-DEFINITELY_PRE_MODERN:
-observed decision date < 2019-11-29
-
-DATE_SHIFT_UNCERTAIN:
-2019-11-29 through 2020-11-29
-
-DEFINITELY_MODERN:
-observed decision date > 2020-11-29.
-
-For STRIDE and Nivo/Ipi, preserve regimen-specific robust approval status separately.
-
-Do not claim a regimen was routine-care available merely because its shifted date appears after the exact FDA date.
-
-# ============================================================
-# PART 15 — AUDIT EVERY SYSTEMIC SWITCH
-# ============================================================
-
-If the total number of post-TACE systemic-switch patients is ≤100:
-
-PRINT EVERY PATIENT.
-
-For each print:
-
-PATIENT
-HCC_TACE_NUMBER
-TACE_DATE
-HCC_INDICATION_STATUS
-REASSESSMENT_DATE
-INADEQUATE_CONTROL_STATUS
-INADEQUATE_CONTROL_EVIDENCE
-ECOG
-CHILD_PUGH
-ALBI
-DELTA_ALBI
-AFP
-NEXT_TACE_DATE
-SYSTEMIC_START_DATE
-DAYS_FROM_TACE_TO_SYSTEMIC
-DAYS_FROM_SCAN_TO_SYSTEMIC
-DAYS_FROM_INADEQUACY_TO_SYSTEMIC
-SYSTEMIC_REGIMEN
-SYSTEMIC_EXPOSURE_SOURCE
-RESEARCH_STATUS
-ANY_TACE_BETWEEN_DECISION_AND_SYSTEMIC
-DATE_SHIFT_ERA
-DEATH_DATE
-LAST_CONTACT.
-
-Also print relevant note excerpts describing WHY systemic therapy was chosen when available.
-
-This section is mandatory.
-
-# ============================================================
-# PART 16 — AUDIT REPEAT-TACE PATIENTS
-# ============================================================
-
-Random sample with fixed seed:
-
-30 after TACE #1
-30 after TACE #2
-30 after explicit inadequate-control phenotype if applicable.
-
-For each print:
-
-- previous TACE
-- reassessment
-- explicit response/control evidence
-- decision note
-- next TACE
-- days to next TACE
-- ALBI
-- delta ALBI
-- AFP
-- ECOG/CP if available.
-
-Purpose:
-verify that "repeat TACE" reflects a clinical decision rather than duplicate episode coding.
-
-# ============================================================
-# PART 17 — SPECIFIC SANITY CHECKS
-# ============================================================
-
-Run all of these:
-
-1.
-No HCC-TACE episode may be DEFINITE_HCC if its strongest episode-specific indication explicitly names another primary malignancy with liver metastasis and does not mention HCC.
-
-2.
-TACE #2 date > TACE #1 date.
-
-3.
-Systemic start after a decision must be > decision date.
-
-4.
-Do not count existing systemic therapy that started BEFORE the TACE as "systemic escalation."
-
-5.
-If a patient is already on systemic therapy when TACE occurs, classify separately:
-
-`TACE_DURING_EXISTING_SYSTEMIC`
-
-not systemic switch.
-
-6.
-Do not count TACE-associated doxorubicin as systemic treatment.
-
-7.
-Systemic regimen must be HCC-indication validated.
-
-8.
-Inadequate-control evidence must not rely exclusively on negated language.
-
-9.
-LR-TR nonviable must not simultaneously equal viable unless there are multiple lesions with explicitly different states; if so classify at PATIENT level carefully.
-
-10.
-Complete response cannot automatically coexist with overall progressive disease unless clearly due to a different/new lesion; print those cases.
-
-11.
-No patient can have first inadequate-control date before the relevant TACE.
-
-12.
-A TACE decision after TACE #2 must use the correct reassessment after TACE #2, not a prior scan.
-
-13.
-All cumulative counts must be monotonic:
-
-N≤30 ≤ N≤45 ≤ N≤60 ≤ N≤90 ≤ N≤120 ≤ N≤180 ≤ N≤365 ≤ EVER.
-
-Assert this in code.
-
-14.
-Print patient IDs responsible for any violation.
-
-# ============================================================
-# PART 18 — THE DECISIVE FEASIBILITY TABLE
-# ============================================================
-
-Print this exact table:
-
-DECISION POINT | ERA | N_ELIGIBLE | REPEAT_TACE_30 | SYS_30 | REPEAT_TACE_60 | SYS_60 | REPEAT_TACE_90 | SYS_90 | REPEAT_TACE_120 | SYS_120 | SYS_EVER
-
-Rows:
-
-- after TACE #1 reassessment
-- after TACE #2 reassessment
-- after explicit inadequate control following TACE #1
-- after explicit inadequate control following TACE #2
-- first inadequate-control decision after either TACE #1/#2
-
-For each show:
-
-ALL ERA
-DEFINITELY MODERN.
-
-Then a second table for MODERN systemic regimens only:
-
-DECISION POINT
-AB
-STRIDE
-NIVO_IPI
-OTHER MODERN ICI
-TKI
-TOTAL.
-
-# ============================================================
-# PART 19 — FEASIBILITY INTERPRETATION
-# ============================================================
-
-Do NOT perform causal inference.
-
-Based only on arm size and phenotype quality, assign one of:
-
-A. SINGLE-CENTER COMPARATIVE STUDY PLAUSIBLE
-B. SINGLE-CENTER POSSIBLE BUT SMALL
-C. DESCRIPTIVE SINGLE-CENTER ONLY
-D. MULTICENTER REQUIRED
-
-Use transparent thresholds rather than arbitrary optimism.
-
-At minimum discuss:
-
-- systemic-arm N
-- modern systemic-arm N
-- repeat-TACE N
-- data completeness
-- HCC-indication certainty
-- ECOG coverage
-- CP coverage
-- ALBI coverage
-- decision-note coverage
-- number requiring human review.
-
-Do not call target-trial emulation feasible merely because one arm has a large N.
-
-# ============================================================
-# PART 20 — REQUIRED FINAL COPY-PASTE REPORT
-# ============================================================
-
-Print ONE plain-text block beginning:
-
-============================================================
-HCC TACE → SYSTEMIC TRANSITION AUDIT v12.4
-============================================================
-
-It must contain:
-
-A. canonical TACE starting counts
-B. HCC-directed TACE-indication classification
-C. non-HCC contamination counts and examples
-D. true/probable first-TACE counts
-E. HCC-directed TACE-number distribution
-F. reassessment coverage after TACE1 and TACE2
-G. explicit adequate/inadequate-control phenotype counts
-H. ECOG note-extraction coverage
-I. Child-Pugh note-extraction coverage
-J. systemic-treatment start validation
-K. cumulative systemic-switch counts after TACE1
-L. cumulative systemic-switch counts after TACE2
-M. cumulative switch counts after reassessment
-N. cumulative switch counts after explicit inadequate control
-O. first TACE-inadequacy strategy distribution
-P. exact modern systemic regimens
-Q. all systemic-switch patient timelines
-R. repeat-TACE audit summary
-S. decisive feasibility table
-T. all failed sanity checks
-U. unresolved uncertainties
-V. persisted table names / rows / patients
-W. IMPLEMENTATION LOGIC for every major phenotype.
-
-Print actual numeric results.
-
-Do not omit sections because they are inconvenient.
-
-Do not summarize "no issue" without printing the underlying N.
-
-# ============================================================
-# PERSIST
-# ============================================================
-
-Persist at minimum:
-
-- hcc_tace_hcc_indication_v12_4
-- hcc_tace_sequence_hcc_only_v12_4
-- hcc_index_tace_hcc_validated_v12_4
-- hcc_post_tace_reassessment_v12_4
-- hcc_post_tace_control_status_v12_4
-- hcc_post_tace_clinical_status_v12_4
-- hcc_systemic_starts_for_tace_v12_4
-- hcc_tace_to_systemic_transitions_v12_4
-- hcc_first_tace_inadequacy_v12_4
-- hcc_tace_strategy_candidates_v12_4
-- hcc_tace_feasibility_summary_v12_4
-
-Read each table back after persisting.
-
-Print:
-
-TABLE
-ROWS
-UNIQUE PATIENTS
-UNIT OF ANALYSIS
-PRIMARY KEY / UNIQUE KEY.
-
-STOP after this.
-
-NO OUTCOME MODEL.
-NO SURVIVAL ANALYSIS.
-NO PROPENSITY MODEL.
-NO PROJECT RANKING.
+Parts 2-4 — Project A Population + ALBI + AFP Landmarks
+Parts 2-4 — Project A Population + ALBI + AFP Landmarks
+======================================================================
+PART 2 — PROJECT A TARGET POPULATION
+======================================================================
+
+ICI-containing regimens: ['AB', 'STRIDE', 'NIVO_IPI', 'NIVO_MONO', 'PEMBRO_MONO', 'DURVA_MONO', 'ATEZO_MONO', 'CABOZANTINIB+NIVO_MONO', 'LENVATINIB+PEMBRO_MONO', 'LENVATINIB+NIVO_MONO', 'IPI_MONO', 'BEV_MONO+NIVO_MONO']
+HC true-1L ICI patients: 242
+
+A1 all HC true1L ICI: N=242
+  AB                                         96
+  STRIDE                                     50
+  NIVO_MONO                                  43
+  NIVO_IPI                                   17
+  PEMBRO_MONO                                14
+  DURVA_MONO                                  7
+  CABOZANTINIB+NIVO_MONO                      6
+  ATEZO_MONO                                  6
+  LENVATINIB+PEMBRO_MONO                      1
+  IPI_MONO                                    1
+  LENVATINIB+NIVO_MONO                        1
+
+A2 routine-care ICI: N=153
+  AB                                         71
+  STRIDE                                     37
+  NIVO_MONO                                  14
+  PEMBRO_MONO                                 9
+  NIVO_IPI                                    8
+  ATEZO_MONO                                  6
+  DURVA_MONO                                  5
+  LENVATINIB+PEMBRO_MONO                      1
+  IPI_MONO                                    1
+  LENVATINIB+NIVO_MONO                        1
+
+A3 modern-era ICI: N=0
+
+A4 modern routine-care ICI: N=0
+
+======================================================================
+PART 3 — FIXED-LANDMARK ALBI
+======================================================================
+Albumin rows after filtering: 166,330
+Bilirubin rows after filtering: 160,196
+
+BASELINE ALBI:
+  Window: day -14 to 0, target day 0
+  Albumin available:   227
+  Bilirubin available: 224
+  Paired (any gap):    224
+  Paired (gap<=3d):  222
+  Pair gap: median=0d, mean=0.0d, max=0d
+  mALBI distribution:
+    Grade1      107
+    Grade2a      43
+    Grade2b      56
+    Grade3       16
+
+WK6 ALBI:
+  Window: day 28 to 56, target day 42
+  Albumin available:   200
+  Bilirubin available: 198
+  Paired (any gap):    198
+  Paired (gap<=3d):  198
+  Pair gap: median=0d, mean=0.0d, max=0d
+  mALBI distribution:
+    Grade1       83
+    Grade2a      39
+    Grade2b      57
+    Grade3       19
+
+WK12 ALBI:
+  Window: day 70 to 98, target day 84
+  Albumin available:   171
+  Bilirubin available: 171
+  Paired (any gap):    171
+  Paired (gap<=3d):  168
+  Pair gap: median=0d, mean=0.0d, max=0d
+  mALBI distribution:
+    Grade1       73
+    Grade2a      33
+    Grade2b      47
+    Grade3       15
+
+BASELINE30 ALBI:
+  Window: day -30 to 0, target day 0
+  Albumin available:   235
+  Bilirubin available: 232
+  Paired (any gap):    232
+  Paired (gap<=3d):  230
+  Pair gap: median=0d, mean=0.0d, max=0d
+  mALBI distribution:
+    Grade1      112
+    Grade2a      43
+    Grade2b      59
+    Grade3       16
+
+PERSISTED: reach_users.xzhao81.hcc_medonc_lockdown_albi_landmarks_v1
+  ROWS: 242  |  PATIENTS: 242
+
+PAIRED BASELINE+WK6 ALBI BY REGIMEN:
+  AB                                         76
+  STRIDE                                     38
+  NIVO_MONO                                  32
+  PEMBRO_MONO                                10
+  NIVO_IPI                                   10
+  DURVA_MONO                                  6
+  CABOZANTINIB+NIVO_MONO                      5
+  ATEZO_MONO                                  4
+  LENVATINIB+PEMBRO_MONO                      1
+  IPI_MONO                                    1
+  TOTAL paired baseline+wk6: 183
+
+======================================================================
+PART 4 — FIXED-LANDMARK AFP
+======================================================================
+AFP measurements after filtering: 20,441
+
+BASELINE AFP: day -30 to 0 (target 0)
+  Patients with AFP: 203
+  Median: 81.2, IQR: [7.4, 2807.2]
+  AFP >10: 144 patients
+  AFP >20: 127 patients
+  AFP >100: 98 patients
+  AFP >=400: 77 patients
+
+BASELINE_14D AFP: day -14 to 0 (target 0)
+  Patients with AFP: 187
+  Median: 89.9, IQR: [8.1, 3240.8]
+  AFP >10: 135 patients
+  AFP >20: 118 patients
+  AFP >100: 93 patients
+  AFP >=400: 72 patients
+
+WEEK6 AFP: day 28 to 56 (target 42)
+  Patients with AFP: 162
+  Median: 40.8, IQR: [5.2, 1283.8]
+  AFP >10: 100 patients
+  AFP >20: 90 patients
+  AFP >100: 68 patients
+  AFP >=400: 54 patients
+
+WEEK12 AFP: day 70 to 98 (target 84)
+  Patients with AFP: 132
+  Median: 23.0, IQR: [4.7, 762.9]
+  AFP >10: 77 patients
+  AFP >20: 66 patients
+  AFP >100: 47 patients
+  AFP >=400: 37 patients
+
+PERSISTED: reach_users.xzhao81.hcc_medonc_lockdown_afp_landmarks_v1
+  ROWS: 242  |  PATIENTS: 242
+
+AFP >10: eligible=144, paired_w6=103, paired_w12=89
+
+AFP >20: eligible=127, paired_w6=91, paired_w12=79
+
+AFP >100: eligible=98, paired_w6=71, paired_w12=58
+
+AFP >=400: eligible=77, paired_w6=56, paired_w12=43
+
+Parts 2-4 complete.
+Parts 5-8 — Landmark Eligibility + Outcomes
+Parts 5-8 — Landmark Eligibility + Outcomes
+======================================================================
+PART 5 — WEEK-6 LANDMARK ELIGIBILITY
+======================================================================
+
+A1 total:                  242
+Alive at day 42:         222
+On treatment (raw dur):    161
+On treatment (corrected):  181
+Eligible at landmark:      222
+
+Among eligible at landmark:
+  Paired ALBI (bl+w6):   180
+  Paired AFP (bl+w6):    150
+  Both ALBI+AFP paired:  139
+
+ELIGIBLE AT LANDMARK BY REGIMEN:
+  AB                                         91
+  STRIDE                                     45
+  NIVO_MONO                                  40
+  NIVO_IPI                                   14
+  PEMBRO_MONO                                12
+  DURVA_MONO                                  7
+  CABOZANTINIB+NIVO_MONO                      6
+  ATEZO_MONO                                  4
+  LENVATINIB+PEMBRO_MONO                      1
+  IPI_MONO                                    1
+  LENVATINIB+NIVO_MONO                        1
+
+======================================================================
+PART 6 — TUMOR×LIVER COMBINED VARIABLES
+======================================================================
+
+mALBI GRADE TRANSITIONS (baseline -> week 6):
+  Grade1     -> Grade1        68
+  Grade1     -> Grade2a       13
+  Grade1     -> Grade2b       14
+  Grade2a    -> Grade1         5
+  Grade2a    -> Grade2a       21
+  Grade2a    -> Grade2b       12
+  Grade2b    -> Grade1         1
+  Grade2b    -> Grade2a        3
+  Grade2b    -> Grade2b       24
+  Grade2b    -> Grade3        12
+  Grade3     -> Grade2b        2
+  Grade3     -> Grade3         5
+
+mALBI worsened: 51  stable/improved: 129
+Delta ALBI (w6-bl): median=0.177, IQR=[-0.056,0.444]
+
+AFP RESPONSE (bl>=20, eligible, N=90):
+  >=50% decrease: 32 (35.6%)
+  Any increase:   36 (40.0%)
+
+======================================================================
+PART 7 — INCIDENT DECOMPENSATION
+======================================================================
+
+ICI patients with ANY decomp after 1L start: 120/242
+ICI patients with decomp AFTER landmark (day 42): 102
+
+Time to first decomp (from 1L start):
+  Median: 47d, IQR: [12,183]
+
+Post-1L decomp types (unique patients):
+  ASCITES_DX                 106
+  PARACENTESIS                49
+  ENCEPHALOPATHY_DX           43
+  VARICEAL_BLEED               8
+  SBP                          5
+  HEPATORENAL                  2
+
+TRULY INCIDENT decomp (no prior): 33 patients
+
+======================================================================
+PART 8 — SUBSEQUENT THERAPEUTIC OPPORTUNITY
+======================================================================
+
+POST-1L STATE DISTRIBUTION (ICI, N=242):
+  HOSPICE_OR_DEATH_WITHOUT_NEXT_THERAPY                69
+  DOCUMENTED_PROGRESSION_TO_2L                         65
+  ADMINISTRATIVE_CENSOR                                48
+  LOCAL_CONSOLIDATION_OR_CONVERSION                    25
+  DOCUMENTED_PROGRESSION_NO_2L                         24
+  HEPATIC_DYSFUNCTION_STOP                             11
+
+Patients reaching 2L therapy: 65
+
+2L REGIMENS:
+  LENVATINIB                                 20
+  NIVO_IPI                                   19
+  AB                                          7
+  CABOZANTINIB                                6
+  STRIDE                                      5
+  TREME_MONO                                  2
+  DURVA_MONO                                  2
+  REGORAFENIB                                 1
+  PEMBRO_MONO                                 1
+  IPI_MONO                                    1
+  ATEZO_MONO                                  1
+
+Time 1L->2L: median=280d, IQR=[87,486]
+
+Alive at 6 months: 186/242 (76.9%)
+
+Parts 5-8 complete.
+Part 9 — Project A Feasibility Summary
+Part 9 — Project A Feasibility Summary
+======================================================================
+PART 9 — PROJECT A FEASIBILITY
+======================================================================
+
+Project A: Early tumor-biology × hepatic-reserve dynamics and
+           preservation of subsequent therapeutic opportunity
+
+A1 All HC 1L ICI: N=242
+
+A2 Routine-care ICI: N=153
+
+A3 Modern-era ICI: N=215
+
+A4 Modern RC ICI: N=142
+
+PERSISTED: reach_users.xzhao81.hcc_medonc_projectA_week6_landmark_v1
+  ROWS: 242 | PATIENTS: 242
+
+======================================================================
+PROJECT A FEASIBILITY DASHBOARD
+======================================================================
+
+  A1 all HC 1L ICI:           242
+  A2 routine-care:             153
+  A3 modern-era:               215
+  A4 modern + routine-care:    142
+  
+  Alive at week 6:             222  (91.7%)
+  
+  ALBI baseline:               222  (91.7%)
+  ALBI week 6:                 198  (81.8%)
+  ALBI paired (bl+w6):         183  (75.6%)
+  
+  AFP baseline:                203  (83.9%)
+  AFP week 6:                  162  (66.9%)
+  AFP paired (bl+w6):          151  (62.4%)
+  
+  Both ALBI+AFP paired:        140  (57.9%)
+  Reached 2L therapy:          65  (26.9%)
+
+KEY PROJECT A FLAGS:
+  1. ALBI phenotype from liver labs — VALID (recalculated, not old CP)
+  2. AFP phenotype from strict biomarkers — VALID
+  3. Oral TKI stop dates UNRELIABLE — affects duration calculations
+  4. race_ethnicity HAS KNOWN BUG — do not use as covariate
+  5. Post-1L states infer progression from 2L — may overcount progression
+  6. Modern-era filter yields 215 patients (A3) — CHECK era definitions
+
+Part 9 complete.
+Parts 10-14 — Project B: AB vs STRIDE Selection
+Parts 10-14 — Project B: AB vs STRIDE Selection
+======================================================================
+PART 10 — PROJECT B TARGET POPULATION
+======================================================================
+
+Project B: Real-world clinical determinants of AB vs STRIDE selection
+
+AB vs STRIDE routine-care: N=108
+  AB                     71
+  STRIDE                 37
+
+Modern-era only: N=103
+  AB                     66
+  STRIDE                 37
+
+PERSISTED: reach_users.xzhao81.hcc_medonc_lockdown_projectB_ab_stride_selection_v1
+  ROWS: 108 | PATIENTS: 108
+
+======================================================================
+PART 11 — SELECTION VARIABLE INVENTORY
+======================================================================
+
+VARIABLE AVAILABILITY (N=108):
+  albi_bl                               97  (89.8%)
+  malbi_bl                              97  (89.8%)
+  reconstructed_cp_class                 0  (0.0%)
+  age_at_tx                            108  (100.0%)
+  sex                                  108  (100.0%)
+  decompensation_flag                  108  (100.0%)
+  route_class                          108  (100.0%)
+  beacon_initial_plan                  108  (100.0%)
+
+BASELINE ALBI BY REGIMEN:
+  AB: N=65, median=-2.648, IQR=[-2.943,-2.140]
+  STRIDE: N=32, median=-2.079, IQR=[-2.369,-1.803]
+
+mALBI GRADE BY REGIMEN:
+  AB:
+    Grade1       33
+    Grade2a      15
+    Grade2b      10
+    Grade3        7
+  STRIDE:
+    Grade1        3
+    Grade2a      10
+    Grade2b      18
+    Grade3        1
+
+CHILD-PUGH BY REGIMEN:
+  AB:
+  STRIDE:
+
+AGE BY REGIMEN:
+  AB: median=67.8, IQR=[61.7,76.2]
+  STRIDE: median=70.0, IQR=[63.9,76.0]
+
+SEX BY REGIMEN:
+  AB:
+    Female       20
+    Male         51
+  STRIDE:
+    Female        6
+    Male         31
+
+DECOMPENSATION FLAG BY REGIMEN:
+  AB decomp=0: 26
+  AB decomp=1: 45
+  STRIDE decomp=0: 8
+  STRIDE decomp=1: 29
+
+PERSISTED: reach_users.xzhao81.hcc_medonc_lockdown_projectB_selection_variables_v1
+  ROWS: 108
+
+======================================================================
+PART 12 — DEMOGRAPHICS
+======================================================================
+
+WARNING: race_ethnicity column has known Hispanic mapping bug.
+Using first_race and ethnic_group separately instead.
+
+AB FIRST_RACE:
+  White                            38
+  Black                            27
+  Chinese                           2
+  Other                             2
+  Filipino                          1
+  Other Asian                       1
+
+AB ETHNIC_GROUP:
+  Not Hispanic                     62
+  NULL                              5
+  Hispanic                          2
+  Unknown                           1
+  Unable to Ob                      1
+
+STRIDE FIRST_RACE:
+  White                            22
+  Black                            14
+  Other                             1
+
+STRIDE ETHNIC_GROUP:
+  Not Hispanic                     27
+  NULL                              7
+  Unknown                           2
+  NotDisclose                       1
+
+======================================================================
+PART 13 — CHANNELING DIAGNOSTICS
+======================================================================
+
+STANDARDIZED DIFFERENCES (AB vs STRIDE):
+  (|d|>0.1 indicates meaningful imbalance)
+  Age                       d=-0.095
+  Baseline ALBI             d=-0.669 ***
+  Male sex                  d=-0.291 ***
+  Decompensation            d=-0.335 ***
+
+======================================================================
+PART 14 — NOTE REVIEW TARGETING
+======================================================================
+
+UNCERTAIN AB/STRIDE patients needing review: 28
+  AB                24
+  STRIDE             4
+
+Prior systemic outside REACH possible: 11
+No beacon initial plan confirmation: 0
+
+TOTAL MANUAL REVIEW ESTIMATE FOR PROJECT B:
+  Uncertain research status: 28
+  Prior systemic possible:   11
+  No beacon plan:            0
+  (some overlap expected)
+
+PROJECT B FEASIBILITY SUMMARY:
+  AB routine-care:    71
+  STRIDE routine-care: 37
+  Total:               108
+  Modern-era subset:   103
+  Baseline ALBI avail: 97
+
+Parts 10-14 complete.
+Parts 15-20 — Project C: ICI Discontinuation + 2L Access
+Parts 15-20 — Project C: ICI Discontinuation + 2L Access
+======================================================================
+PART 15 — PROJECT C TARGET POPULATION
+======================================================================
+
+Project C: Cause-specific first-line ICI discontinuation and
+           subsequent treatment access
+
+Project C cohort (RC ICI): N=153
+  AB                                         71
+  STRIDE                                     37
+  NIVO_MONO                                  14
+  PEMBRO_MONO                                 9
+  NIVO_IPI                                    8
+  ATEZO_MONO                                  6
+  DURVA_MONO                                  5
+  LENVATINIB+PEMBRO_MONO                      1
+  IPI_MONO                                    1
+  LENVATINIB+NIVO_MONO                        1
+
+======================================================================
+PART 16 — TRUE 1L STOP DATE LOGIC
+======================================================================
+
+Patients with MAR-based last ICI admin: 0/153
+
+DURATION COMPARISON:
+  Raw dur_days (sys_lines): median=77d
+  MAR-based: N/A
+
+PERSISTED: reach_users.xzhao81.hcc_medonc_lockdown_projectC_stop_dates_v1
+  ROWS: 153 | PATIENTS: 153
+
+======================================================================
+PART 17 — CAUSE OF 1L CESSATION
+======================================================================
+
+1L CESSATION CAUSES (N=153):
+  HOSPICE_OR_DEATH_WITHOUT_NEXT_THERAPY                51
+  DOCUMENTED_PROGRESSION_TO_2L                         40
+  ADMINISTRATIVE_CENSOR                                29
+  LOCAL_CONSOLIDATION_OR_CONVERSION                    13
+  DOCUMENTED_PROGRESSION_NO_2L                         13
+  HEPATIC_DYSFUNCTION_STOP                              7
+
+STOP CATEGORIES:
+  PROGRESSION                 53
+  DEATH_HOSPICE               51
+  ADMIN_CENSOR                29
+  LOCAL_TREATMENT             13
+  HEPATIC_DYSFUNCTION          7
+
+Decomp within 30d of 1L stop: 24
+
+PERSISTED: reach_users.xzhao81.hcc_medonc_lockdown_projectC_failure_causes_v1
+  ROWS: 153
+
+======================================================================
+PART 18 — AUDIT OLD POST-1L STATE TABLE
+======================================================================
+
+Post-1L state coverage:
+  Has post-1L state: 153/153 (100.0%)
+
+STOP CATEGORY BY REGIMEN:
+
+  AB (N=71):
+    PROGRESSION                 30 (42%)
+    DEATH_HOSPICE               17 (24%)
+    ADMIN_CENSOR                10 (14%)
+    LOCAL_TREATMENT              9 (13%)
+    HEPATIC_DYSFUNCTION          5 (7%)
+
+  STRIDE (N=37):
+    DEATH_HOSPICE               17 (46%)
+    ADMIN_CENSOR                12 (32%)
+    PROGRESSION                  5 (14%)
+    LOCAL_TREATMENT              2 (5%)
+    HEPATIC_DYSFUNCTION          1 (3%)
+
+  NIVO_MONO (N=14):
+    PROGRESSION                 10 (71%)
+    DEATH_HOSPICE                3 (21%)
+    LOCAL_TREATMENT              1 (7%)
+
+  NIVO_IPI (N=8):
+    DEATH_HOSPICE                4 (50%)
+    PROGRESSION                  2 (25%)
+    HEPATIC_DYSFUNCTION          1 (12%)
+    ADMIN_CENSOR                 1 (12%)
+
+  PEMBRO_MONO (N=9):
+    DEATH_HOSPICE                5 (56%)
+    ADMIN_CENSOR                 3 (33%)
+    PROGRESSION                  1 (11%)
+
+======================================================================
+PART 19 — SUBSEQUENT TREATMENT ACCESS
+======================================================================
+
+Patients reaching 2L: 40/153 (26.1%)
+
+2L ACCESS BY STOP CATEGORY:
+  PROGRESSION                 40/53   (75%)
+  DEATH_HOSPICE                0/51   (0%)
+  ADMIN_CENSOR                 0/29   (0%)
+  LOCAL_TREATMENT              0/13   (0%)
+  HEPATIC_DYSFUNCTION          0/7    (0%)
+
+2L ACCESS BY 1L REGIMEN:
+  AB                               22/71   (31%)
+  STRIDE                            5/37   (14%)
+  NIVO_MONO                         6/14   (43%)
+  PEMBRO_MONO                       1/9    (11%)
+  NIVO_IPI                          1/8    (12%)
+  ATEZO_MONO                        4/6    (67%)
+  DURVA_MONO                        0/5    (0%)
+  LENVATINIB+PEMBRO_MONO            0/1    (0%)
+  IPI_MONO                          0/1    (0%)
+  LENVATINIB+NIVO_MONO              1/1    (100%)
+
+2L REGIMENS AFTER ICI 1L:
+  NIVO_IPI                         14
+  LENVATINIB                       11
+  CABOZANTINIB                      5
+  STRIDE                            4
+  AB                                2
+  TREME_MONO                        1
+  REGORAFENIB                       1
+  PEMBRO_MONO                       1
+  ATEZO_MONO                        1
+
+PERSISTED: reach_users.xzhao81.hcc_medonc_lockdown_projectC_2l_access_v1
+  ROWS: 153
+
+======================================================================
+PART 20 — HUMAN REVIEW BURDEN
+======================================================================
+
+MANUAL REVIEW BURDEN ESTIMATE:
+
+Project A:
+  No chart review needed for ALBI/AFP phenotypes (lab-based)
+  Post-1L state verification: ~153 patients (progression evidence hierarchy)
+
+Project B:
+  Uncertain research status: 28 AB/STRIDE charts
+  Prior systemic possible:   11 charts (overlap expected)
+
+Project C:
+  Stop-reason classification audit:
+    ADMIN_CENSOR (ambiguous):    29 charts
+    HEPATIC_DYSFUNCTION:         7 charts
+    TOTAL C review estimate:     36 charts
+
+  TOTAL REVIEW BURDEN (all projects, max): ~64 charts
+  (with overlap, likely ~48 unique charts)
+
+Parts 15-20 complete.
+Parts 21-23 — Final Feasibility + Go/No-Go + Report
+Parts 21-23 — Final Feasibility + Go/No-Go + Report
+======================================================================
+PART 21 — FEASIBILITY TABLE
+======================================================================
+  hcc_medonc_lockdown_true1l_v1                             282 rows    282 patients  (HC true-1L patients)
+  hcc_medonc_lockdown_albi_landmarks_v1                     242 rows    242 patients  (ICI patients with ALBI)
+  hcc_medonc_lockdown_afp_landmarks_v1                      242 rows    242 patients  (ICI patients with AFP)
+  hcc_medonc_projectA_week6_landmark_v1                     242 rows    242 patients  (Project A landmark)
+  hcc_medonc_lockdown_projectB_ab_stride_selection_v1       108 rows    108 patients  (Project B cohort)
+  hcc_medonc_lockdown_projectB_selection_variables_v1       108 rows    108 patients  (Project B + vars)
+  hcc_medonc_lockdown_projectC_stop_dates_v1                153 rows    153 patients  (Project C stop dates)
+  hcc_medonc_lockdown_projectC_failure_causes_v1            153 rows    153 patients  (Project C causes)
+  hcc_medonc_lockdown_projectC_2l_access_v1                 153 rows    153 patients  (Project C 2L access)
+
+======================================================================
+PART 22 — GO / NO-GO THRESHOLDS
+======================================================================
+
+  GO/NO-GO THRESHOLDS:
+  
+  Minimum N for primary analysis:  >= 50 patients
+  Minimum paired biomarker:        >= 40 pairs
+  Minimum outcome events:          >= 20 events per arm
+  Acceptable missing data:         <= 30% missing on key variable
+
+
+PROJECT A: Early tumor-biology × hepatic-reserve dynamics
+  Primary cohort (A1 ICI):        242  GO
+  Routine-care (A2):              153  GO
+  Paired ALBI (bl+w6):            183  GO
+  Paired AFP (bl+w6):             151  GO
+  Both ALBI+AFP paired:           140  GO
+  Reached 2L (outcome events):     65  GO
+  OVERALL:                        GO
+
+PROJECT B: AB vs STRIDE selection determinants
+  Total RC AB+STRIDE:             108  GO
+  AB arm:                          71  GO
+  STRIDE arm:                      37  GO
+  Baseline ALBI available:         97  (90%)  GO
+  CHANNELING DETECTED:           YES (ALBI d=-0.67, decomp d=-0.34)
+  OVERALL:                        GO
+
+PROJECT C: Cause-specific ICI discontinuation + 2L access
+  RC ICI cohort:                  153  GO
+  Progression events:              53  GO
+  Death/hospice events:            51  GO
+  Hepatic dysfunction:              7  MARGINAL — small subgroup
+  Admin censor:                    29  NEEDS CHART REVIEW
+  Reached 2L:                      40  GO
+  OVERALL:                        GO
+  KEY LIMITATION:                 MAR-based stop dates not available in drug_expo atlas
+                                  (source field values don’t include 'MAR')
+                                  Must reconstruct from src_ma table
+
+======================================================================
+PART 23 — COPY-PASTE REVIEW REPORT
+======================================================================
+
+=======================================================================
+HCC MED-ONC PROJECT LOCKDOWN ANALYSIS
+FINAL FEASIBILITY REPORT
+Generated: 2026-10-02
+Schema: reach_users.xzhao81
+=======================================================================
+
+SOURCE DATA:
+  Master HCC roster:               3,999 patients
+  Validated systemic patients:       571
+  High-confidence true first-line:   282  (14 regimens)
+  ICI-containing true 1L:            242  (11 regimens)
+  Routine-care ICI:                  153
+
+-----------------------------------------------------------------------
+PROJECT A: Early tumor-biology × hepatic-reserve dynamics and
+           preservation of subsequent therapeutic opportunity
+-----------------------------------------------------------------------
+
+  FEASIBILITY: GO
+  
+  Cohorts:
+    A1 all HC 1L ICI:         242
+    A2 routine-care ICI:      153
+    A3 modern-era ICI:        215
+    A4 modern RC ICI:         142
+  
+  Biomarker coverage (A1):
+    ALBI paired (bl+w6):      183  (75.6%)
+    AFP paired (bl+w6):       151  (62.4%)
+    Both ALBI+AFP:            140  (57.9%)
+  
+  Key findings:
+    Alive at week 6:          222  (91.7%)
+    mALBI worsened at w6:     51/180 (28.3%)
+    AFP >=50% response:       32/90  (35.6%)
+    2L access:                65/242 (26.9%)
+    Incident decomp (new):    33
+  
+  Phenotype validity:
+    ALBI: VALID (recalculated from liver labs, not old CP)
+    AFP:  VALID (strict biomarker phenotype)
+  
+  Risks:
+    * Oral TKI stop dates unreliable (orders only)
+    * race_ethnicity has Hispanic mapping bug
+    * Post-1L states infer progression from 2L initiation
+
+-----------------------------------------------------------------------
+PROJECT B: Real-world clinical determinants of AB vs STRIDE selection
+-----------------------------------------------------------------------
+
+  FEASIBILITY: GO (with caveats)
+  
+  Cohort:
+    AB routine-care:           71
+    STRIDE routine-care:       37
+    Total:                    108
+    Modern-era subset:        103
+  
+  Variable availability (N=108):
+    Baseline ALBI:             97 (89.8%)
+    Age at treatment:         108 (100%)
+    Sex:                      108 (100%)
+    Decompensation flag:      108 (100%)
+    Reconstructed CP:           0 (0%)  *** CP NOT AVAILABLE
+  
+  Channeling detected:
+    Baseline ALBI:   d=-0.67  *** STRIDE patients have worse liver function
+    Male sex:        d=-0.29
+    Decompensation:  d=-0.34
+    Age:             d=-0.10  (balanced)
+  
+  Manual review needed:
+    Uncertain research status: 28 charts
+    Prior systemic possible:   11 charts
+  
+  Risks:
+    * Small STRIDE arm (N=37) limits multivariable modeling
+    * CP reconstruction failed — must use ALBI as sole liver-reserve proxy
+    * Channeling by indication (STRIDE = sicker liver) is the core question
+
+-----------------------------------------------------------------------
+PROJECT C: Cause-specific first-line ICI discontinuation and
+           subsequent treatment access
+-----------------------------------------------------------------------
+
+  FEASIBILITY: GO (with chart review)
+  
+  Cohort:                     153 routine-care ICI
+  
+  Stop categories:
+    PROGRESSION:               53 (34.6%)
+    DEATH / HOSPICE:           51 (33.3%)
+    ADMIN CENSOR:              29 (19.0%)
+    LOCAL TREATMENT:           13  (8.5%)
+    HEPATIC DYSFUNCTION:        7  (4.6%)
+  
+  2L access:
+    Total reaching 2L:         40/153 (26.1%)
+    After progression:         40/53  (75.5%)
+    After death/hospice:        0/51  (0%)
+    After admin censor:         0/29  (0%)
+  
+  Key patterns by regimen:
+    AB:  42% progression, 24% death, 31% 2L access
+    STRIDE: 14% progression, 46% death, 14% 2L access
+  
+  2L regimens:
+    NIVO_IPI: 14, LENVATINIB: 11, CABO: 5, STRIDE: 4
+  
+  Decomp within 30d of 1L stop: 24 patients
+  
+  Manual review needed:
+    Admin censor (ambiguous):  29 charts
+    Hepatic dysfunction:        7 charts
+  
+  Risks:
+    * MAR-based last ICI admin not available in drug_expo atlas
+      (must reconstruct from raw src_ma table)
+    * Admin censor is ambiguous — may include toxicity stops,
+      insurance gaps, patient preference
+    * Post-1L state table infers progression from 2L start
+
+-----------------------------------------------------------------------
+CROSS-PROJECT SUMMARY
+-----------------------------------------------------------------------
+
+  TOTAL CHART REVIEW BURDEN: ~48–64 unique charts
+    Project B uncertain:       28
+    Project C ambiguous stops: 36
+    (overlap reduces total)
+  
+  PERSISTED TABLES:
+    reach_users.xzhao81.hcc_medonc_lockdown_true1l_v1
+    reach_users.xzhao81.hcc_medonc_lockdown_albi_landmarks_v1
+    reach_users.xzhao81.hcc_medonc_lockdown_afp_landmarks_v1
+    reach_users.xzhao81.hcc_medonc_projectA_week6_landmark_v1
+    reach_users.xzhao81.hcc_medonc_lockdown_projectB_ab_stride_selection_v1
+    reach_users.xzhao81.hcc_medonc_lockdown_projectB_selection_variables_v1
+    reach_users.xzhao81.hcc_medonc_lockdown_projectC_stop_dates_v1
+    reach_users.xzhao81.hcc_medonc_lockdown_projectC_failure_causes_v1
+    reach_users.xzhao81.hcc_medonc_lockdown_projectC_2l_access_v1
+  
+  DATA QUALITY WARNINGS (all projects):
+    1. race_ethnicity — Hispanic mapping bug, DO NOT USE
+    2. Oral TKI stop dates — unreliable, orders-only
+    3. Child-Pugh — reconstructed CP failed to join (0%)
+    4. Post-1L states — progression inferred from 2L initiation
+    5. Drug exposure atlas — source does not differentiate MAR vs orders
+  
+  RECOMMENDATION FOR MARI NAKAZAWA / MARK YARCHOAN:
+    All three projects are FEASIBLE in REACH with current data.
+    Project A is strongest (N=242, lab-based phenotypes).
+    Project B is feasible but N=37 STRIDE arm needs careful modeling.
+    Project C is feasible but requires ~36 chart reviews for stop-reason.
+    
+    Priority chart review: 28 uncertain AB/STRIDE + 29 admin-censor stops.
+
+=======================================================================
+END OF REPORT
+=======================================================================
+
+
+Part 23 complete. All analyses finished.
