@@ -1,872 +1,1948 @@
+Follow every requirement in `skills.md`.
+
+# ============================================================
+# MISSION
+# ============================================================
+
+This is a PROJECT-AGNOSTIC DEEP DATA DISCOVERY analysis.
+
+We may have prematurely focused on ALBI and AFP because those were already known and easy to extract.
+
+DO NOT assume:
+- ALBI is the best biomarker.
+- AFP is the best tumor biomarker.
+- the best study is treatment sequencing.
+- the best study is AB vs STRIDE.
+- the best study is a prognostic biomarker study.
+- the best study has already been proposed.
+
+Your task is to discover, systematically and aggressively, what information Johns Hopkins REACH actually contains that could support an unusually strong HCC MEDICAL-ONCOLOGY research project.
+
+Search deeply across:
+
+- laboratory data
+- tumor biomarkers
+- immune/inflammatory biomarkers
+- liver disease biology
+- virology
+- pathology
+- biopsy
+- molecular/genomic testing
+- liquid biopsy
+- radiology reports
+- imaging metadata
+- tumor burden
+- treatment response
+- body composition/frailty
+- performance status
+- systemic-treatment administrations
+- dose intensity
+- treatment holds
+- adverse events
+- immune-related toxicity
+- concomitant medications
+- comorbidities
+- patient-reported/symptom data
+- clinical notes
+- tumor board information
+- staging
+- healthcare utilization
+- time toxicity
+- days at home
+- hospice/palliative care
+- clinical trials
+- demographics
+- race
+- ethnicity
+- language
+- insurance
+- geography
+- socioeconomic information
+- referral patterns
+- access/equity
+- any other data domain discovered in REACH.
+
+The goal is NOT to find evidence for our current hypotheses.
+
+The goal is to identify data assets we may not yet know exist.
+
+Think like:
+1. a medical oncologist,
+2. a hepatologist,
+3. a cancer biologist,
+4. a molecular pathologist,
+5. a radiologist,
+6. an immunologist,
+7. an epidemiologist,
+8. a causal-inference scientist,
+9. a clinical informatician,
+10. and a skeptical peer reviewer.
+
+# ============================================================
+# PROJECT ISOLATION
+# ============================================================
+
+THIS IS A MEDICAL-ONCOLOGY DATA-DISCOVERY WORKSTREAM.
+
+It is separate from the TACE project.
+
+Do NOT modify the TACE notebook.
+
+Do NOT append this to the TACE notebook.
+
+Create a NEW notebook:
+
+`HCC_MEDONC_DEEP_DATA_DISCOVERY_v1`
 
-Part 1 — Build Canonical HC True-1L Cohort
-Part 1 — Build Canonical HC True-1L Cohort
-======================================================================
-PART 1 — CANONICAL HC TRUE FIRST-LINE COHORT
-======================================================================
-
-JOIN KEY DIAGNOSTICS: sl_dups=0, v10_dups=0
-
-JOIN: matched=282  v10_hc=282  unmatched=0  mult=1.0000
-Patients with >1 row: 0
-
-LINE NUMBER DISTRIBUTION:
-  line=1: 282
-
-ASSERTION all in systemic canonical: missing=0
-  PASSED
-
-TOTAL HC TRUE-1L: 282 PATIENTS
-
-BY REGIMEN:
-  AB                                              96
-  STRIDE                                          50
-  NIVO_MONO                                       43
-  SORAFENIB                                       20
-  LENVATINIB                                      18
-  NIVO_IPI                                        17
-  PEMBRO_MONO                                     14
-  DURVA_MONO                                       7
-  CABOZANTINIB+NIVO_MONO                           6
-  ATEZO_MONO                                       6
-  CABOZANTINIB                                     2
-  LENVATINIB+PEMBRO_MONO                           1
-  IPI_MONO                                         1
-  LENVATINIB+NIVO_MONO                             1
-
-BY RESEARCH STATUS:
-  ROUTINE_CARE                                   177
-  UNCERTAIN                                       64
-  DEFINITE_INTERVENTIONAL_TRIAL                   40
-  PROBABLE_INTERVENTIONAL_TRIAL                    1
-
-PERSISTED: reach_users.xzhao81.hcc_medonc_lockdown_true1l_v1
-  ROWS: 282  |  PATIENTS: 282
-  UNIT: one row per HC true-1L patient
-
-Part 1 complete.
-Parts 2-4 — Project A Population + ALBI + AFP Landmarks
-Parts 2-4 — Project A Population + ALBI + AFP Landmarks
-======================================================================
-PART 2 — PROJECT A TARGET POPULATION
-======================================================================
-
-ICI-containing regimens: ['AB', 'STRIDE', 'NIVO_IPI', 'NIVO_MONO', 'PEMBRO_MONO', 'DURVA_MONO', 'ATEZO_MONO', 'CABOZANTINIB+NIVO_MONO', 'LENVATINIB+PEMBRO_MONO', 'LENVATINIB+NIVO_MONO', 'IPI_MONO', 'BEV_MONO+NIVO_MONO']
-HC true-1L ICI patients: 242
-
-A1 all HC true1L ICI: N=242
-  AB                                         96
-  STRIDE                                     50
-  NIVO_MONO                                  43
-  NIVO_IPI                                   17
-  PEMBRO_MONO                                14
-  DURVA_MONO                                  7
-  CABOZANTINIB+NIVO_MONO                      6
-  ATEZO_MONO                                  6
-  LENVATINIB+PEMBRO_MONO                      1
-  IPI_MONO                                    1
-  LENVATINIB+NIVO_MONO                        1
-
-A2 routine-care ICI: N=153
-  AB                                         71
-  STRIDE                                     37
-  NIVO_MONO                                  14
-  PEMBRO_MONO                                 9
-  NIVO_IPI                                    8
-  ATEZO_MONO                                  6
-  DURVA_MONO                                  5
-  LENVATINIB+PEMBRO_MONO                      1
-  IPI_MONO                                    1
-  LENVATINIB+NIVO_MONO                        1
-
-A3 modern-era ICI: N=215
-  AB                                         90
-  STRIDE                                     48
-  NIVO_MONO                                  32
-  NIVO_IPI                                   16
-  PEMBRO_MONO                                14
-  DURVA_MONO                                  7
-  ATEZO_MONO                                  6
-  IPI_MONO                                    1
-  LENVATINIB+NIVO_MONO                        1
-
-A4 modern routine-care ICI: N=142
-  AB                                         66
-  STRIDE                                     37
-  NIVO_MONO                                  10
-  PEMBRO_MONO                                 9
-  NIVO_IPI                                    7
-  ATEZO_MONO                                  6
-  DURVA_MONO                                  5
-  IPI_MONO                                    1
-  LENVATINIB+NIVO_MONO                        1
-
-======================================================================
-PART 3 — FIXED-LANDMARK ALBI
-======================================================================
-Albumin rows after filtering: 166,330
-Bilirubin rows after filtering: 160,196
-
-BASELINE ALBI:
-  Window: day -14 to 0, target day 0
-  Albumin available:   227
-  Bilirubin available: 224
-  Paired (any gap):    224
-  Paired (gap<=3d):  222
-  Pair gap: median=0d, mean=0.0d, max=0d
-  mALBI distribution:
-    Grade1      107
-    Grade2a      43
-    Grade2b      56
-    Grade3       16
-
-WK6 ALBI:
-  Window: day 28 to 56, target day 42
-  Albumin available:   200
-  Bilirubin available: 198
-  Paired (any gap):    198
-  Paired (gap<=3d):  198
-  Pair gap: median=0d, mean=0.0d, max=0d
-  mALBI distribution:
-    Grade1       83
-    Grade2a      39
-    Grade2b      57
-    Grade3       19
-
-WK12 ALBI:
-  Window: day 70 to 98, target day 84
-  Albumin available:   171
-  Bilirubin available: 171
-  Paired (any gap):    171
-  Paired (gap<=3d):  168
-  Pair gap: median=0d, mean=0.0d, max=0d
-  mALBI distribution:
-    Grade1       73
-    Grade2a      33
-    Grade2b      47
-    Grade3       15
-
-BASELINE30 ALBI:
-  Window: day -30 to 0, target day 0
-  Albumin available:   235
-  Bilirubin available: 232
-  Paired (any gap):    232
-  Paired (gap<=3d):  230
-  Pair gap: median=0d, mean=0.0d, max=0d
-  mALBI distribution:
-    Grade1      112
-    Grade2a      43
-    Grade2b      59
-    Grade3       16
-
-PERSISTED: reach_users.xzhao81.hcc_medonc_lockdown_albi_landmarks_v1
-  ROWS: 242  |  PATIENTS: 242
-
-PAIRED BASELINE+WK6 ALBI BY REGIMEN:
-  AB                                         76
-  STRIDE                                     38
-  NIVO_MONO                                  32
-  PEMBRO_MONO                                10
-  NIVO_IPI                                   10
-  DURVA_MONO                                  6
-  CABOZANTINIB+NIVO_MONO                      5
-  ATEZO_MONO                                  4
-  LENVATINIB+PEMBRO_MONO                      1
-  IPI_MONO                                    1
-  TOTAL paired baseline+wk6: 183
-
-======================================================================
-PART 4 — FIXED-LANDMARK AFP
-======================================================================
-AFP measurements after filtering: 20,441
-
-BASELINE AFP: day -30 to 0 (target 0)
-  Patients with AFP: 203
-  Median: 81.2, IQR: [7.4, 2807.2]
-  AFP >10: 144 patients
-  AFP >20: 127 patients
-  AFP >100: 98 patients
-  AFP >=400: 77 patients
-
-BASELINE_14D AFP: day -14 to 0 (target 0)
-  Patients with AFP: 187
-  Median: 89.9, IQR: [8.1, 3240.8]
-  AFP >10: 135 patients
-  AFP >20: 118 patients
-  AFP >100: 93 patients
-  AFP >=400: 72 patients
-
-WEEK6 AFP: day 28 to 56 (target 42)
-  Patients with AFP: 162
-  Median: 40.8, IQR: [5.2, 1283.8]
-  AFP >10: 100 patients
-  AFP >20: 90 patients
-  AFP >100: 68 patients
-  AFP >=400: 54 patients
-
-WEEK12 AFP: day 70 to 98 (target 84)
-  Patients with AFP: 132
-  Median: 23.0, IQR: [4.7, 762.9]
-  AFP >10: 77 patients
-  AFP >20: 66 patients
-  AFP >100: 47 patients
-  AFP >=400: 37 patients
-
-PERSISTED: reach_users.xzhao81.hcc_medonc_lockdown_afp_landmarks_v1
-  ROWS: 242  |  PATIENTS: 242
-
-AFP >10: eligible=144, paired_w6=103, paired_w12=89
-
-AFP >20: eligible=127, paired_w6=91, paired_w12=79
-
-AFP >100: eligible=98, paired_w6=71, paired_w12=58
-
-AFP >=400: eligible=77, paired_w6=56, paired_w12=43
-
-Parts 2-4 complete.
-Parts 5-8 — Landmark Eligibility + Outcomes
-Parts 5-8 — Landmark Eligibility + Outcomes
-======================================================================
-PART 5 — WEEK-6 LANDMARK ELIGIBILITY
-======================================================================
-
-A1 total:                  242
-Alive at day 42:         222
-On treatment (raw dur):    161
-On treatment (corrected):  181
-Eligible at landmark:      222
-
-Among eligible at landmark:
-  Paired ALBI (bl+w6):   180
-  Paired AFP (bl+w6):    150
-  Both ALBI+AFP paired:  139
-
-ELIGIBLE AT LANDMARK BY REGIMEN:
-  AB                                         91
-  STRIDE                                     45
-  NIVO_MONO                                  40
-  NIVO_IPI                                   14
-  PEMBRO_MONO                                12
-  DURVA_MONO                                  7
-  CABOZANTINIB+NIVO_MONO                      6
-  ATEZO_MONO                                  4
-  LENVATINIB+PEMBRO_MONO                      1
-  IPI_MONO                                    1
-  LENVATINIB+NIVO_MONO                        1
-
-======================================================================
-PART 6 — TUMOR×LIVER COMBINED VARIABLES
-======================================================================
-
-mALBI GRADE TRANSITIONS (baseline -> week 6):
-  Grade1     -> Grade1        68
-  Grade1     -> Grade2a       13
-  Grade1     -> Grade2b       14
-  Grade2a    -> Grade1         5
-  Grade2a    -> Grade2a       21
-  Grade2a    -> Grade2b       12
-  Grade2b    -> Grade1         1
-  Grade2b    -> Grade2a        3
-  Grade2b    -> Grade2b       24
-  Grade2b    -> Grade3        12
-  Grade3     -> Grade2b        2
-  Grade3     -> Grade3         5
-
-mALBI worsened: 51  stable/improved: 129
-Delta ALBI (w6-bl): median=0.177, IQR=[-0.056,0.444]
-
-AFP RESPONSE (bl>=20, eligible, N=90):
-  >=50% decrease: 32 (35.6%)
-  Any increase:   36 (40.0%)
-
-======================================================================
-PART 7 — INCIDENT DECOMPENSATION
-======================================================================
-
-ICI patients with ANY decomp after 1L start: 120/242
-ICI patients with decomp AFTER landmark (day 42): 102
-
-Time to first decomp (from 1L start):
-  Median: 47d, IQR: [12,183]
-
-Post-1L decomp types (unique patients):
-  ASCITES_DX                 106
-  PARACENTESIS                49
-  ENCEPHALOPATHY_DX           43
-  VARICEAL_BLEED               8
-  SBP                          5
-  HEPATORENAL                  2
-
-TRULY INCIDENT decomp (no prior): 33 patients
-
-======================================================================
-PART 8 — SUBSEQUENT THERAPEUTIC OPPORTUNITY
-======================================================================
-
-POST-1L STATE DISTRIBUTION (ICI, N=242):
-  HOSPICE_OR_DEATH_WITHOUT_NEXT_THERAPY                69
-  DOCUMENTED_PROGRESSION_TO_2L                         65
-  ADMINISTRATIVE_CENSOR                                48
-  LOCAL_CONSOLIDATION_OR_CONVERSION                    25
-  DOCUMENTED_PROGRESSION_NO_2L                         24
-  HEPATIC_DYSFUNCTION_STOP                             11
-
-Patients reaching 2L therapy: 65
-
-2L REGIMENS:
-  LENVATINIB                                 20
-  NIVO_IPI                                   19
-  AB                                          7
-  CABOZANTINIB                                6
-  STRIDE                                      5
-  TREME_MONO                                  2
-  DURVA_MONO                                  2
-  REGORAFENIB                                 1
-  PEMBRO_MONO                                 1
-  IPI_MONO                                    1
-  ATEZO_MONO                                  1
-
-Time 1L->2L: median=280d, IQR=[87,486]
-
-Alive at 6 months: 186/242 (76.9%)
-
-Parts 5-8 complete.
-Part 9 — Project A Feasibility Summary
-Part 9 — Project A Feasibility Summary
-======================================================================
-PART 9 — PROJECT A FEASIBILITY
-======================================================================
-
-Project A: Early tumor-biology × hepatic-reserve dynamics and
-           preservation of subsequent therapeutic opportunity
-
-A1 All HC 1L ICI: N=242
-
-A2 Routine-care ICI: N=153
-
-A3 Modern-era ICI: N=215
-
-A4 Modern RC ICI: N=142
-
-PERSISTED: reach_users.xzhao81.hcc_medonc_projectA_week6_landmark_v1
-  ROWS: 242 | PATIENTS: 242
-
-======================================================================
-PROJECT A FEASIBILITY DASHBOARD
-======================================================================
-
-  A1 all HC 1L ICI:           242
-  A2 routine-care:             153
-  A3 modern-era:               215
-  A4 modern + routine-care:    142
-  
-  Alive at week 6:             222  (91.7%)
-  
-  ALBI baseline:               222  (91.7%)
-  ALBI week 6:                 198  (81.8%)
-  ALBI paired (bl+w6):         183  (75.6%)
-  
-  AFP baseline:                203  (83.9%)
-  AFP week 6:                  162  (66.9%)
-  AFP paired (bl+w6):          151  (62.4%)
-  
-  Both ALBI+AFP paired:        140  (57.9%)
-  Reached 2L therapy:          65  (26.9%)
-
-KEY PROJECT A FLAGS:
-  1. ALBI phenotype from liver labs — VALID (recalculated, not old CP)
-  2. AFP phenotype from strict biomarkers — VALID
-  3. Oral TKI stop dates UNRELIABLE — affects duration calculations
-  4. race_ethnicity HAS KNOWN BUG — do not use as covariate
-  5. Post-1L states infer progression from 2L — may overcount progression
-  6. Modern-era filter yields 215 patients (A3) — CHECK era definitions
-
-Part 9 complete.
-Parts 10-14 — Project B: AB vs STRIDE Selection
-Parts 10-14 — Project B: AB vs STRIDE Selection
-======================================================================
-PART 10 — PROJECT B TARGET POPULATION
-======================================================================
-
-Project B: Real-world clinical determinants of AB vs STRIDE selection
-
-AB vs STRIDE routine-care: N=108
-  AB                     71
-  STRIDE                 37
-
-Modern-era only: N=103
-  AB                     66
-  STRIDE                 37
-
-PERSISTED: reach_users.xzhao81.hcc_medonc_lockdown_projectB_ab_stride_selection_v1
-  ROWS: 108 | PATIENTS: 108
-
-======================================================================
-PART 11 — SELECTION VARIABLE INVENTORY
-======================================================================
-
-VARIABLE AVAILABILITY (N=108):
-  albi_bl                               97  (89.8%)
-  malbi_bl                              97  (89.8%)
-  reconstructed_cp_class                 0  (0.0%)
-  age_at_tx                            108  (100.0%)
-  sex                                  108  (100.0%)
-  decompensation_flag                  108  (100.0%)
-  route_class                          108  (100.0%)
-  beacon_initial_plan                  108  (100.0%)
-
-BASELINE ALBI BY REGIMEN:
-  AB: N=65, median=-2.648, IQR=[-2.943,-2.140]
-  STRIDE: N=32, median=-2.079, IQR=[-2.369,-1.803]
-
-mALBI GRADE BY REGIMEN:
-  AB:
-    Grade1       33
-    Grade2a      15
-    Grade2b      10
-    Grade3        7
-  STRIDE:
-    Grade1        3
-    Grade2a      10
-    Grade2b      18
-    Grade3        1
-
-CHILD-PUGH BY REGIMEN:
-  AB:
-  STRIDE:
-
-AGE BY REGIMEN:
-  AB: median=67.8, IQR=[61.7,76.2]
-  STRIDE: median=70.0, IQR=[63.9,76.0]
-
-SEX BY REGIMEN:
-  AB:
-    Female       20
-    Male         51
-  STRIDE:
-    Female        6
-    Male         31
-
-DECOMPENSATION FLAG BY REGIMEN:
-  AB decomp=0: 26
-  AB decomp=1: 45
-  STRIDE decomp=0: 8
-  STRIDE decomp=1: 29
-
-PERSISTED: reach_users.xzhao81.hcc_medonc_lockdown_projectB_selection_variables_v1
-  ROWS: 108
-
-======================================================================
-PART 12 — DEMOGRAPHICS
-======================================================================
-
-WARNING: race_ethnicity column has known Hispanic mapping bug.
-Using first_race and ethnic_group separately instead.
-
-AB FIRST_RACE:
-  White                            38
-  Black                            27
-  Chinese                           2
-  Other                             2
-  Filipino                          1
-  Other Asian                       1
-
-AB ETHNIC_GROUP:
-  Not Hispanic                     62
-  NULL                              5
-  Hispanic                          2
-  Unknown                           1
-  Unable to Ob                      1
-
-STRIDE FIRST_RACE:
-  White                            22
-  Black                            14
-  Other                             1
-
-STRIDE ETHNIC_GROUP:
-  Not Hispanic                     27
-  NULL                              7
-  Unknown                           2
-  NotDisclose                       1
-
-======================================================================
-PART 13 — CHANNELING DIAGNOSTICS
-======================================================================
-
-STANDARDIZED DIFFERENCES (AB vs STRIDE):
-  (|d|>0.1 indicates meaningful imbalance)
-  Age                       d=-0.095
-  Baseline ALBI             d=-0.669 ***
-  Male sex                  d=-0.291 ***
-  Decompensation            d=-0.335 ***
-
-======================================================================
-PART 14 — NOTE REVIEW TARGETING
-======================================================================
-
-UNCERTAIN AB/STRIDE patients needing review: 28
-  AB                24
-  STRIDE             4
-
-Prior systemic outside REACH possible: 11
-No beacon initial plan confirmation: 0
-
-TOTAL MANUAL REVIEW ESTIMATE FOR PROJECT B:
-  Uncertain research status: 28
-  Prior systemic possible:   11
-  No beacon plan:            0
-  (some overlap expected)
-
-PROJECT B FEASIBILITY SUMMARY:
-  AB routine-care:    71
-  STRIDE routine-care: 37
-  Total:               108
-  Modern-era subset:   103
-  Baseline ALBI avail: 97
-
-Parts 10-14 complete.
-Parts 15-20 — Project C: ICI Discontinuation + 2L Access
-Parts 15-20 — Project C: ICI Discontinuation + 2L Access
-======================================================================
-PART 15 — PROJECT C TARGET POPULATION
-======================================================================
-
-Project C: Cause-specific first-line ICI discontinuation and
-           subsequent treatment access
-
-Project C cohort (RC ICI): N=153
-  AB                                         71
-  STRIDE                                     37
-  NIVO_MONO                                  14
-  PEMBRO_MONO                                 9
-  NIVO_IPI                                    8
-  ATEZO_MONO                                  6
-  DURVA_MONO                                  5
-  LENVATINIB+PEMBRO_MONO                      1
-  IPI_MONO                                    1
-  LENVATINIB+NIVO_MONO                        1
-
-======================================================================
-PART 16 — TRUE 1L STOP DATE LOGIC
-======================================================================
-
-Patients with MAR-based last ICI admin: 0/153
-
-DURATION COMPARISON:
-  Raw dur_days (sys_lines): median=77d
-  MAR-based: N/A
-
-PERSISTED: reach_users.xzhao81.hcc_medonc_lockdown_projectC_stop_dates_v1
-  ROWS: 153 | PATIENTS: 153
-
-======================================================================
-PART 17 — CAUSE OF 1L CESSATION
-======================================================================
-
-1L CESSATION CAUSES (N=153):
-  HOSPICE_OR_DEATH_WITHOUT_NEXT_THERAPY                51
-  DOCUMENTED_PROGRESSION_TO_2L                         40
-  ADMINISTRATIVE_CENSOR                                29
-  LOCAL_CONSOLIDATION_OR_CONVERSION                    13
-  DOCUMENTED_PROGRESSION_NO_2L                         13
-  HEPATIC_DYSFUNCTION_STOP                              7
-
-STOP CATEGORIES:
-  PROGRESSION                 53
-  DEATH_HOSPICE               51
-  ADMIN_CENSOR                29
-  LOCAL_TREATMENT             13
-  HEPATIC_DYSFUNCTION          7
-
-Decomp within 30d of 1L stop: 24
-
-PERSISTED: reach_users.xzhao81.hcc_medonc_lockdown_projectC_failure_causes_v1
-  ROWS: 153
-
-======================================================================
-PART 18 — AUDIT OLD POST-1L STATE TABLE
-======================================================================
-
-Post-1L state coverage:
-  Has post-1L state: 153/153 (100.0%)
-
-STOP CATEGORY BY REGIMEN:
-
-  AB (N=71):
-    PROGRESSION                 30 (42%)
-    DEATH_HOSPICE               17 (24%)
-    ADMIN_CENSOR                10 (14%)
-    LOCAL_TREATMENT              9 (13%)
-    HEPATIC_DYSFUNCTION          5 (7%)
-
-  STRIDE (N=37):
-    DEATH_HOSPICE               17 (46%)
-    ADMIN_CENSOR                12 (32%)
-    PROGRESSION                  5 (14%)
-    LOCAL_TREATMENT              2 (5%)
-    HEPATIC_DYSFUNCTION          1 (3%)
-
-  NIVO_MONO (N=14):
-    PROGRESSION                 10 (71%)
-    DEATH_HOSPICE                3 (21%)
-    LOCAL_TREATMENT              1 (7%)
-
-  NIVO_IPI (N=8):
-    DEATH_HOSPICE                4 (50%)
-    PROGRESSION                  2 (25%)
-    HEPATIC_DYSFUNCTION          1 (12%)
-    ADMIN_CENSOR                 1 (12%)
-
-  PEMBRO_MONO (N=9):
-    DEATH_HOSPICE                5 (56%)
-    ADMIN_CENSOR                 3 (33%)
-    PROGRESSION                  1 (11%)
-
-======================================================================
-PART 19 — SUBSEQUENT TREATMENT ACCESS
-======================================================================
-
-Patients reaching 2L: 40/153 (26.1%)
-
-2L ACCESS BY STOP CATEGORY:
-  PROGRESSION                 40/53   (75%)
-  DEATH_HOSPICE                0/51   (0%)
-  ADMIN_CENSOR                 0/29   (0%)
-  LOCAL_TREATMENT              0/13   (0%)
-  HEPATIC_DYSFUNCTION          0/7    (0%)
-
-2L ACCESS BY 1L REGIMEN:
-  AB                               22/71   (31%)
-  STRIDE                            5/37   (14%)
-  NIVO_MONO                         6/14   (43%)
-  PEMBRO_MONO                       1/9    (11%)
-  NIVO_IPI                          1/8    (12%)
-  ATEZO_MONO                        4/6    (67%)
-  DURVA_MONO                        0/5    (0%)
-  LENVATINIB+PEMBRO_MONO            0/1    (0%)
-  IPI_MONO                          0/1    (0%)
-  LENVATINIB+NIVO_MONO              1/1    (100%)
-
-2L REGIMENS AFTER ICI 1L:
-  NIVO_IPI                         14
-  LENVATINIB                       11
-  CABOZANTINIB                      5
-  STRIDE                            4
-  AB                                2
-  TREME_MONO                        1
-  REGORAFENIB                       1
-  PEMBRO_MONO                       1
-  ATEZO_MONO                        1
-
-PERSISTED: reach_users.xzhao81.hcc_medonc_lockdown_projectC_2l_access_v1
-  ROWS: 153
-
-======================================================================
-PART 20 — HUMAN REVIEW BURDEN
-======================================================================
-
-MANUAL REVIEW BURDEN ESTIMATE:
-
-Project A:
-  No chart review needed for ALBI/AFP phenotypes (lab-based)
-  Post-1L state verification: ~153 patients (progression evidence hierarchy)
-
-Project B:
-  Uncertain research status: 28 AB/STRIDE charts
-  Prior systemic possible:   11 charts (overlap expected)
-
-Project C:
-  Stop-reason classification audit:
-    ADMIN_CENSOR (ambiguous):    29 charts
-    HEPATIC_DYSFUNCTION:         7 charts
-    TOTAL C review estimate:     36 charts
-
-  TOTAL REVIEW BURDEN (all projects, max): ~64 charts
-  (with overlap, likely ~48 unique charts)
-
-Parts 15-20 complete.
-Parts 21-23 — Final Feasibility + Go/No-Go + Report
-Parts 21-23 — Final Feasibility + Go/No-Go + Report
-======================================================================
-PART 21 — FEASIBILITY TABLE
-======================================================================
-  hcc_medonc_lockdown_true1l_v1                             282 rows    282 patients  (HC true-1L patients)
-  hcc_medonc_lockdown_albi_landmarks_v1                     242 rows    242 patients  (ICI patients with ALBI)
-  hcc_medonc_lockdown_afp_landmarks_v1                      242 rows    242 patients  (ICI patients with AFP)
-  hcc_medonc_projectA_week6_landmark_v1                     242 rows    242 patients  (Project A landmark)
-  hcc_medonc_lockdown_projectB_ab_stride_selection_v1       108 rows    108 patients  (Project B cohort)
-  hcc_medonc_lockdown_projectB_selection_variables_v1       108 rows    108 patients  (Project B + vars)
-  hcc_medonc_lockdown_projectC_stop_dates_v1                153 rows    153 patients  (Project C stop dates)
-  hcc_medonc_lockdown_projectC_failure_causes_v1            153 rows    153 patients  (Project C causes)
-  hcc_medonc_lockdown_projectC_2l_access_v1                 153 rows    153 patients  (Project C 2L access)
-
-======================================================================
-PART 22 — GO / NO-GO THRESHOLDS
-======================================================================
-
-  GO/NO-GO THRESHOLDS:
-  
-  Minimum N for primary analysis:  >= 50 patients
-  Minimum paired biomarker:        >= 40 pairs
-  Minimum outcome events:          >= 20 events per arm
-  Acceptable missing data:         <= 30% missing on key variable
-
-
-PROJECT A: Early tumor-biology × hepatic-reserve dynamics
-  Primary cohort (A1 ICI):        242  GO
-  Routine-care (A2):              153  GO
-  Paired ALBI (bl+w6):            183  GO
-  Paired AFP (bl+w6):             151  GO
-  Both ALBI+AFP paired:           140  GO
-  Reached 2L (outcome events):     65  GO
-  OVERALL:                        GO
-
-PROJECT B: AB vs STRIDE selection determinants
-  Total RC AB+STRIDE:             108  GO
-  AB arm:                          71  GO
-  STRIDE arm:                      37  GO
-  Baseline ALBI available:         97  (90%)  GO
-  CHANNELING DETECTED:           YES (ALBI d=∼-0.67, decomp d=∼-0.34)
-  OVERALL:                        GO
-
-PROJECT C: Cause-specific ICI discontinuation + 2L access
-  RC ICI cohort:                  153  GO
-  Progression events:              53  GO
-  Death/hospice events:            51  GO
-  Hepatic dysfunction:              7  MARGINAL — small subgroup
-  Admin censor:                    29  NEEDS CHART REVIEW
-  Reached 2L:                      40  GO
-  OVERALL:                        GO
-  KEY LIMITATION:                 MAR-based stop dates not available in drug_expo atlas
-                                  Must reconstruct from src_ma table
-
-======================================================================
-PART 23 — COPY-PASTE REVIEW REPORT
-======================================================================
-
---- CROSS-PROJECT ISOLATION CHECK ---
-  A ∩ B: 108  (expected: B ⊆ A, so = B)
-  A ∩ C: 153  (expected: C ⊆ A, so = C)
-  B ∩ C: 108  (expected: B ⊆ C since both are RC)
-  A ∩ B ∩ C: 108
-  Projects share patients as expected (nested cohorts, NOT independent)
-
-=======================================================================
-HCC MED-ONC PROJECT LOCKDOWN ANALYSIS
-FINAL FEASIBILITY REPORT
-Generated: 2026-10-03
-Schema: reach_users.xzhao81
-=======================================================================
-
-SOURCE DATA:
-  Master HCC roster:               3,999 patients
-  Validated systemic patients:     571
-  High-confidence true first-line: 282  (14 regimens)
-  ICI-containing true 1L:          242
-  Routine-care ICI:                153
-
------------------------------------------------------------------------
-PROJECT A: Early tumor-biology × hepatic-reserve dynamics and
-           preservation of subsequent therapeutic opportunity
------------------------------------------------------------------------
-
-  FEASIBILITY: GO
-  
-  Cohorts:
-    A1 all HC 1L ICI:         242
-    A2 routine-care ICI:      153
-  
-  Biomarker coverage (A1):
-    ALBI paired (bl+w6):      183  (75.6%)
-    AFP paired (bl+w6):       151  (62.4%)
-    Both ALBI+AFP:            140  (57.9%)
-  
-  Key findings:
-    Reached 2L:               65/242 (26.9%)
-  
-  Phenotype validity:
-    ALBI: VALID (recalculated from liver labs with fixed-landmark windows)
-    AFP:  VALID (hcc_tumor_biomarkers_v12 with fixed-landmark windows)
-  
-  Risks:
-    * Oral TKI stop dates unreliable (orders only)
-    * race_ethnicity has Hispanic mapping bug — DO NOT USE
-    * Post-1L states infer progression from 2L initiation
-
------------------------------------------------------------------------
-PROJECT B: Real-world clinical determinants of AB vs STRIDE selection
------------------------------------------------------------------------
-
-  FEASIBILITY: GO (with caveats)
-  
-  Cohort:
-    AB routine-care:           71
-    STRIDE routine-care:       37
-    Total:                     108
-  
-  Variable availability (N=108):
-    Baseline ALBI:             97 (90%)
-  
-  Channeling detected:
-    STRIDE patients have worse liver function (ALBI, decompensation)
-  
-  Risks:
-    * Small STRIDE arm (N=37) limits multivariable modeling
-    * CP reconstruction failed — must use ALBI as sole liver-reserve proxy
-    * Channeling by indication is the core scientific question
-
------------------------------------------------------------------------
-PROJECT C: Cause-specific first-line ICI discontinuation and
-           subsequent treatment access
------------------------------------------------------------------------
-
-  FEASIBILITY: GO (with chart review)
-  
-  Cohort: 153 routine-care ICI
-  
-  Stop categories:
-    PROGRESSION:               53
-    DEATH / HOSPICE:           51
-    ADMIN CENSOR:              29
-    HEPATIC DYSFUNCTION:       7
-  
-  2L access:
-    Total reaching 2L:         40/153 (26.1%)
-  
-  Risks:
-    * MAR-based stop dates not available in drug_expo atlas
-    * Admin censor is ambiguous — requires chart review
-    * Post-1L state table infers progression from 2L start
-
------------------------------------------------------------------------
-CROSS-PROJECT SUMMARY
------------------------------------------------------------------------
-
-  CROSS-PROJECT ISOLATION:
-    A ∩ B: 108  B ∩ C: 108  A ∩ B ∩ C: 108
-    Projects are NESTED (B,C ⊆ A), NOT independent samples
-  
-  PERSISTED TABLES (9):
-    reach_users.xzhao81.hcc_medonc_lockdown_true1l_v1
-    reach_users.xzhao81.hcc_medonc_lockdown_albi_landmarks_v1
-    reach_users.xzhao81.hcc_medonc_lockdown_afp_landmarks_v1
-    reach_users.xzhao81.hcc_medonc_projectA_week6_landmark_v1
-    reach_users.xzhao81.hcc_medonc_lockdown_projectB_ab_stride_selection_v1
-    reach_users.xzhao81.hcc_medonc_lockdown_projectB_selection_variables_v1
-    reach_users.xzhao81.hcc_medonc_lockdown_projectC_stop_dates_v1
-    reach_users.xzhao81.hcc_medonc_lockdown_projectC_failure_causes_v1
-    reach_users.xzhao81.hcc_medonc_lockdown_projectC_2l_access_v1
-  
-  DATA QUALITY WARNINGS (all projects):
-    1. race_ethnicity — Hispanic mapping bug, DO NOT USE
-    2. Oral TKI stop dates — unreliable, orders-only
-    3. Child-Pugh — reconstructed CP failed to join (0%)
-    4. Post-1L states — progression inferred from 2L initiation
-    5. Drug exposure atlas — source does not differentiate MAR vs orders
-
-=======================================================================
-END OF REPORT
-=======================================================================
-
-
-Part 23 complete. All analyses finished.
+Suggested path:
+
+`HCC_REACH/MedOnc/HCC_MEDONC_DEEP_DATA_DISCOVERY_v1`
+
+All newly persisted tables must begin:
+
+`hcc_medonc_discovery_`
+
+Do NOT overwrite:
+- `hcc_tace_*`
+- `post_tace_*`
+- existing canonical HCC tables
+- prior med-onc lockdown tables.
+
+Validated general HCC tables may be READ ONLY.
+
+At notebook start print:
+
+============================================================
+PROJECT: HCC MEDICAL ONCOLOGY — DEEP DATA DISCOVERY
+WORKSTREAM: SEPARATE FROM TACE
+NOTEBOOK: <actual notebook>
+============================================================
+
+# ============================================================
+# CRITICAL OPERATING PRINCIPLE
+# ============================================================
+
+DO NOT conclude that a variable is unavailable because one previously used table did not contain it.
+
+Example:
+
+The prior atlas found zero steroid orders.
+
+This does NOT prove REACH lacks steroid exposure.
+
+You must independently search:
+- medication orders
+- MAR
+- inpatient MAR
+- discharge medications
+- medication lists
+- treatment-plan supportive medications
+- relevant note text
+
+before declaring steroid exposure unavailable.
+
+Apply this principle to EVERY domain.
+
+Likewise:
+
+"ECOG not structured" ≠ "ECOG unavailable."
+
+Search:
+- flowsheets
+- oncology notes
+- treatment plans
+- smart data elements
+- problem-specific documentation
+- note text.
+
+"RECIST not structured" ≠ "response unavailable."
+
+Search:
+- radiology reports
+- oncology notes
+- tumor board notes
+- treatment response language.
+
+# ============================================================
+# PART 0 — DEFINE REFERENCE COHORTS
+# ============================================================
+
+Regenerate these from canonical tables rather than hard-coding them.
+
+COHORT H0:
+high-confidence HCC patients.
+
+Expected approximately:
+2,544.
+
+COHORT H1:
+validated systemic-treated HCC patients.
+
+Source:
+`reach_users.xzhao81.hcc_systemic_patients_canonical_v12_2`
+
+Expected approximately:
+571.
+
+COHORT H2:
+high-confidence true-1L systemic patients.
+
+Source:
+`reach_users.xzhao81.hcc_medonc_lockdown_true1l_v1`
+
+Expected:
+282.
+
+COHORT H3:
+HC true-1L ICI-treated patients.
+
+Expected:
+242.
+
+COHORT H4:
+routine-care HC true-1L ICI.
+
+Expected:
+153.
+
+COHORT H5:
+modern routine-care HC true-1L ICI.
+
+Expected approximately:
+142.
+
+Every data-domain assessment below must report coverage separately for:
+
+H0 / H1 / H2 / H3 / H4 / H5.
+
+This is essential.
+
+A variable available in 2,000 HCC patients but only 12 modern ICI patients may not be useful for a med-onc project.
+
+# ============================================================
+# PART 1 — FULL REACH SCHEMA DISCOVERY
+# ============================================================
+
+Do NOT begin with the tables we already know.
+
+First discover ALL accessible tables and columns.
+
+Attempt:
+
+`system.information_schema.tables`
+and
+`system.information_schema.columns`
+
+for accessible catalogs/schemas.
+
+If permissions prevent that, use:
+
+`SHOW SCHEMAS`
+`SHOW TABLES IN <schema>`
+`DESCRIBE TABLE <table>`
+
+At minimum inspect:
+
+`deid.derived`
+`reach_users.xzhao81`
+
+plus any other accessible REACH/Epic schemas.
+
+Print:
+
+TOTAL TABLES DISCOVERED
+TOTAL COLUMNS DISCOVERED
+
+Then search TABLE NAMES and COLUMN NAMES case-insensitively for the following stems:
+
+`lab`
+`result`
+`component`
+`path`
+`pathology`
+`surgical`
+`specimen`
+`biopsy`
+`cytology`
+`molecular`
+`genom`
+`gene`
+`variant`
+`mutation`
+`sequence`
+`NGS`
+`Foundation`
+`Tempus`
+`Guardant`
+`Caris`
+`ctDNA`
+`liquid`
+`MSI`
+`TMB`
+`PDL1`
+`PD-L1`
+`image`
+`imaging`
+`radiology`
+`rad`
+`CT`
+`MRI`
+`accession`
+`report`
+`impression`
+`note`
+`oncology`
+`tumor`
+`board`
+`stage`
+`BCLC`
+`ECOG`
+`performance`
+`flowsheet`
+`smartdata`
+`vital`
+`weight`
+`BMI`
+`med`
+`admin`
+`order`
+`pharmacy`
+`refill`
+`encounter`
+`admission`
+`emergency`
+`ED`
+`ICU`
+`hospice`
+`palliative`
+`insurance`
+`payer`
+`coverage`
+`language`
+`interpreter`
+`address`
+`zip`
+`geocode`
+`ADI`
+`SDI`
+`income`
+`distance`
+`referral`
+`social`
+`smoking`
+`alcohol`
+`trial`
+`research`
+`protocol`
+`biospecimen`
+`biobank`.
+
+Print EVERY matching:
+- table
+- column
+- datatype.
+
+Do not truncate this table.
+
+Persist:
+
+`hcc_medonc_discovery_schema_inventory_v1`
+
+# ============================================================
+# PART 2 — CANDIDATE SOURCE TABLE FORENSICS
+# ============================================================
+
+For every table that appears potentially relevant:
+
+Print:
+
+TABLE:
+SCHEMA:
+PURPOSE INFERRED FROM COLUMNS:
+N_ROWS:
+N_DISTINCT_PATIENTS:
+PATIENT KEY:
+DATE FIELD(S):
+TEXT FIELD(S):
+ORDER/ACCESSION/SPECIMEN KEY(S):
+DUPLICATION STRUCTURE:
+EARLIEST DATE:
+LATEST DATE:
+
+Then print:
+- complete schema
+- first 10 representative rows
+- 10 random rows with fixed seed when feasible.
+
+Do not print only the columns you think matter.
+
+We are looking for unexpected data.
+
+# ============================================================
+# PART 3 — COMPLETE LABORATORY UNIVERSE
+# ============================================================
+
+Previous work concentrated on:
+albumin
+bilirubin
+INR
+AFP.
+
+Now inventory EVERYTHING.
+
+From laboratory sources identify every distinct:
+
+- component_base_name
+- component/display name
+- LOINC if available
+- units
+- reference range
+- numeric vs qualitative result.
+
+For H1 systemic patients print the TOP 300 laboratory components by:
+
+1. number of unique patients
+2. number of measurements
+
+Do not truncate at 20.
+
+For each candidate marker calculate coverage in H0-H5.
+
+Explicitly search synonyms for:
+
+### CBC / IMMUNE
+- WBC
+- absolute neutrophils
+- absolute lymphocytes
+- monocytes
+- eosinophils
+- basophils
+- platelets
+- hemoglobin
+- RDW
+
+Derived feasibility:
+- NLR
+- PLR
+- LMR
+- SII if components available.
+
+Do NOT calculate outcome associations.
+
+### INFLAMMATORY / IMMUNE
+- CRP
+- hsCRP
+- ESR
+- ferritin
+- LDH
+- IL-6
+- procalcitonin
+- cytokines if present
+
+### TUMOR MARKERS
+Search broadly:
+- AFP
+- AFP-L3
+- AFP L3%
+- DCP
+- PIVKA-II
+- des-gamma-carboxy prothrombin
+- CEA
+- CA19-9
+- CA125
+- other liver tumor markers.
+
+Do not assume DCP/AFP-L3 are absent based on previous queries.
+
+Search actual component names and LOINCs.
+
+### LIVER
+- AST
+- ALT
+- ALP
+- GGT
+- albumin
+- bilirubin total/direct
+- INR/PT
+- ammonia
+- bile acids if present
+
+### RENAL / ELECTROLYTES
+- creatinine
+- eGFR
+- BUN
+- sodium
+- potassium
+- magnesium
+- phosphate
+
+### METABOLIC / NUTRITION
+- glucose
+- HbA1c
+- cholesterol
+- triglyceride
+- prealbumin
+- total protein
+- vitamin D
+- B12
+- folate if available
+
+### ENDOCRINE / ICI TOXICITY
+- TSH
+- free T4
+- total T4
+- cortisol
+- ACTH
+- testosterone if present
+- CK
+- troponin
+- BNP
+- lipase
+- amylase
+
+### URINE / VEGF TOXICITY
+- urinalysis protein
+- urine protein
+- urine protein/creatinine ratio
+- microalbumin
+- hematuria
+
+### COAGULATION / THROMBOSIS
+- PT/INR
+- PTT
+- fibrinogen
+- D-dimer if available.
+
+For each marker print:
+
+N_PATIENTS_H0
+N_PATIENTS_H1
+N_PATIENTS_H2
+N_PATIENTS_H3
+N_PATIENTS_H4
+N_PATIENTS_H5
+N_WITHIN_30D_PRE_1L
+N_WITHIN_14D_PRE_1L
+N_DAY28_56_AFTER_1L
+MEDIAN_MEASUREMENTS_PER_PATIENT
+UNITS
+UNIT_HETEROGENEITY
+OBVIOUS_SENTINEL/INVALID_VALUES
+
+Persist complete coverage table:
+
+`hcc_medonc_discovery_lab_coverage_v1`
+
+# ============================================================
+# PART 4 — DERIVABLE BLOOD-BASED BIOMARKERS
+# ============================================================
+
+Determine whether REACH can reliably construct:
+
+- NLR
+- PLR
+- LMR
+- systemic immune-inflammation index
+- CRAFITY
+- prognostic nutritional index
+- APRI
+- FIB-4
+- MELD
+- MELD-Na
+- MELD 3.0
+- ALBI/mALBI
+- other validated HCC laboratory indices found in available data.
+
+For EACH score:
+
+COMPONENTS REQUIRED
+COMPONENT COVERAGE
+EXACT SAME-DAY COVERAGE
+±3-DAY COVERAGE
+H2 COVERAGE
+H3 COVERAGE
+H5 COVERAGE
+
+Do not model outcomes.
+
+Do not call a score usable if components come from widely separated dates.
+
+# ============================================================
+# PART 5 — HCC ETIOLOGY / LIVER DISEASE BIOLOGY
+# ============================================================
+
+Build a DATA AVAILABILITY atlas for etiology.
+
+Search diagnoses, labs, medications and notes for:
+
+### HBV
+- HBsAg
+- HBcAb
+- HBsAb
+- HBeAg
+- HBV DNA
+- quantitative HBV DNA
+- tenofovir
+- entecavir
+- other antivirals
+
+### HCV
+- HCV antibody
+- HCV RNA
+- genotype
+- SVR documentation
+- DAA exposure
+
+### MASLD/MASH
+- diabetes
+- obesity/BMI
+- dyslipidemia
+- metabolic syndrome
+- MASLD/MASH/NASH diagnoses
+
+### ALCOHOL
+- alcohol-related liver disease
+- alcohol use documentation
+
+### OTHER
+- autoimmune hepatitis
+- PBC
+- PSC
+- hemochromatosis
+- Wilson disease
+- alpha-1 antitrypsin deficiency.
+
+Construct multiple-source etiology candidates:
+
+HBV
+HCV
+HBV/HCV
+MASLD/MASH
+ALCOHOL
+MIXED
+OTHER
+UNKNOWN.
+
+DO NOT force mutually exclusive classification yet.
+
+Print evidence-source counts and overlaps.
+
+Print H3 ICI counts by etiology candidate.
+
+This could reveal an important ICI-response project.
+
+Persist:
+`hcc_medonc_discovery_etiology_v1`
+
+# ============================================================
+# PART 6 — PATHOLOGY AND BIOPSY DISCOVERY
+# ============================================================
+
+This section has NOT been adequately explored previously.
+
+Identify every pathology-related table.
+
+Determine:
+
+- number of HCC patients with any liver biopsy
+- number with tumor biopsy
+- number with resection pathology
+- number with transplant explant pathology
+- number with pathology text
+- number with biopsy BEFORE systemic therapy
+- number with biopsy within 365d before ICI
+- number with biopsy within 90d before ICI.
+
+Among pathology report text, search case-insensitively for:
+
+HCC
+hepatocellular carcinoma
+combined HCC-CCA
+cholangiocarcinoma
+fibrolamellar
+well differentiated
+moderately differentiated
+poorly differentiated
+grade
+macrotrabecular
+steatohepatitic
+clear cell
+scirrhous
+microvascular invasion
+lymphovascular invasion
+vascular invasion
+portal vein invasion
+necrosis
+treatment effect
+
+and immunohistochemical markers:
+
+arginase-1
+HepPar-1
+glypican-3 / GPC3
+AFP
+CK7
+CK19
+beta-catenin / β-catenin
+glutamine synthetase
+PD-L1
+CD8
+CD3
+CD68
+MMR proteins
+MLH1
+MSH2
+MSH6
+PMS2.
+
+For every search concept print:
+- N reports
+- N patients H0-H5
+- 10 representative evidence snippets.
+
+Do not claim extraction validity.
+
+Create:
+
+`PATHOLOGY DISCOVERY MATRIX`
+
+with:
+VARIABLE
+N_HCC
+N_SYSTEMIC
+N_TRUE1L
+N_ICI_TRUE1L
+N_PRETREATMENT_ICI
+TEXT_EXTRACTION_FEASIBLE
+MANUAL_REVIEW_REQUIRED
+
+Persist:
+`hcc_medonc_discovery_pathology_v1`
+
+# ============================================================
+# PART 7 — GENOMIC / MOLECULAR PROFILING
+# ============================================================
+
+Search ALL schemas for molecular/genomic data.
+
+Do not assume the previously observed genomic-result count is complete.
+
+Search for:
+- genomic orders
+- molecular pathology
+- sequencing
+- NGS
+- Foundation Medicine
+- FoundationOne
+- Tempus
+- Guardant
+- Caris
+- institutional panels
+- liquid biopsy
+- ctDNA.
+
+Determine:
+
+NUMBER OF:
+- HCC patients tested
+- systemic HCC patients tested
+- true1L patients tested
+- ICI true1L patients tested
+- patients tested before ICI
+- tissue assays
+- plasma assays
+- repeated assays.
+
+Identify actual structured fields for:
+
+- gene
+- variant
+- mutation type
+- allele frequency
+- pathogenicity
+- copy number
+- fusion
+- TMB
+- MSI
+- PD-L1
+- sample type
+- specimen date
+- report date.
+
+Explicitly count mutations in:
+
+CTNNB1
+AXIN1
+APC
+TP53
+TERT
+ARID1A
+ARID2
+BAP1
+FGF19
+CCND1
+MET
+MYC
+PIK3CA
+PTEN
+TSC1
+TSC2
+JAK1
+JAK2
+B2M
+NFE2L2
+KEAP1
+
+plus all other recurrent alterations discovered.
+
+Print top 50 genes by frequency in HCC.
+
+For CTNNB1/Wnt specifically print:
+
+N tested
+N mutated
+N pre-ICI tested
+N ICI-treated mutation-positive
+N ICI-treated mutation-negative.
+
+For TMB:
+print distribution and N evaluable.
+
+For MSI:
+print N evaluable and categories.
+
+For PD-L1:
+print assay name
+scoring method
+TPS/CPS if available
+N evaluable.
+
+For ctDNA:
+print platforms
+N patients
+timing relative to therapy
+serial testing availability.
+
+Do NOT run outcome analyses.
+
+Persist:
+`hcc_medonc_discovery_genomics_v1`
+
+# ============================================================
+# PART 8 — BIOSPECIMEN / BIOBANK LINKABILITY
+# ============================================================
+
+Search accessible metadata/tables for:
+
+- biospecimen
+- biobank
+- tissue bank
+- plasma
+- serum
+- PBMC
+- frozen tissue
+- FFPE
+- specimen identifiers.
+
+We are NOT asking you to access restricted specimens.
+
+We are asking:
+
+Can REACH identify patients linked to existing specimens?
+
+Print:
+- candidate tables
+- fields
+- H0-H5 coverage
+- sample type
+- collection timing
+- whether IDs appear joinable to patient IDs.
+
+Label everything:
+
+`LINKABILITY ONLY — NOT SPECIMEN ACCESS`
+
+This could identify a translational extension.
+
+# ============================================================
+# PART 9 — RADIOLOGY / IMAGING DATA DISCOVERY
+# ============================================================
+
+Do not accept the prior conclusion:
+
+"RECIST not structured."
+
+Inventory what imaging information actually exists.
+
+Identify:
+- radiology report tables
+- accession IDs
+- study IDs
+- order IDs
+- modality
+- body region
+- contrast
+- report text
+- impression text
+- addenda
+- actual image/DICOM linkage if any.
+
+For H3 true1L ICI patients determine:
+
+- CT/MRI within -90 to +7d of 1L start
+- CT/MRI within -45 to +7d
+- CT/MRI during weeks 6–12
+- serial CT/MRI availability.
+
+Print coverage.
+
+Search baseline report text for:
+
+number of lesions
+largest lesion
+multifocal
+bilobar
+unilobar
+infiltrative
+portal vein tumor thrombus
+PVTT
+tumor in vein
+LR-TIV
+macrovascular invasion
+hepatic vein invasion
+extrahepatic disease
+metastasis
+lung metastasis
+bone metastasis
+lymph node
+adenopathy
+ascites
+splenomegaly
+portal hypertension
+cirrhosis.
+
+Search follow-up reports for:
+
+response
+partial response
+complete response
+progression
+stable
+increased
+decreased
+new lesion
+LR-TR viable
+LR-TR nonviable
+LR-TR equivocal
+treatment response
+mRECIST
+RECIST.
+
+Print:
+- N reports containing each concept
+- N unique patients
+- H3 coverage
+- 10 raw snippets each for important concepts.
+
+Do NOT create a final imaging phenotype.
+
+We need to know whether NLP/manual extraction is plausible.
+
+# ============================================================
+# PART 10 — ACTUAL IMAGE AVAILABILITY / RADIOMICS POTENTIAL
+# ============================================================
+
+Determine whether REACH exposes:
+- DICOM references
+- image object IDs
+- image series metadata
+- PACS links
+- image pixels
+- image-derived measurements.
+
+DO NOT attempt mass image downloading.
+
+Just determine whether image-level linkage exists.
+
+Print:
+
+ACTUAL CT/MRI PIXELS ACCESSIBLE: YES / NO / UNCERTAIN
+
+If yes/uncertain:
+- number of H3 patients with candidate baseline CT
+- number with candidate baseline MRI
+- series identifiers
+- slice/series metadata availability.
+
+This could enable:
+- radiomics
+- automated tumor burden
+- body composition
+- sarcopenia.
+
+Do not perform those analyses now.
+
+# ============================================================
+# PART 11 — BODY COMPOSITION / NUTRITION / FRAILTY
+# ============================================================
+
+Search structured and text sources for:
+
+- height
+- weight
+- BMI
+- longitudinal weight
+- weight loss
+- cachexia
+- sarcopenia
+- malnutrition
+- nutrition consult
+- albumin
+- prealbumin
+- grip strength if present
+- gait/frailty scores
+- Karnofsky
+- ECOG
+- performance status.
+
+For weight:
+
+calculate DATA AVAILABILITY for:
+- within 30d before 1L
+- week6
+- week12
+- 6 months.
+
+Do not model weight change.
+
+For ECOG:
+
+Search in this order:
+
+1. structured oncology fields
+2. flowsheets
+3. treatment plans
+4. smart data elements
+5. oncology note text.
+
+Search patterns:
+
+`ECOG`
+`PS 0`
+`PS 1`
+`PS 2`
+`performance status`
+`ECOG performance`
+`Karnofsky`
+`KPS`.
+
+Print:
+- structured ECOG N
+- text-mentioned ECOG N
+- extractable ECOG N
+- H2/H3/H5 coverage
+- 30 representative snippets spanning scores.
+
+Do not call ECOG unavailable until all sources are searched.
+
+# ============================================================
+# PART 12 — IMMUNOTHERAPY TOXICITY DATA CAPABILITY
+# ============================================================
+
+Start over.
+
+Do NOT reuse the old ICI-hepatitis phenotype as proof of feasibility.
+
+For H3 ICI patients determine whether REACH can identify:
+
+### HEPATITIS
+- ALT
+- AST
+- bilirubin
+- ALP
+- steroids
+- mycophenolate
+- ICI holds
+- hepatology consults.
+
+### THYROID
+- TSH
+- free T4
+- levothyroxine initiation
+- thyroiditis diagnosis.
+
+### ADRENAL / HYPOPHYSITIS
+- cortisol
+- ACTH
+- hydrocortisone
+- adrenal-insufficiency diagnosis
+- pituitary MRI if searchable.
+
+### COLITIS
+- diarrhea diagnosis
+- colitis diagnosis
+- stool testing
+- colonoscopy
+- steroids
+- infliximab
+- vedolizumab.
+
+### PNEUMONITIS
+- diagnosis
+- CT chest
+- pulmonary consult
+- steroids
+- oxygen.
+
+### NEPHRITIS
+- creatinine
+- AKI
+- nephritis codes
+- steroids.
+
+### MYOSITIS / MYOCARDITIS
+- CK
+- troponin
+- ECG/echo
+- myocarditis diagnosis.
+
+### DERMATOLOGIC / RHEUMATOLOGIC
+- rash
+- dermatitis
+- arthritis
+- rheumatology/dermatology consult
+- steroid/DMARD treatment.
+
+For each toxicity:
+
+STRUCTURED DATA AVAILABLE?
+LAB SUPPORT?
+MEDICATION SUPPORT?
+NOTE SUPPORT?
+H3 CANDIDATES N?
+HIGH-SPECIFICITY CANDIDATE N?
+
+No outcome analysis.
+
+# ============================================================
+# PART 13 — SYSTEMIC STEROID / IMMUNOSUPPRESSION REPAIR
+# ============================================================
+
+Prior atlas finding:
+0 steroid orders.
+
+Assume this was an extraction failure until proven otherwise.
+
+Search:
+
+MED_ORDERS
+MED_ADMIN
+inpatient MAR
+outpatient medications
+discharge meds
+treatment-plan medications
+
+for:
+
+prednisone
+prednisolone
+methylprednisolone
+dexamethasone
+hydrocortisone
+budesonide
+
+plus:
+
+mycophenolate
+infliximab
+vedolizumab
+tacrolimus
+sirolimus
+cyclosporine
+azathioprine.
+
+Print:
+- exact query
+- names matched
+- order counts
+- administration counts
+- patient counts H0-H5.
+
+Separate:
+- antiemetic dexamethasone
+- infusion premedication
+- chronic steroids
+- therapeutic high-dose steroids.
+
+Do not use dexamethasone blindly.
+
+Persist:
+`hcc_medonc_discovery_immunosuppression_v1`
+
+# ============================================================
+# PART 14 — CONCOMITANT MEDICATIONS AROUND ICI
+# ============================================================
+
+Inventory potentially biologically relevant co-exposures in H3.
+
+Primary baseline window:
+-30 to +7d around ICI start.
+
+Search:
+
+- antibiotics
+- proton-pump inhibitors
+- H2 blockers
+- systemic corticosteroids
+- metformin
+- statins
+- aspirin
+- NSAIDs
+- anticoagulants
+- antiplatelets
+- beta blockers
+- ACEi/ARB
+- lactulose
+- rifaximin
+- diuretics
+- opioids.
+
+For each:
+- N exposed
+- source
+- order vs administration
+- exposure-confidence
+- chronic vs one-time feasibility.
+
+Do NOT perform outcome comparisons.
+
+This is discovery for possible pharmaco-oncology questions.
+
+# ============================================================
+# PART 15 — VIROLOGY × ICI FEASIBILITY
+# ============================================================
+
+For HBV-positive patients determine:
+
+- HBsAg
+- baseline HBV DNA
+- antiviral therapy
+- serial HBV DNA after ICI
+- HBV reactivation candidates.
+
+For HCV-positive patients:
+
+- baseline RNA
+- SVR
+- DAA treatment
+- serial RNA during/after ICI.
+
+Print exact N in H3.
+
+This may generate:
+- viral-reactivation safety studies
+- viral vs nonviral ICI biology
+- antiviral-treatment interaction questions.
+
+Do not model outcomes.
+
+# ============================================================
+# PART 16 — TREATMENT ADMINISTRATION INTENSITY
+# ============================================================
+
+For IV systemic regimens use MAR to derive DATA CAPABILITY for:
+
+- planned cycle interval
+- actual administration dates
+- delayed cycles
+- skipped components
+- component discontinuation
+- dose if reliable
+- dose reduction if reliable
+- relative dose intensity if derivable
+- treatment-free intervals.
+
+For:
+AB
+STRIDE
+NIVO_IPI
+NIVO_MONO
+PEMBRO
+DURVA.
+
+Print whether dose information is:
+HIGH / MODERATE / LOW confidence.
+
+For AB specifically:
+we already know component-level MAR is strong.
+
+Now determine whether analogous component-level treatment modification is measurable for:
+- STRIDE induction → durvalumab maintenance
+- NIVO/IPI induction → nivolumab maintenance.
+
+# ============================================================
+# PART 17 — CLINICAL RESPONSE IN ONCOLOGY NOTES
+# ============================================================
+
+Search oncology notes after therapy initiation for response language:
+
+`response`
+`responding`
+`partial response`
+`complete response`
+`stable disease`
+`progressive disease`
+`progression`
+`mixed response`
+`dramatic response`
+`AFP response`
+`clinical benefit`
+`no evidence of progression`.
+
+For H3:
+
+Print number of patients with at least one response-assessment note within:
+- day28–90
+- day60–150.
+
+Print 50 representative snippets stratified by apparent response class.
+
+Do not classify final response yet.
+
+Goal:
+determine whether note-derived response is feasible without full radiology abstraction.
+
+# ============================================================
+# PART 18 — STAGING / TUMOR-BURDEN DATA
+# ============================================================
+
+Search structured and note sources for:
+
+- BCLC
+- AJCC/TNM
+- stage IV
+- Barcelona stage
+- Child-Pugh stated explicitly
+- tumor count
+- tumor size
+- macrovascular invasion
+- extrahepatic spread
+- portal vein invasion
+- metastasis site.
+
+Print coverage H0-H5.
+
+If structured staging exists, print actual fields and distributions.
+
+If only text:
+print extraction feasibility and representative snippets.
+
+# ============================================================
+# PART 19 — DEMOGRAPHICS REBUILD
+# ============================================================
+
+Discard the old derived `race_ethnicity` field for this exercise.
+
+Start from raw demographic fields.
+
+Print distributions of:
+
+`first_race`
+`ethnic_group`
+
+and every other raw race/ethnicity field discovered.
+
+For each raw category print:
+H0/H1/H2/H3/H5 N.
+
+Construct NO combined race/ethnicity variable until mappings are shown explicitly.
+
+Then inventory:
+
+- age
+- sex
+- preferred language
+- interpreter requirement
+- marital status if available
+- smoking
+- alcohol
+- employment if available
+- disability if available.
+
+Persist raw demographic atlas only:
+
+`hcc_medonc_discovery_demographics_raw_v1`
+
+# ============================================================
+# PART 20 — INSURANCE / SOCIOECONOMIC / GEOGRAPHIC DATA
+# ============================================================
+
+Search every accessible table for:
+
+- payer
+- insurance
+- Medicare
+- Medicaid
+- commercial/private
+- uninsured/self-pay
+- ZIP
+- census tract
+- geocode
+- ADI
+- SVI
+- income
+- education
+- deprivation
+- rurality
+- distance
+- referral source.
+
+For every variable print:
+- source
+- coverage H0-H5
+- longitudinal vs baseline
+- missingness
+- category distribution.
+
+If coordinates or ZIP-derived data are deidentified/coarsened:
+describe exactly what level remains.
+
+Determine whether distance-to-Hopkins or neighborhood-level deprivation is technically reconstructable.
+
+DO NOT calculate it unless allowed and clearly supported.
+
+# ============================================================
+# PART 21 — REFERRAL / OUTSIDE-CARE PHENOTYPE
+# ============================================================
+
+Single-center studies are vulnerable to referral bias and left truncation.
+
+Search for:
+
+- outside oncology care
+- outside systemic therapy
+- referring institution
+- transfer of care
+- Johns Hopkins initial diagnosis vs referral
+- outside pathology
+- outside imaging
+- outside medication documentation.
+
+Quantify in H1/H2/H3:
+
+- likely Hopkins-primary care
+- likely external referral
+- unknown.
+
+Print evidence sources.
+
+This could itself explain treatment patterns and improve every future REACH analysis.
+
+# ============================================================
+# PART 22 — HEALTHCARE UTILIZATION / TIME TOXICITY
+# ============================================================
+
+This domain was not adequately explored.
+
+Determine whether we can construct patient-level CARE DAYS.
+
+Inventory:
+
+- outpatient oncology visits
+- infusion visits
+- laboratory-only visits
+- imaging days
+- ED days
+- inpatient days
+- ICU days
+- procedure days
+- telemedicine if identifiable.
+
+Deduplicate to PATIENT-DAY.
+
+One calendar day with five encounter rows = ONE care day unless separately justified.
+
+For H3 calculate feasibility for:
+
+FIRST 90 DAYS after systemic start
+FIRST 180 DAYS
+FIRST YEAR.
+
+Do NOT compare regimens yet.
+
+Print for each patient-period:
+
+possible metrics:
+- days alive
+- inpatient days
+- ED days
+- infusion days
+- outpatient visit days
+- imaging/lab-only days
+- total healthcare-contact days
+- days at home.
+
+Report:
+N with complete enough encounter coverage.
+
+Persist:
+`hcc_medonc_discovery_time_toxicity_v1`
+
+# ============================================================
+# PART 23 — SYMPTOMS / PATIENT-REPORTED DATA
+# ============================================================
+
+Search:
+- flowsheets
+- nursing intake
+- symptom questionnaires
+- pain scores
+- fatigue
+- appetite
+- nausea
+- diarrhea
+- dyspnea
+- performance status
+- quality-of-life instruments.
+
+Search specifically:
+PROMIS
+FACT-Hep
+EORTC
+ESAS
+pain score
+fatigue score.
+
+Print existence and coverage.
+
+Do not assume unavailable.
+
+# ============================================================
+# PART 24 — COMORBIDITY / HOST IMMUNE CONTEXT
+# ============================================================
+
+Inventory in H3:
+
+- autoimmune disease
+- solid-organ transplant
+- HIV
+- chronic infection
+- diabetes
+- obesity
+- CKD
+- cardiovascular disease
+- prior malignancy
+- immunosuppressive medication.
+
+Print exact N and evidence source.
+
+For autoimmune disease:
+do not use ICD-3 grouping alone without checking specificity.
+
+Print exact diagnoses.
+
+# ============================================================
+# PART 25 — CLINICAL TRIAL DATA DEPTH
+# ============================================================
+
+Beyond `research_status_final`, determine whether REACH stores:
+
+- protocol ID
+- trial name
+- NCT number
+- investigational drug
+- enrollment date
+- consent date
+- randomization
+- arm.
+
+Print availability and H2/H3 counts.
+
+This can help distinguish:
+routine-care treatment
+from trial-specific access and follow-up.
+
+# ============================================================
+# PART 26 — MULTIMODAL JOINABILITY MATRIX
+# ============================================================
+
+This is one of the MOST IMPORTANT outputs.
+
+Build a patient-level feature-presence matrix for H3.
+
+Columns:
+
+PAT
+REGIMEN
+ROUTINE_CARE
+BASELINE_AFP
+EARLY_AFP
+BASELINE_ALBI
+EARLY_ALBI
+CBC
+NLR
+CRP
+LDH
+VIRAL_ETIOLOGY
+HBV_DNA
+HCV_RNA
+BIOPSY
+PATHOLOGY_TEXT
+PDL1
+GENOMICS
+CTNNB1_STATUS
+TMB
+MSI
+CTDNA
+BASELINE_CT_MRI
+FOLLOWUP_CT_MRI
+RADIOLOGY_TEXT
+RESPONSE_NOTE
+ECOG
+WEIGHT_BMI
+AUTOIMMUNE_STATUS
+STEROID_EXPOSURE
+ANTIBIOTIC_EXPOSURE
+PPI_EXPOSURE
+INSURANCE
+LANGUAGE
+GEOGRAPHIC_DATA
+CARE_DAYS
+DECOMPENSATION
+DEATH
+2L_TREATMENT.
+
+Then print the most important overlap counts, for example:
+
+ICI + genomics
+ICI + pretreatment genomics
+ICI + CTNNB1
+ICI + pathology
+ICI + pathology + genomics
+ICI + baseline imaging + followup imaging
+ICI + AFP + NLR + CRP
+ICI + ECOG + imaging + labs
+ICI + insurance + geography
+ICI + time-toxicity
+ICI + biopsy + genomic + imaging + outcome.
+
+Do not choose combinations based on outcome results.
+
+Persist:
+`hcc_medonc_discovery_multimodal_matrix_v1`
+
+# ============================================================
+# PART 27 — "WHAT DID WE NOT KNOW BEFORE?" REPORT
+# ============================================================
+
+Generate a table containing ONLY genuinely newly discovered capabilities.
+
+Columns:
+
+DOMAIN
+NEWLY_DISCOVERED_DATA
+SOURCE_TABLE
+PATIENT_COVERAGE_H3
+PRETREATMENT_COVERAGE
+LONGITUDINAL?
+STRUCTURED_OR_TEXT
+QUALITY
+WHY_IT_MIGHT_MATTER
+
+Do not include AFP or ALBI unless something materially new was discovered.
+
+We specifically want to know what our previous project thinking was missing.
+
+# ============================================================
+# PART 28 — HIGH-VALUE DATA SIGNALS
+# ============================================================
+
+Without ranking projects, identify data signals that appear unusually strong.
+
+A "strong data signal" means one or more of:
+
+- unusually high coverage
+- longitudinal density
+- administration-level precision
+- uncommon molecular information
+- unusually rich pathology
+- high-quality linked imaging
+- strong note documentation
+- uncommon equity/access variables
+- unusual patient-centered utilization data
+- ability to link several modalities in the same patients.
+
+For every signal print:
+
+SIGNAL:
+N:
+DATA SOURCE:
+WHAT IS ACTUALLY OBSERVED:
+WHAT IS INFERRED:
+MAIN VALIDITY CONCERN:
+POTENTIAL MED-ONC QUESTION TYPES:
+
+Do not say "best."
+
+# ============================================================
+# PART 29 — CANDIDATE PROJECT GENERATOR
+# ============================================================
+
+Only AFTER completing all discovery above, generate candidate research concepts.
+
+Generate at least 20 distinct concepts if the data support them.
+
+Include categories:
+
+- predictive biomarker
+- prognostic biomarker
+- treatment selection
+- treatment toxicity
+- treatment delivery
+- treatment sequencing
+- host biology
+- tumor biology
+- molecular oncology
+- immunotherapy biology
+- implementation science
+- patient-centered outcomes
+- equity/access
+- clinical-trial implementation
+- multimodal precision oncology.
+
+For each concept print:
+
+PROJECT CONCEPT:
+EXACT QUESTION:
+TARGET POPULATION:
+INDEX:
+EXPOSURE/PREDICTOR:
+OUTCOME:
+RAW N:
+EXPECTED ANALYZABLE N:
+KEY EVENTS:
+DATA DOMAINS USED:
+WHY REACH IS DISTINCTIVE:
+WHAT WOULD REQUIRE MANUAL REVIEW:
+PRIMARY BIAS:
+PRIMARY MEASUREMENT RISK:
+WHAT WOULD KILL THE PROJECT:
+NEEDS OUTSIDE COLLABORATOR?:
+  - med onc only
+  - pathology
+  - radiology
+  - hepatology
+  - biostatistics
+  - informatics
+  - other
+
+DO NOT rank them.
+
+DO NOT estimate treatment effects.
+
+DO NOT claim novelty.
+
+ChatGPT will independently check the literature.
+
+# ============================================================
+# PART 30 — NEGATIVE FINDINGS
+# ============================================================
+
+Print important things REACH DOES NOT appear able to support.
+
+Examples:
+
+- insufficient genomic coverage
+- no ctDNA
+- no PD-L1
+- no actual image access
+- poor ECOG coverage
+- absent insurance data
+- no reliable steroid exposure
+
+but only after exhaustive search.
+
+For every negative result print:
+
+SEARCHED TABLES:
+SEARCHED FIELDS:
+SEARCH TERMS:
+RESULT:
+WHY WE BELIEVE IT IS TRULY UNAVAILABLE.
+
+Do not report merely:
+"not found."
+
+# ============================================================
+# PART 31 — RED-TEAM / CLINICAL PLAUSIBILITY TESTS
+# ============================================================
+
+Automatically flag:
+
+- implausible demographic distributions
+- biologically impossible laboratory values
+- pre-treatment variables occurring after treatment
+- pathology occurring after index being called baseline
+- genomics ordered after progression being called pretreatment
+- repeated billing records counted as separate tests
+- multiple reports from one accession counted as separate scans
+- note mentions mistaken for confirmed diagnoses
+- oral orders mistaken for actual exposure
+- future treatment used to classify baseline eligibility
+- trial patients mixed with routine care
+- line numbers mixed with patients
+- pathology from non-HCC tumors attributed to HCC
+- genomic testing from another malignancy attributed to HCC.
+
+For every alert print:
+
+*** CLINICAL PLAUSIBILITY ALERT ***
+
+PATIENT COUNT:
+ROOT CAUSE INVESTIGATION:
+RESOLUTION:
+UNRESOLVED CASES:
+
+# ============================================================
+# PART 32 — FULL COPY-PASTE REPORT
+# ============================================================
+
+At completion print one self-contained block:
+
+============================================================
+HCC MED-ONC DEEP REACH DATA DISCOVERY REPORT
+============================================================
+
+A. SCHEMA DISCOVERY
+- all candidate tables
+- important new tables
+- important new fields
+
+B. REFERENCE COHORTS
+- H0 through H5
+
+C. LABORATORY UNIVERSE
+- top laboratory components
+- coverage matrix
+- derivable indices
+
+D. ETIOLOGY / VIROLOGY
+
+E. PATHOLOGY / BIOPSY
+
+F. GENOMICS / MOLECULAR
+
+G. LIQUID BIOPSY / ctDNA
+
+H. BIOSPECIMEN LINKABILITY
+
+I. RADIOLOGY / IMAGING TEXT
+
+J. IMAGE-LEVEL ACCESS
+
+K. TUMOR BURDEN / STAGING
+
+L. PERFORMANCE / FRAILTY / BODY COMPOSITION
+
+M. IMMUNOTHERAPY TOXICITY DATA
+
+N. STEROIDS / IMMUNOSUPPRESSION
+
+O. CONCOMITANT MEDICATIONS
+
+P. TREATMENT-ADMINISTRATION INTENSITY
+
+Q. RESPONSE DOCUMENTATION
+
+R. DEMOGRAPHICS
+
+S. INSURANCE / SES / GEOGRAPHY
+
+T. REFERRAL / OUTSIDE CARE
+
+U. HEALTHCARE UTILIZATION / TIME TOXICITY
+
+V. SYMPTOMS / PATIENT-REPORTED DATA
+
+W. TRIAL DATA
+
+X. MULTIMODAL JOINABILITY MATRIX
+
+Y. NEWLY DISCOVERED CAPABILITIES
+
+Z. HIGH-VALUE DATA SIGNALS
+
+AA. ALL CANDIDATE PROJECT CONCEPTS
+
+AB. IMPORTANT NEGATIVE FINDINGS
+
+AC. EVERY CLINICAL-PLAUSIBILITY ALERT
+
+AD. ALL PERSISTED TABLES:
+- name
+- rows
+- patients
+- unit.
+
+For EVERY major result also include:
+
+IMPLEMENTATION LOGIC:
+SOURCE:
+JOIN KEY:
+DATE RULE:
+DENOMINATOR:
+CODE OR EXECUTABLE PSEUDOCODE:
+
+Do not write:
+"see notebook"
+or
+"see table above."
+
+Repeat the required numbers in the final report.
+
+# ============================================================
+# PART 33 — PERSIST
+# ============================================================
+
+Persist at minimum:
+
+`hcc_medonc_discovery_schema_inventory_v1`
+`hcc_medonc_discovery_lab_coverage_v1`
+`hcc_medonc_discovery_etiology_v1`
+`hcc_medonc_discovery_pathology_v1`
+`hcc_medonc_discovery_genomics_v1`
+`hcc_medonc_discovery_immunosuppression_v1`
+`hcc_medonc_discovery_demographics_raw_v1`
+`hcc_medonc_discovery_time_toxicity_v1`
+`hcc_medonc_discovery_multimodal_matrix_v1`
+
+Do not overwrite existing tables.
+
+Read every new table back.
+
+Print:
+TABLE
+ROWS
+UNIQUE PATIENTS
+UNIT OF ANALYSIS.
+
+# ============================================================
+# FINAL ISOLATION CHECK
+# ============================================================
+
+Print PASS/FAIL:
+
+1. TACE notebook not modified.
+2. No TACE-specific table written.
+3. Every new table begins `hcc_medonc_discovery_`.
+4. Canonical upstream tables were read-only.
+5. Notebook independently runs top-to-bottom.
+6. No analysis relies on an in-memory object from another notebook.
+
+STOP.
+
+Do not run survival models.
+Do not run propensity-score models.
+Do not select a final project.
+Do not rank project concepts.
+Do not optimize biomarker thresholds.
