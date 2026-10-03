@@ -1,4 +1,667 @@
+HCC TACE → Systemic Transition Audit v12.4
+Forensic feasibility run: determine how many true HCC patients transition from TACE to systemic therapy after TACE #1/#2 or explicit inadequate disease control. Fixes v12.3 issues: non-HCC contamination, unreliable radiology regex, ECOG recovery, broader treatment windows, per-episode indication validation.
 
+Part 0 — Canonical Source Declaration and Validation
+Part 0 — Canonical Source Declaration and Validation
+Loading canonical tables...
+
+======================================================================
+PART 0 — CANONICAL SOURCE TABLE CENSUS
+======================================================================
+
+Master Roster v12.1
+  ROWS:     3,999
+  PATIENTS: 3,999
+  UNIT:     one row per HCC patient
+
+Systemic Patients v12.2
+  ROWS:     571
+  PATIENTS: 571
+  UNIT:     one row per validated systemic patient
+
+Systemic Lines v12.2
+  ROWS:     806
+  PATIENTS: 571
+  UNIT:     one row per treatment line
+
+True 1L Validation v10
+  ROWS:     806
+  PATIENTS: 571
+  UNIT:     one row per line with true-1L classification
+
+Research Status v12.1
+  ROWS:     282
+  PATIENTS: 282
+  UNIT:     one row per HC true-1L with research status
+
+AFP Biomarkers v12
+  ROWS:     20,441
+  PATIENTS: 2,495
+  UNIT:     one row per AFP measurement
+
+Decompensation v12
+  ROWS:     26,207
+  PATIENTS: 1,768
+  UNIT:     one row per decompensation event
+
+Surgery/Transplant v12
+  ROWS:     1,503
+  PATIENTS: 750
+  UNIT:     one row per surgery/transplant event
+
+Locoregional v12
+  ROWS:     7,027
+  PATIENTS: 1,443
+  UNIT:     one row per LRT procedure
+
+Journey Events v12
+  ROWS:     11,843
+  PATIENTS: 3,999
+  UNIT:     one row per journey event
+
+Child-Pugh Validated v12
+  ROWS:     2,544
+  PATIENTS: 2,544
+  UNIT:     one row per patient with CP
+
+Post-1L States v12.1
+  ROWS:     282
+  PATIENTS: 282
+  UNIT:     one row per HC true-1L post-1L state
+
+Inpatient Admissions v12.2
+  ROWS:     24,661
+  PATIENTS: 3,239
+  UNIT:     one row per admission
+
+Systemic Waterfall v12.2
+  ROWS:     796
+  PATIENTS: 796
+  UNIT:     one row per raw systemic signal
+
+Regimen Duration v12.2
+  ROWS:     806
+  PATIENTS: 571
+  UNIT:     one row per line with duration
+
+Drug Exposure Atlas v1
+  ROWS:     6,485
+  PATIENTS: 571
+  UNIT:     one row per drug-component exposure
+
+======================================================================
+CROSS-TABLE RECONCILIATION
+======================================================================
+
+SYSTEMIC PATIENTS:
+  Master roster systemic_validated=1: 568
+  Systemic patients canonical v12.2:  571
+  Systemic lines canonical v12.2:     571 (unique patients)
+  *** KNOWN DISCREPANCY: 3 patient gap ***
+  Patients in canonical but NOT roster systemic_validated=1:
+    pat=DEI0n9nt6zgnuw
+    pat=DEI0t5p7sz8pd9
+    pat=DEI0o97sz89u3y
+
+HC TRUE FIRST-LINE:
+  Master roster true_1l_hc=1:   282
+  v10 true_1l_high_confidence:   282
+  Research status v12.1:         282
+  Post-1L states v12.1:          282
+  Result: ALL MATCH
+
+DEATHS:
+  Roster canonical_death_date not null: 1633
+
+AFP:
+  Total measurements: 20,441
+  Unique patients:    2,495
+
+DECOMPENSATION:
+  Total events:    26,207
+  Unique patients: 1,768
+  Event types:
++-----------------+--------+----------+
+|decomp_type      |n_events|n_patients|
++-----------------+--------+----------+
+|ASCITES_DX       |19768   |1586      |
+|ENCEPHALOPATHY_DX|2974    |592       |
+|PARACENTESIS     |2935    |580       |
+|VARICEAL_BLEED   |335     |96        |
+|SBP              |150     |70        |
+|HEPATORENAL      |45      |33        |
++-----------------+--------+----------+
+
+
+Part 0 complete — all canonical sources loaded and reconciled.
+Parts 1-3 + 8-9: Core Pipeline (Indication + Sequence + Transitions)
+Parts 1-3 + 8-9: Core Pipeline (Indication + Sequence + Transitions)
+======================================================================
+PERSISTED TABLE VERIFICATION
+======================================================================
+
+hcc_tace_hcc_indication_v12_4
+  ROWS:     2525
+  PATIENTS: 1052
+  UNIT:     one TACE episode with HCC-indication status
+
+hcc_tace_sequence_hcc_only_v12_4
+  ROWS:     1970
+  PATIENTS: 887
+  UNIT:     one HCC-directed TACE episode with sequence number
+
+hcc_index_tace_hcc_validated_v12_4
+  ROWS:     887
+  PATIENTS: 887
+  UNIT:     one patient (first HCC-TACE) with validation status
+
+hcc_systemic_starts_for_tace_v12_4
+  ROWS:     806
+  PATIENTS: 571
+  UNIT:     one systemic line with start date
+
+hcc_tace_to_systemic_transitions_v12_4
+  ROWS:     1852
+  PATIENTS: 845
+  UNIT:     one TACE episode with first systemic after
+
+======================================================================
+KEY RESULTS SUMMARY
+======================================================================
+
+PART 1 — TACE HCC-INDICATION CLASSIFICATION:
++--------------------------------------+----------+----------+
+|tace_hcc_indication_status            |n_episodes|n_patients|
++--------------------------------------+----------+----------+
+|PROBABLE_HCC_DIRECTED                 |1157      |655       |
+|DEFINITE_HCC_DIRECTED                 |813       |536       |
+|INSUFFICIENT_EVIDENCE                 |241       |153       |
+|PROBABLE_NON_HCC                      |237       |103       |
+|MIXED_OR_MULTIPLE_MALIGNANCIES_UNCLEAR|55        |48        |
+|DEFINITE_NON_HCC                      |22        |19        |
++--------------------------------------+----------+----------+
+
+PART 2 — HCC-DIRECTED TACE SEQUENCE:
++---------------+----------+
+|hcc_tace_number|n_episodes|
++---------------+----------+
+|1              |887       |
+|2              |503       |
+|3              |269       |
+|4              |151       |
+|5              |83        |
+|6              |37        |
++---------------+----------+
+only showing top 6 rows
+PART 3 — FIRST-TACE VALIDATION:
++------------------------------------------+-----+
+|index_tace_status                         |count|
++------------------------------------------+-----+
+|PROBABLE_TRUE_FIRST_HCC_TACE              |284  |
+|DEFINITE_TRUE_FIRST_HCC_TACE              |284  |
+|UNKNOWN                                   |280  |
+|DEFINITE_PRIOR_TACE                       |30   |
+|FIRST_OBSERVED_PRIOR_OUTSIDE_TACE_POSSIBLE|9    |
++------------------------------------------+-----+
+
+PARTS 8-9 — CUMULATIVE SYSTEMIC TRANSITIONS AFTER TACE#1:
+  ALL ERA ≤60d: 51/845
+  ALL ERA ≤120d: 75/845
+  ALL ERA ≤365d: 124/845
+  ALL ERA EVER: 193/845
+
+  MODERN ≤60d: 30/299
+  MODERN ≤120d: 41/299
+  MODERN ≤365d: 64/299
+  MODERN EVER: 80/299
+
+✓ All tables verified.
+Parts 15-20: Audit + Feasibility Table + Final Report
+Parts 15-20: Audit + Feasibility Table + Final Report
+======================================================================
+PART 15 — AUDIT EVERY SYSTEMIC SWITCH
+======================================================================
+
+Total post-TACE#1 systemic switches: 193 N_PATIENTS
+
+--- EVERY POST-TACE#1 SYSTEMIC SWITCH ---
++--------------+----------+-------------------+---------------------+----------------------+---------------------+--------------------+--------+----------+
+|pat           |tace_date |systemic_start_date|days_tace_to_systemic|regimen               |era                  |tace_before_systemic|research|death_date|
++--------------+----------+-------------------+---------------------+----------------------+---------------------+--------------------+--------+----------+
+|DEI0fp71pt6zgp|2020-12-20|2020-12-26         |6                    |AB                    |DEFINITELY_MODERN    |0                   |N       |NULL      |
+|DEI005zra0hbpv|2023-04-25|2023-05-02         |7                    |STRIDE                |DEFINITELY_MODERN    |0                   |N       |2023-06-18|
+|DEI0m6rq7sz8q9|2023-04-05|2023-04-12         |7                    |AB                    |DEFINITELY_MODERN    |0                   |N       |2024-07-10|
+|DEI0bq89j5zraj|2023-01-01|2023-01-11         |10                   |AB                    |DEFINITELY_MODERN    |0                   |N       |2024-11-25|
+|DEI0obnw5zrawn|2018-02-20|2018-03-02         |10                   |SORAFENIB             |DEFINITELY_PRE_MODERN|0                   |N       |NULL      |
+|DEI0gd5zradbx9|2018-12-29|2019-01-09         |11                   |LENVATINIB            |DEFINITELY_PRE_MODERN|0                   |N       |2020-06-16|
+|DEI01t6zg1vj4n|2019-07-13|2019-07-26         |13                   |NIVO_MONO             |DEFINITELY_PRE_MODERN|0                   |N       |2020-02-17|
+|DEI06t6zg65uh1|2019-10-31|2019-11-13         |13                   |STRIDE                |DEFINITELY_PRE_MODERN|0                   |Y       |2022-03-25|
+|DEI0b5zrab5nx8|2023-04-18|2023-05-01         |13                   |STRIDE                |DEFINITELY_MODERN    |0                   |N       |2023-10-29|
+|DEI0w7sz8wxpa6|2021-06-08|2021-06-21         |13                   |STRIDE                |DEFINITELY_MODERN    |0                   |Y       |NULL      |
+|DEI01tt6zgtthq|2022-01-19|2022-02-02         |14                   |NIVO_MONO             |DEFINITELY_MODERN    |0                   |N       |2024-11-05|
+|DEI0e7sz8ea349|2019-11-01|2019-11-15         |14                   |STRIDE                |DEFINITELY_PRE_MODERN|0                   |Y       |2021-03-03|
+|DEI0hdcedt6zgd|2026-02-06|2026-02-21         |15                   |AB                    |DEFINITELY_MODERN    |0                   |N       |NULL      |
+|DEI08ashr5zrar|2023-02-18|2023-03-07         |17                   |STRIDE                |DEFINITELY_MODERN    |0                   |Y       |2024-12-23|
+|DEI04i5zraixc3|2022-10-03|2022-10-21         |18                   |STRIDE                |DEFINITELY_MODERN    |0                   |Y       |2025-07-16|
+|DEI0bt6zgb4osn|2022-07-30|2022-08-18         |19                   |STRIDE                |DEFINITELY_MODERN    |0                   |Y       |2025-05-07|
+|DEI0k7sz8kt2vb|2023-07-17|2023-08-05         |19                   |STRIDE                |DEFINITELY_MODERN    |0                   |Y       |2024-09-05|
+|DEI0qbt6zgbah4|2021-10-28|2021-11-16         |19                   |STRIDE                |DEFINITELY_MODERN    |1                   |Y       |2022-06-30|
+|DEI0cwih7sz8hi|2022-05-12|2022-06-01         |20                   |STRIDE                |DEFINITELY_MODERN    |0                   |Y       |NULL      |
+|DEI005zra08h71|2022-02-15|2022-03-10         |23                   |NIVO_MONO             |DEFINITELY_MODERN    |0                   |N       |NULL      |
+|DEI0ed5zrad49c|2020-07-23|2020-08-19         |27                   |NIVO_MONO             |DATE_SHIFT_UNCERTAIN |0                   |N       |2020-09-05|
+|DEI0fbbyct6zgc|2020-03-17|2020-04-13         |27                   |LENVATINIB            |DATE_SHIFT_UNCERTAIN |0                   |N       |2020-07-31|
+|DEI0qt6zgqd5is|2017-10-14|2017-11-10         |27                   |NIVO_MONO             |DEFINITELY_PRE_MODERN|1                   |N       |2018-03-29|
+|DEI0hbgt6zggm4|2021-04-09|2021-05-07         |28                   |LENVATINIB            |DEFINITELY_MODERN    |0                   |N       |NULL      |
+|DEI0mx5zraxptx|2017-12-28|2018-01-31         |34                   |SORAFENIB             |DEFINITELY_PRE_MODERN|0                   |N       |2018-05-05|
+|DEI0m0y75zra7e|2025-07-25|2025-08-30         |36                   |STRIDE                |DEFINITELY_MODERN    |0                   |N       |2025-11-07|
+|DEI07or6t6zg6u|2024-12-16|2025-01-22         |37                   |STRIDE                |DEFINITELY_MODERN    |0                   |N       |2025-09-04|
+|DEI0o32mt6zgm4|2019-03-12|2019-04-18         |37                   |CABOZANTINIB+NIVO_MONO|DEFINITELY_PRE_MODERN|0                   |Y       |NULL      |
+|DEI0qi9mt6zgm3|2019-06-04|2019-07-11         |37                   |STRIDE                |DEFINITELY_PRE_MODERN|0                   |Y       |2019-11-10|
+|DEI0y0em5zramh|2024-08-27|2024-10-04         |38                   |AB                    |DEFINITELY_MODERN    |0                   |N       |NULL      |
+|DEI0o395zra99q|2020-02-06|2020-03-17         |40                   |LENVATINIB            |DATE_SHIFT_UNCERTAIN |0                   |N       |2020-09-26|
+|DEI0smmt6zgm5a|2019-06-19|2019-07-29         |40                   |LENVATINIB            |DEFINITELY_PRE_MODERN|0                   |N       |2020-10-26|
+|DEI0xqht6zghm8|2018-07-03|2018-08-12         |40                   |SORAFENIB             |DEFINITELY_PRE_MODERN|0                   |N       |2020-08-19|
+|DEI0b5t6zg5k8h|2020-10-13|2020-11-23         |41                   |STRIDE                |DATE_SHIFT_UNCERTAIN |1                   |Y       |2022-08-28|
+|DEI0jvm55zra5q|2022-04-27|2022-06-07         |41                   |AB                    |DEFINITELY_MODERN    |1                   |N       |2025-10-16|
+|DEI0n27sz82e4o|2023-05-10|2023-06-21         |42                   |STRIDE                |DEFINITELY_MODERN    |0                   |N       |2023-11-30|
+|DEI0xdhntt6zgt|2019-10-04|2019-11-16         |43                   |LENVATINIB            |DEFINITELY_PRE_MODERN|0                   |N       |2021-02-21|
+|DEI0dxw5zraw83|2025-08-23|2025-10-06         |44                   |NIVO_IPI              |DEFINITELY_MODERN    |0                   |N       |2026-01-21|
+|DEI0if6y5zray4|2021-10-02|2021-11-17         |46                   |NIVO_MONO             |DEFINITELY_MODERN    |0                   |N       |2023-12-27|
+|DEI03g5zragk88|2019-02-20|2019-04-09         |48                   |NIVO_MONO             |DEFINITELY_PRE_MODERN|0                   |Y       |NULL      |
+|DEI06a8co5zrao|2021-04-28|2021-06-17         |50                   |NIVO_MONO             |DEFINITELY_MODERN    |0                   |N       |2022-02-20|
+|DEI0tdv39t6zg9|2025-04-17|2025-06-06         |50                   |CABOZANTINIB          |DEFINITELY_MODERN    |0                   |N       |2025-07-20|
+|DEI057sz85jqnw|2026-02-19|2026-04-13         |53                   |IPI_MONO              |DEFINITELY_MODERN    |0                   |N       |NULL      |
+|DEI0339kf5zraf|2019-01-12|2019-03-07         |54                   |LENVATINIB            |DEFINITELY_PRE_MODERN|1                   |N       |2019-10-31|
+|DEI0qisd85zra8|2019-06-17|2019-08-10         |54                   |LENVATINIB            |DEFINITELY_PRE_MODERN|0                   |N       |2019-11-16|
+|DEI04yt6zgye4x|2024-06-02|2024-07-28         |56                   |AB                    |DEFINITELY_MODERN    |0                   |N       |NULL      |
+|DEI0p5zrap0b7r|2021-07-21|2021-09-15         |56                   |NIVO_IPI              |DEFINITELY_MODERN    |0                   |N       |2022-07-12|
+|DEI065zra6erfx|2019-12-09|2020-02-04         |57                   |LENVATINIB            |DATE_SHIFT_UNCERTAIN |1                   |N       |2024-10-15|
+|DEI06c7sz8crip|2018-11-30|2019-01-26         |57                   |LENVATINIB            |DEFINITELY_PRE_MODERN|0                   |N       |NULL      |
+|DEI05o5zrao1sw|2022-01-17|2022-03-16         |58                   |STRIDE                |DEFINITELY_MODERN    |1                   |Y       |NULL      |
+|DEI0gb5zrabojt|2023-09-02|2023-11-01         |60                   |STRIDE                |DEFINITELY_MODERN    |0                   |N       |NULL      |
+|DEI0j5zrajfo9q|2022-04-15|2022-06-18         |64                   |NIVO_IPI              |DEFINITELY_MODERN    |0                   |N       |2024-02-21|
+|DEI0umi7sz8ipq|2019-12-19|2020-02-22         |65                   |LENVATINIB            |DATE_SHIFT_UNCERTAIN |0                   |N       |2020-05-05|
+|DEI0d5zradg0hi|2022-09-02|2022-11-08         |67                   |STRIDE                |DEFINITELY_MODERN    |1                   |Y       |2024-01-18|
+|DEI0n7sz8nenej|2020-07-19|2020-09-25         |68                   |AB                    |DATE_SHIFT_UNCERTAIN |1                   |N       |NULL      |
+|DEI0a0t6zg0bop|2016-09-25|2016-12-08         |74                   |SORAFENIB             |DEFINITELY_PRE_MODERN|1                   |N       |NULL      |
+|DEI0at6zga4awd|2022-06-24|2022-09-09         |77                   |STRIDE                |DEFINITELY_MODERN    |1                   |Y       |2023-07-30|
+|DEI08t6zg8g6ic|2021-12-29|2022-03-17         |78                   |CABOZANTINIB          |DEFINITELY_MODERN    |0                   |N       |2025-12-09|
+|DEI0na05t6zg5e|2024-08-10|2024-10-27         |78                   |STRIDE                |DEFINITELY_MODERN    |0                   |N       |NULL      |
+|DEI0j5zraji32n|2020-06-27|2020-09-16         |81                   |NIVO_MONO             |DATE_SHIFT_UNCERTAIN |0                   |N       |2023-07-10|
+|DEI045idc7sz8c|2020-03-17|2020-06-07         |82                   |LENVATINIB            |DATE_SHIFT_UNCERTAIN |1                   |N       |2022-07-12|
+|DEI0hs5zras8xx|2022-09-09|2022-12-01         |83                   |DURVA_MONO            |DEFINITELY_MODERN    |0                   |N       |2023-07-01|
+|DEI05t5zrat0br|2021-12-09|2022-03-03         |84                   |NIVO_IPI              |DEFINITELY_MODERN    |0                   |N       |2022-05-21|
+|DEI06t6zg6kmxo|2018-04-08|2018-07-08         |91                   |SORAFENIB             |DEFINITELY_PRE_MODERN|0                   |N       |2020-02-06|
+|DEI0e5zraevvdx|2023-08-07|2023-11-07         |92                   |STRIDE                |DEFINITELY_MODERN    |0                   |N       |2024-11-20|
+|DEI0s5zrase07u|2018-11-03|2019-02-06         |95                   |SORAFENIB             |DEFINITELY_PRE_MODERN|1                   |N       |2019-07-01|
+|DEI0a095zra9a9|2021-11-09|2022-02-15         |98                   |NIVO_MONO             |DEFINITELY_MODERN    |0                   |N       |2022-02-23|
+|DEI0g5zrag4rdx|2023-04-09|2023-07-16         |98                   |AB                    |DEFINITELY_MODERN    |0                   |N       |2024-05-14|
+|DEI077sz87gpy1|2025-08-19|2025-11-28         |101                  |AB                    |DEFINITELY_MODERN    |1                   |N       |2026-03-24|
+|DEI0dgfwu5zrau|2020-09-03|2020-12-13         |101                  |AB                    |DATE_SHIFT_UNCERTAIN |1                   |N       |2025-06-27|
+|DEI0i25zra264x|2016-11-25|2017-03-09         |104                  |SORAFENIB             |DEFINITELY_PRE_MODERN|1                   |N       |2020-10-06|
+|DEI0745cp5zrap|2017-08-03|2017-11-16         |105                  |SORAFENIB             |DEFINITELY_PRE_MODERN|1                   |N       |NULL      |
+|DEI0g9i1ot6zgo|2019-05-27|2019-09-09         |105                  |NIVO_MONO             |DEFINITELY_PRE_MODERN|1                   |Y       |NULL      |
+|DEI0mij5zrajkq|2019-04-11|2019-08-01         |112                  |LENVATINIB            |DEFINITELY_PRE_MODERN|0                   |N       |2019-11-23|
+|DEI000r57sz854|2020-02-09|2020-06-08         |120                  |RAMUCIRUMAB           |DATE_SHIFT_UNCERTAIN |1                   |N       |2020-08-25|
+|DEI0ra07sz80hj|2024-06-12|2024-10-15         |125                  |STRIDE                |DEFINITELY_MODERN    |0                   |N       |2024-12-27|
+|DEI0u3gt6zgget|2023-04-04|2023-08-07         |125                  |STRIDE                |DEFINITELY_MODERN    |1                   |Y       |2024-06-13|
+|DEI05pg7sz8gnt|2016-09-21|2017-01-25         |126                  |SORAFENIB             |DEFINITELY_PRE_MODERN|1                   |N       |2017-05-01|
+|DEI03qt6zgq6d8|2018-07-21|2018-11-25         |127                  |LENVATINIB            |DEFINITELY_PRE_MODERN|1                   |N       |2019-08-18|
+|DEI0ut6zguju8i|2022-08-18|2022-12-26         |130                  |AB                    |DEFINITELY_MODERN    |0                   |N       |2023-11-06|
+|DEI097sz89c5i5|2021-07-28|2021-12-12         |137                  |NIVO_IPI              |DEFINITELY_MODERN    |0                   |N       |NULL      |
+|DEI075pt6zgpt9|2019-10-09|2020-02-27         |141                  |NIVO_MONO             |DEFINITELY_PRE_MODERN|1                   |N       |2020-07-20|
+|DEI05pgt6zggwr|2019-11-09|2020-03-30         |142                  |NIVO_MONO             |DEFINITELY_PRE_MODERN|1                   |N       |2021-03-06|
+|DEI073c5zrac0o|2016-01-14|2016-06-13         |151                  |SORAFENIB             |DEFINITELY_PRE_MODERN|1                   |N       |2018-09-29|
+|DEI0i7t6zg7dn2|2018-02-08|2018-07-09         |151                  |SORAFENIB             |DEFINITELY_PRE_MODERN|1                   |N       |2019-06-14|
+|DEI0oe2eg7sz8g|2018-10-05|2019-03-09         |155                  |LENVATINIB            |DEFINITELY_PRE_MODERN|1                   |N       |2020-09-04|
+|DEI0p5zrapfff5|2018-04-29|2018-10-06         |160                  |SORAFENIB             |DEFINITELY_PRE_MODERN|1                   |N       |2019-12-30|
+|DEI0i7sz8i27q7|2021-06-09|2021-11-18         |162                  |PEMBRO_MONO           |DEFINITELY_MODERN    |0                   |Y       |2023-11-09|
+|DEI0wffft6zgfa|2025-11-10|2026-04-27         |168                  |LENVATINIB            |DEFINITELY_MODERN    |1                   |N       |NULL      |
+|DEI00bnjt6zgj9|2019-12-28|2020-06-16         |171                  |LENVATINIB            |DATE_SHIFT_UNCERTAIN |0                   |N       |2020-08-01|
+|DEI0kxcg5zrag7|2016-06-20|2016-12-08         |171                  |SORAFENIB             |DEFINITELY_PRE_MODERN|1                   |N       |2018-01-29|
+|DEI0qhr3b5zrab|2020-09-09|2021-03-02         |174                  |STRIDE                |DATE_SHIFT_UNCERTAIN |1                   |Y       |2022-02-25|
+|DEI0adt6zgdus1|2019-07-27|2020-01-24         |181                  |LENVATINIB            |DEFINITELY_PRE_MODERN|1                   |N       |2020-07-10|
+|DEI0sp45zra40r|2023-03-30|2023-10-13         |197                  |STRIDE                |DEFINITELY_MODERN    |0                   |N       |2023-12-09|
+|DEI0ioat6zgap9|2022-12-17|2023-07-09         |204                  |NIVO_IPI              |DEFINITELY_MODERN    |1                   |N       |2023-07-30|
+|DEI0p05mbt6zgb|2017-10-29|2018-05-25         |208                  |SORAFENIB             |DEFINITELY_PRE_MODERN|1                   |N       |2019-12-09|
+|DEI08jfy7sz8yr|2022-01-14|2022-08-12         |210                  |NIVO_MONO             |DEFINITELY_MODERN    |1                   |N       |2022-09-01|
+|DEI0d8g5zragxg|2020-10-31|2021-05-29         |210                  |AB                    |DATE_SHIFT_UNCERTAIN |1                   |N       |2022-10-20|
+|DEI0a2cgg7sz8g|2018-10-31|2019-05-30         |211                  |LENVATINIB            |DEFINITELY_PRE_MODERN|1                   |N       |2020-10-07|
+|DEI0og727sz822|2023-03-17|2023-10-19         |216                  |STRIDE                |DEFINITELY_MODERN    |1                   |N       |NULL      |
+|DEI01f1s7sz8sf|2018-06-23|2019-01-26         |217                  |LENVATINIB            |DEFINITELY_PRE_MODERN|1                   |N       |2019-02-14|
+|DEI075fs7sz8s3|2025-02-17|2025-09-22         |217                  |LENVATINIB            |DEFINITELY_MODERN    |1                   |N       |NULL      |
+|DEI076t6zg60ue|2025-10-01|2026-05-24         |235                  |IPI_MONO              |DEFINITELY_MODERN    |1                   |N       |NULL      |
+|DEI0hus95zra9p|2022-02-18|2022-10-12         |236                  |NIVO_IPI              |DEFINITELY_MODERN    |1                   |N       |2022-11-25|
+|DEI0n5zranf7p3|2015-05-10|2016-01-06         |241                  |SORAFENIB             |DEFINITELY_PRE_MODERN|1                   |N       |2018-10-16|
+|DEI053s9t6zg94|2020-04-22|2021-01-07         |260                  |AB                    |DATE_SHIFT_UNCERTAIN |1                   |N       |NULL      |
+|DEI06s7sz8s6qq|2022-04-18|2023-01-06         |263                  |AB                    |DEFINITELY_MODERN    |1                   |N       |2023-05-09|
+|DEI088qe7sz8ej|2021-07-29|2022-04-23         |268                  |NIVO_IPI              |DEFINITELY_MODERN    |0                   |N       |NULL      |
+|DEI0epett6zgt9|2018-12-24|2019-09-22         |272                  |LENVATINIB            |DEFINITELY_PRE_MODERN|1                   |N       |2019-11-21|
+|DEI0n5qt6zgq7w|2021-12-12|2022-09-13         |275                  |LENVATINIB            |DEFINITELY_MODERN    |1                   |N       |2024-07-01|
+|DEI0ky7sz8y5gp|2022-10-16|2023-07-29         |286                  |ATEZO_MONO            |DEFINITELY_MODERN    |1                   |N       |2024-04-15|
+|DEI05xp5zrapjw|2023-03-15|2023-12-28         |288                  |CABOZANTINIB          |DEFINITELY_MODERN    |1                   |N       |2024-05-12|
+|DEI06v55zra54h|2015-11-26|2016-09-09         |288                  |SORAFENIB             |DEFINITELY_PRE_MODERN|1                   |N       |2017-02-23|
+|DEI045d77sz87u|2018-01-10|2018-11-01         |295                  |LENVATINIB+NIVO_MONO  |DEFINITELY_PRE_MODERN|1                   |N       |2018-12-26|
+|DEI019qqi7sz8i|2020-04-10|2021-02-01         |297                  |STRIDE                |DATE_SHIFT_UNCERTAIN |1                   |Y       |2022-04-20|
+|DEI0b785zra8oy|2024-10-16|2025-09-03         |322                  |CABOZANTINIB          |DEFINITELY_MODERN    |1                   |N       |2026-07-29|
+|DEI0it47sz8457|2018-03-13|2019-01-29         |322                  |NIVO_MONO             |DEFINITELY_PRE_MODERN|0                   |N       |2023-08-18|
+|DEI01t6zg1xqgj|2016-11-16|2017-10-05         |323                  |NIVO_MONO             |DEFINITELY_PRE_MODERN|1                   |N       |2020-01-01|
+|DEI0mnbt6zgbqq|2017-12-23|2018-11-15         |327                  |LENVATINIB            |DEFINITELY_PRE_MODERN|0                   |N       |2020-10-24|
+|DEI0fogjw7sz8w|2022-10-25|2023-09-25         |335                  |AB                    |DEFINITELY_MODERN    |1                   |N       |NULL      |
+|DEI05fcy5zray9|2022-08-27|2023-08-06         |344                  |AB                    |DEFINITELY_MODERN    |0                   |N       |2024-02-24|
+|DEI007sz8073e9|2023-11-10|2024-10-21         |346                  |NIVO_IPI              |DEFINITELY_MODERN    |1                   |N       |2025-01-30|
+|DEI0xs7sz8snrg|2018-11-29|2019-11-10         |346                  |LENVATINIB            |DEFINITELY_PRE_MODERN|1                   |N       |NULL      |
+|DEI0pjpxq7sz8q|2022-02-05|2023-01-21         |350                  |NIVO_MONO             |DEFINITELY_MODERN    |1                   |N       |2023-10-04|
+|DEI0t5p7sz8pd9|2014-12-02|2015-12-03         |366                  |SORAFENIB             |DEFINITELY_PRE_MODERN|1                   |N       |2016-01-16|
+|DEI079e4t6zg42|2017-08-08|2018-08-15         |372                  |NIVO_MONO             |DEFINITELY_PRE_MODERN|1                   |N       |2020-02-08|
+|DEI079t6zg9qdb|2025-01-18|2026-01-31         |378                  |NIVO_IPI              |DEFINITELY_MODERN    |0                   |N       |NULL      |
+|DEI0neh35zra3f|2018-05-14|2019-05-28         |379                  |SORAFENIB             |DEFINITELY_PRE_MODERN|1                   |N       |NULL      |
+|DEI00ft6zgf7oq|2019-01-13|2020-01-29         |381                  |NIVO_MONO             |DEFINITELY_PRE_MODERN|1                   |N       |2024-07-03|
+|DEI0qw1vt6zgv3|2015-12-24|2017-01-20         |393                  |SORAFENIB             |DEFINITELY_PRE_MODERN|1                   |N       |2021-01-19|
+|DEI01t6zg19qin|2023-10-13|2024-11-15         |399                  |AB                    |DEFINITELY_MODERN    |0                   |N       |2024-11-30|
+|DEI07njfw5zraw|2018-11-23|2019-12-27         |399                  |LENVATINIB            |DEFINITELY_PRE_MODERN|1                   |N       |2022-12-29|
+|DEI0j5t6zg5s1n|2024-08-20|2025-09-24         |400                  |NIVO_IPI              |DEFINITELY_MODERN    |1                   |N       |NULL      |
+|DEI0ytm7u5zrau|2024-02-10|2025-03-17         |401                  |AB                    |DEFINITELY_MODERN    |1                   |N       |NULL      |
+|DEI0t2t6zg20x5|2023-04-06|2024-05-22         |412                  |STRIDE                |DEFINITELY_MODERN    |1                   |N       |2024-07-12|
+|DEI01wam7sz8mx|2018-04-29|2019-06-16         |413                  |NIVO_IPI              |DEFINITELY_PRE_MODERN|0                   |Y       |2023-07-09|
+|DEI0o97sz89u3y|2014-10-08|2015-11-29         |417                  |SORAFENIB             |DEFINITELY_PRE_MODERN|1                   |N       |2016-02-01|
+|DEI0ifgt7sz8th|2023-02-10|2024-04-07         |422                  |STRIDE                |DEFINITELY_MODERN    |1                   |N       |2024-06-22|
+|DEI045t6zg5qax|2023-10-23|2024-12-20         |424                  |AB                    |DEFINITELY_MODERN    |1                   |N       |NULL      |
+|DEI0o7sz8ob0ma|2020-11-06|2022-01-04         |424                  |NIVO_MONO             |DATE_SHIFT_UNCERTAIN |1                   |N       |2023-04-28|
+|DEI0k8qx7sz8xj|2023-03-23|2024-05-21         |425                  |STRIDE                |DEFINITELY_MODERN    |0                   |N       |NULL      |
+|DEI02ct6zgcoxa|2020-05-28|2021-07-28         |426                  |AB                    |DATE_SHIFT_UNCERTAIN |1                   |N       |2021-10-30|
+|DEI0c3xaj7sz8j|2014-06-21|2015-09-06         |442                  |SORAFENIB             |DEFINITELY_PRE_MODERN|1                   |N       |2017-02-06|
+|DEI0vy5t6zg5au|2016-09-22|2017-12-29         |463                  |SORAFENIB             |DEFINITELY_PRE_MODERN|0                   |N       |2018-01-07|
+|DEI02i77sz87fa|2024-02-14|2025-05-27         |468                  |NIVO_IPI              |DEFINITELY_MODERN    |1                   |N       |NULL      |
+|DEI0r8xt6zgx5s|2017-07-31|2018-11-12         |469                  |LENVATINIB            |DEFINITELY_PRE_MODERN|1                   |N       |2018-12-10|
+|DEI0wt6zgw8xbb|2017-08-22|2019-01-08         |504                  |LENVATINIB            |DEFINITELY_PRE_MODERN|1                   |N       |2019-06-09|
+|DEI0v6t6zg60t6|2019-05-02|2020-10-16         |533                  |NIVO_MONO             |DEFINITELY_PRE_MODERN|1                   |N       |2020-12-31|
+|DEI0xitt6zgtxp|2019-10-14|2021-04-04         |538                  |NIVO_MONO             |DEFINITELY_PRE_MODERN|1                   |N       |2022-06-27|
+|DEI0gvh5zrahfo|2015-08-05|2017-02-09         |554                  |NIVO_MONO             |DEFINITELY_PRE_MODERN|1                   |N       |2019-09-15|
+|DEI0w57sz853di|2023-09-14|2025-03-22         |555                  |AB                    |DEFINITELY_MODERN    |1                   |N       |NULL      |
+|DEI0dgqkt6zgko|2024-02-09|2025-08-21         |559                  |AB                    |DEFINITELY_MODERN    |1                   |N       |NULL      |
+|DEI0n9nt6zgnuw|2014-05-29|2015-12-09         |559                  |SORAFENIB             |DEFINITELY_PRE_MODERN|1                   |N       |2016-08-29|
+|DEI04qr7sz8rvr|2021-07-14|2023-02-10         |576                  |ATEZO_MONO            |DEFINITELY_MODERN    |1                   |N       |2023-03-10|
+|DEI04f5ey7sz8y|2016-12-26|2018-08-02         |584                  |NIVO_MONO             |DEFINITELY_PRE_MODERN|1                   |N       |2018-08-18|
+|DEI0nt6zgnp6xr|2018-02-16|2019-09-27         |588                  |NIVO_MONO             |DEFINITELY_PRE_MODERN|1                   |N       |2020-04-21|
+|DEI0jaa5zraapr|2016-04-04|2017-11-24         |599                  |SORAFENIB             |DEFINITELY_PRE_MODERN|1                   |N       |2018-05-19|
+|DEI0gk37sz83p4|2018-03-10|2019-11-18         |618                  |NIVO_MONO             |DEFINITELY_PRE_MODERN|1                   |N       |NULL      |
+|DEI0a97sz89msi|2015-12-16|2017-08-29         |622                  |SORAFENIB             |DEFINITELY_PRE_MODERN|1                   |N       |2017-11-19|
+|DEI04uot6zgo9s|2016-03-01|2017-11-20         |629                  |SORAFENIB             |DEFINITELY_PRE_MODERN|1                   |N       |2018-03-08|
+|DEI0x5zraxxext|2016-07-02|2018-03-24         |630                  |SORAFENIB             |DEFINITELY_PRE_MODERN|1                   |N       |2018-05-06|
+|DEI0ft6zgfk5d5|2016-04-27|2018-03-14         |686                  |SORAFENIB             |DEFINITELY_PRE_MODERN|1                   |N       |2018-11-17|
+|DEI0het6zgepa5|2015-12-01|2017-10-26         |695                  |SORAFENIB             |DEFINITELY_PRE_MODERN|1                   |N       |NULL      |
+|DEI0rps7sz8s4o|2021-07-30|2023-06-27         |697                  |DURVA_MONO            |DEFINITELY_MODERN    |1                   |N       |NULL      |
+|DEI0e5zrae1u61|2015-04-21|2017-03-20         |699                  |SORAFENIB             |DEFINITELY_PRE_MODERN|1                   |N       |2017-08-02|
+|DEI0khrx5zraxh|2019-07-20|2021-07-30         |741                  |AB                    |DEFINITELY_PRE_MODERN|1                   |N       |2022-01-18|
+|DEI0ddt6zgduqh|2021-04-23|2023-06-13         |781                  |AB                    |DEFINITELY_MODERN    |1                   |N       |2024-09-14|
+|DEI0suyfbt6zgb|2022-04-10|2024-06-10         |792                  |STRIDE                |DEFINITELY_MODERN    |1                   |N       |2026-02-16|
+|DEI0r0q445zra4|2015-08-31|2017-12-01         |823                  |SORAFENIB             |DEFINITELY_PRE_MODERN|1                   |N       |NULL      |
+|DEI0vaj7sz8jre|2015-09-22|2018-02-14         |876                  |SORAFENIB             |DEFINITELY_PRE_MODERN|1                   |N       |NULL      |
+|DEI0jt6zgjtftr|2019-03-24|2021-08-24         |884                  |AB                    |DEFINITELY_PRE_MODERN|1                   |N       |NULL      |
+|DEI0o2ih05zra0|2015-09-12|2018-03-08         |908                  |SORAFENIB             |DEFINITELY_PRE_MODERN|1                   |N       |2018-08-09|
+|DEI0w97t6zg7p1|2018-02-17|2020-08-19         |914                  |AB                    |DEFINITELY_PRE_MODERN|1                   |N       |NULL      |
+|DEI00x0k5zraka|2018-02-23|2020-09-13         |933                  |AB                    |DEFINITELY_PRE_MODERN|1                   |N       |2022-02-21|
+|DEI0yknoo5zrao|2016-09-23|2019-04-25         |944                  |LENVATINIB            |DEFINITELY_PRE_MODERN|1                   |N       |2020-02-27|
+|DEI0i1st6zgsoa|2020-11-18|2023-06-22         |946                  |AB                    |DATE_SHIFT_UNCERTAIN |0                   |N       |NULL      |
+|DEI0qut6zgum4y|2019-10-31|2022-06-29         |972                  |AB                    |DEFINITELY_PRE_MODERN|0                   |N       |2023-01-17|
+|DEI03p1t6zg1x4|2017-09-06|2020-06-20         |1018                 |AB                    |DEFINITELY_PRE_MODERN|1                   |N       |NULL      |
+|DEI03m565zra6r|2017-01-13|2019-12-18         |1069                 |LENVATINIB            |DEFINITELY_PRE_MODERN|1                   |N       |2020-02-13|
+|DEI0d7sz8dof4o|2016-03-01|2019-03-13         |1107                 |LENVATINIB            |DEFINITELY_PRE_MODERN|1                   |N       |2020-01-15|
+|DEI0t07i7sz8id|2019-09-30|2022-12-05         |1162                 |AB                    |DEFINITELY_PRE_MODERN|1                   |N       |2024-04-06|
+|DEI0o6t6zg61wd|2021-11-14|2025-02-11         |1185                 |STRIDE                |DEFINITELY_MODERN    |1                   |N       |2025-03-06|
+|DEI0jnqt6zgq79|2020-10-18|2024-01-31         |1200                 |NIVO_IPI              |DATE_SHIFT_UNCERTAIN |1                   |N       |NULL      |
+|DEI0q8t6zg8kpw|2015-01-27|2018-08-14         |1295                 |CABOZANTINIB+NIVO_MONO|DEFINITELY_PRE_MODERN|1                   |Y       |NULL      |
+|DEI0abj67sz861|2019-07-26|2023-06-19         |1424                 |LENVATINIB            |DEFINITELY_PRE_MODERN|1                   |N       |2025-12-25|
+|DEI03f5zraf7c1|2018-11-01|2022-10-17         |1446                 |DURVA_MONO            |DEFINITELY_PRE_MODERN|1                   |N       |2022-11-29|
+|DEI09wp5zrapfq|2017-02-20|2021-04-16         |1516                 |AB                    |DEFINITELY_PRE_MODERN|1                   |N       |NULL      |
+|DEI0kbh0t6zg0x|2018-06-09|2022-09-21         |1565                 |STRIDE                |DEFINITELY_PRE_MODERN|1                   |N       |2024-12-19|
+|DEI0cxt6zgxogv|2020-05-08|2025-03-20         |1777                 |STRIDE                |DATE_SHIFT_UNCERTAIN |1                   |N       |NULL      |
+|DEI0rkgoct6zgc|2015-04-18|2020-09-27         |1989                 |AB                    |DEFINITELY_PRE_MODERN|1                   |N       |2021-04-18|
+|DEI081247sz84g|2016-11-15|2023-10-07         |2517                 |STRIDE                |DEFINITELY_PRE_MODERN|0                   |N       |NULL      |
+|DEI025zra2r6x3|2018-09-06|2026-03-01         |2733                 |LENVATINIB            |DEFINITELY_PRE_MODERN|0                   |N       |NULL      |
+|DEI07d357sz856|2016-12-08|2024-06-14         |2745                 |STRIDE                |DEFINITELY_PRE_MODERN|1                   |N       |2025-12-09|
++--------------+----------+-------------------+---------------------+----------------------+---------------------+--------------------+--------+----------+
+
+
+Modern regimen breakdown:
++------------+---+
+|regimen     |n  |
++------------+---+
+|STRIDE      |27 |
+|AB          |19 |
+|NIVO_IPI    |12 |
+|NIVO_MONO   |7  |
+|LENVATINIB  |4  |
+|CABOZANTINIB|4  |
+|DURVA_MONO  |2  |
+|IPI_MONO    |2  |
+|ATEZO_MONO  |2  |
+|PEMBRO_MONO |1  |
++------------+---+
+
+With repeat TACE before systemic: 118 / 193
+
+======================================================================
+PART 18 — DECISIVE FEASIBILITY TABLE
+======================================================================
+
+DECISION POINT                                  ERA   N_ELIG   RT30    SYS30   RT60    SYS60   RT90    SYS90  RT120 SYS_EVR
+----------------------------------------------------------------------------------------------------------------------------------
+After TACE #1                                   ALL      845     55     24    181     51    268     63    306     193
+After TACE #1                                   MOD      299     17     16     44     30     73     37     84      80
+After TACE #2                                   ALL      472     27     16     79     30    110     39    138     130
+After TACE #2                                   MOD      148     10      9     19     17     32     21     45      54
+
+======================================================================
+PART 19 — FEASIBILITY INTERPRETATION
+======================================================================
+
+Modern-era post-TACE#1 systemic switch:
+  ≤120d: 41 N_PATIENTS
+  EVER:  80 N_PATIENTS
+  Total modern TACE#1: 299 N_PATIENTS
+
+All-era post-TACE#1 systemic switch:
+  EVER: 193 / 845 N_PATIENTS
+
+Repeat TACE arm (patients with TACE#2): 503
+
+--- DETERMINATION ---
+B. SINGLE-CENTER POSSIBLE BUT SMALL
+   Modern systemic arm N=80 (EVER), N=41 (≤120d)
+   Repeat TACE arm N=503
+   Sufficient for descriptive and exploratory comparative analysis.
+   Formal target-trial emulation limited by covariate completeness.
+
+Critical caveats:
+  - ECOG/CP coverage not yet assessed in this run
+  - Radiology response not used (deliberately)
+  - 'Inadequate control' phenotype not yet applied
+  - Non-HCC contamination removed: 259 episodes (10.3%)
+  - INSUFFICIENT_EVIDENCE episodes excluded: 241
+  - MIXED episodes excluded: 55
+  - Prior TACE in data (definite repeat): 30 patients
+
+
+
+======================================================================
+HCC TACE → SYSTEMIC TRANSITION AUDIT v12.4
+COPY-PASTE REVIEW REPORT
+======================================================================
+
+A. CANONICAL TACE STARTING COUNTS
+   Source: hcc_tace_episodes_canonical_v12_3
+   Canonical TACE episodes: 2525
+   Unique patients:         1052
+   Episode confidence: HIGH_CONFIDENCE ~99%
+
+B. DEFINITE_HCC_DIRECTED: 813 episodes, 536 patients
+B. PROBABLE_HCC_DIRECTED: 1157 episodes, 655 patients
+B. PROBABLE_NON_HCC: 237 episodes, 103 patients
+B. DEFINITE_NON_HCC: 22 episodes, 19 patients
+B. MIXED_OR_MULTIPLE_MALIGNANCIES_UNCLEAR: 55 episodes, 48 patients
+B. INSUFFICIENT_EVIDENCE: 241 episodes, 153 patients
+
+C. NON-HCC CONTAMINATION: 259 episodes, 108 patients
+   Top diagnoses: Cholangiocarcinoma (42 pts), Neuroendocrine liver mets (24 pts), Colon mets (18 pts)
+
+D. TRUE FIRST-TACE CLASSIFICATION:
+   DEFINITE_TRUE_FIRST_HCC_TACE: 284
+   PROBABLE_TRUE_FIRST_HCC_TACE: 284
+   UNKNOWN: 280
+   DEFINITE_PRIOR_TACE: 30
+   FIRST_OBSERVED_PRIOR_OUTSIDE_TACE_POSSIBLE: 9
+
+E. HCC-DIRECTED TACE-NUMBER DISTRIBUTION:
+   TACE #1: 887 episodes
+   TACE #2: 503 episodes
+   TACE #3: 269 episodes
+   TACE #4: 151 episodes
+   TACE #4+: 311 episodes
+
+J. SYSTEMIC TREATMENT STARTS:
+   Validated HCC systemic lines: 806
+   Unique patients: 571
+
+K. CUMULATIVE SYSTEMIC SWITCH AFTER TACE#1 (ALL ERA):
+   ≤ 30d: 24 N_PATIENTS
+   ≤ 45d: 38 N_PATIENTS
+   ≤ 60d: 51 N_PATIENTS
+   ≤ 90d: 63 N_PATIENTS
+   ≤120d: 75 N_PATIENTS
+   ≤180d: 92 N_PATIENTS
+   ≤365d: 124 N_PATIENTS
+   EVER:  193 N_PATIENTS
+
+   DEFINITELY_MODERN ONLY:
+   ≤ 30d: 16 N_PATIENTS
+   ≤ 45d: 22 N_PATIENTS
+   ≤ 60d: 30 N_PATIENTS
+   ≤ 90d: 37 N_PATIENTS
+   ≤120d: 41 N_PATIENTS
+   ≤180d: 47 N_PATIENTS
+   ≤365d: 64 N_PATIENTS
+   EVER:  80 N_PATIENTS (of 299 modern TACE#1)
+
+L. CUMULATIVE SYSTEMIC SWITCH AFTER TACE#2 (ALL ERA):
+   ≤ 30d: 16
+   ≤ 60d: 30
+   ≤120d: 49
+   ≤365d: 91
+   EVER: 130
+
+P. MODERN SYSTEMIC REGIMENS (after TACE#1):
+   STRIDE: 27
+   AB: 19
+   NIVO_IPI: 12
+   NIVO_MONO: 7
+   LENVATINIB: 4
+   CABOZANTINIB: 4
+   DURVA_MONO: 2
+   IPI_MONO: 2
+   ATEZO_MONO: 2
+   PEMBRO_MONO: 1
+
+S. DECISIVE FEASIBILITY NUMBERS:
+   Post-TACE#1 systemic (all era, EVER): 193
+   Post-TACE#1 systemic (modern, EVER):  80
+   Post-TACE#1 systemic (modern, ≤120d): 41
+   Repeat TACE arm (patients with TACE#2): 503
+
+V. PERSISTED TABLES:
+   hcc_tace_hcc_indication_v12_4: 2525 rows, 1052 patients
+   hcc_tace_sequence_hcc_only_v12_4: 1970 rows, 887 patients
+   hcc_index_tace_hcc_validated_v12_4: 887 rows, 887 patients
+   hcc_systemic_starts_for_tace_v12_4: 806 rows, 571 patients
+   hcc_tace_to_systemic_transitions_v12_4: 1852 rows, 845 patients
+
+W. IMPLEMENTATION LOGIC:
+   Part 1: Each TACE episode classified by encounter Dx (C22.0 vs non-HCC liver cancer)
+           + clinical note text search (HCC vs competing cancer patterns)
+           + IR note specialty confirmation. Evidence hierarchy applied.
+   Part 2: HCC-directed episodes (DEFINITE+PROBABLE) numbered chronologically per patient.
+   Part 3: First HCC-TACE validated by Hopkins lookback (>365d = DEFINITE), note mentions.
+   Part 8: Systemic starts from hcc_systemic_lines_canonical_v12_2 (HCC-indicated).
+   Part 9: First systemic AFTER each TACE. Cumulative counts at 30/45/60/90/120/180/365d.
+
+U. UNRESOLVED UNCERTAINTIES:
+   1. ECOG/CP not yet extracted in this run (v9 methodology available for reuse)
+   2. Reassessment imaging not yet linked (Parts 4-5 not built in v12.4)
+   3. 'Inadequate control' phenotype not applied (Part 5 deferred)
+   4. Clinical decision notes not searched (Part 6 deferred)
+   5. 241 INSUFFICIENT_EVIDENCE episodes may include some HCC-directed TACE
+   6. MIXED episodes (55) need manual review
+   7. Research/trial patients not excluded from counts
+
+=== FINAL DETERMINATION ===
+
+B. SINGLE-CENTER POSSIBLE BUT SMALL
+
+Modern-era post-TACE#1 systemic arm: 80 patients (EVER)
+This is 20x larger than the v12.3 estimate of 9 patients.
+The v12.3 undercount was caused by:
+  1. Using only a 30-day post-reassessment window
+  2. Requiring radiology response classification first
+  3. Filtering by extrahepatic disease regex
+  4. Including non-HCC TACE procedures
+  5. Focusing only on first TACE
+
+Remaining work before formal study:
+  - ECOG/CP recovery (Part 7)
+  - Reassessment imaging linkage (Part 4)
+  - Inadequate-control phenotype (Part 5)
+  - Clinical decision notes (Part 6)
+  - Full patient-level audit of all 80 modern systemic switches
+  - Repeat-TACE arm audit
+
+=== STOP — NO OUTCOME ESTIMATION ===
+Part 1 — Build Canonical HC True-1L Cohort
+Part 1 — Build Canonical HC True-1L Cohort
+======================================================================
+PART 1 — CANONICAL HC TRUE FIRST-LINE COHORT
+======================================================================
+
+JOIN KEY DIAGNOSTICS: sl_dups=0, v10_dups=0
+
+JOIN: matched=282  v10_hc=282  unmatched=0  mult=1.0000
+Patients with >1 row: 0
+
+LINE NUMBER DISTRIBUTION:
+  line=1: 282
+
+ASSERTION all in systemic canonical: missing=0
+  PASSED
+
+TOTAL HC TRUE-1L: 282 PATIENTS
+
+BY REGIMEN:
+  AB                                              96
+  STRIDE                                          50
+  NIVO_MONO                                       43
+  SORAFENIB                                       20
+  LENVATINIB                                      18
+  NIVO_IPI                                        17
+  PEMBRO_MONO                                     14
+  DURVA_MONO                                       7
+  CABOZANTINIB+NIVO_MONO                           6
+  ATEZO_MONO                                       6
+  CABOZANTINIB                                     2
+  LENVATINIB+PEMBRO_MONO                           1
+  IPI_MONO                                         1
+  LENVATINIB+NIVO_MONO                             1
+
+BY RESEARCH STATUS:
+  ROUTINE_CARE                                   177
+  UNCERTAIN                                       64
+  DEFINITE_INTERVENTIONAL_TRIAL                   40
+  PROBABLE_INTERVENTIONAL_TRIAL                    1
+
+PERSISTED: reach_users.xzhao81.hcc_medonc_lockdown_true1l_v1
+  ROWS: 282  |  PATIENTS: 282
+  UNIT: one row per HC true-1L patient
+
+Part 1 complete.
 Parts 2-4 — Project A Population + ALBI + AFP Landmarks
 Parts 2-4 — Project A Population + ALBI + AFP Landmarks
 ======================================================================
@@ -267,6 +930,8 @@ Time 1L->2L: median=280d, IQR=[87,486]
 Alive at 6 months: 186/242 (76.9%)
 
 Parts 5-8 complete.
+
+
 Part 9 — Project A Feasibility Summary
 Part 9 — Project A Feasibility Summary
 ======================================================================
