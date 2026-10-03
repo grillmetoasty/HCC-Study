@@ -1,1336 +1,223 @@
-Follow every mandatory requirement in `skills.md`.
-
-This is NOT another broad opportunity atlas.
-
-This is a FINAL PROJECT-LOCKDOWN ANALYSIS for three specific medical-oncology HCC projects that the investigators are considering discussing with Mari Nakazawa and Mark Yarchoan.
-
-The purpose is to answer:
-
-1. Is each project actually feasible in REACH?
-2. What is the exact usable cohort?
-3. Are the key phenotypes valid?
-4. How many meaningful outcome events exist?
-5. What manual review would be required?
-6. Which assumptions remain unresolved?
-
-DO NOT rank projects.
-DO NOT estimate causal treatment effects.
-DO NOT perform survival modeling yet.
-DO NOT reuse stale summary counts without regenerating them from current canonical patient IDs.
-DO NOT silently use older v9/v10/v12/v12.1 phenotypes when this prompt asks you to rebuild them.
-
-The three candidate projects are:
-
-PROJECT A:
-EARLY TUMOR-BIOLOGY × HEPATIC-RESERVE DYNAMICS AND PRESERVATION OF SUBSEQUENT THERAPEUTIC OPPORTUNITY
-
-PROJECT B:
-REAL-WORLD CLINICAL DETERMINANTS OF ATEZOLIZUMAB/BEVACIZUMAB VS STRIDE SELECTION
-
-PROJECT C:
-CAUSE-SPECIFIC FIRST-LINE ICI DISCONTINUATION AND SUBSEQUENT TREATMENT ACCESS
-
-The key principle:
-
-**Generate the cohort first. Validate the phenotype second. Only then print feasibility.**
-
 # ============================================================
-# PART 0 — CANONICAL SOURCE DECLARATION
+# CRITICAL: THIS IS A SEPARATE PROJECT FROM THE TACE PROJECT
 # ============================================================
 
-Use these tables as the starting source hierarchy.
+This medical-oncology analysis is a COMPLETELY SEPARATE research workstream from the ongoing post-TACE / treatment-stage-migration project.
 
-### MASTER / HCC
-`reach_users.xzhao81.hcc_master_patient_roster_v12_1`
+DO NOT continue this work inside the TACE notebook.
 
-Relevant columns:
-- pat
-- broad_hcc
-- high_confidence_hcc
-- first_hcc_date
-- canonical_death_date
-- last_contact
-- systemic_raw_signal
-- systemic_validated
-- true_1l_hc
-- decompensation_flag
+DO NOT append cells to the TACE notebook.
 
-IMPORTANT:
-The master roster systemic_validated count is known to differ slightly from the canonical systemic table.
+DO NOT modify, overwrite, rename, delete, or repurpose any TACE-project notebook cells, temporary views, dataframes, persisted tables, outputs, or project-specific variables.
 
-Therefore:
+Create a NEW Databricks notebook dedicated exclusively to this medical-oncology project.
 
-DO NOT use the roster's systemic_validated flag as the canonical systemic denominator.
+Suggested notebook name:
 
-### CANONICAL SYSTEMIC PATIENTS
-`reach_users.xzhao81.hcc_systemic_patients_canonical_v12_2`
+`HCC_MEDONC_PROJECT_LOCKDOWN_v1`
 
-Expected unit:
-one row per validated systemic-treated HCC patient.
+If a folder structure is available, place it in a separate med-oncology workspace/folder, for example:
 
-Expected approximate N:
-571.
+`HCC_REACH/MedOnc/`
 
-Columns:
-- pat
-- provenance
+and keep the TACE work under its existing separate project location.
 
-### CANONICAL SYSTEMIC LINES
-`reach_users.xzhao81.hcc_systemic_lines_canonical_v12_2`
+The conceptual project structure should be:
 
-Use for:
-- regimen
-- line
-- start
-- end
-- comps
-- srcs
-- exposure_confidence
-- hcc_indication
-- n_orders
-- max_refills
-- line_note
-- dur_days
-- provenance
+HCC REACH
+├── TACE project
+│   ├── TACE forensic/canonical rebuild
+│   ├── post-TACE decision-node work
+│   └── future target-trial analysis
+│
+└── MEDICAL ONCOLOGY project
+    ├── med-onc opportunity atlas
+    ├── project lockdown
+    ├── Project A: dynamic tumor/liver opportunity
+    ├── Project B: AB vs STRIDE selection
+    └── Project C: 1L failure / subsequent treatment access
 
-Relevant columns explicitly:
-- pat
-- regimen
-- comps
-- start
-- end
-- exposure_confidence
-- line
-- line_label
-- hcc_indication
-- srcs
-- beacon_hcc
-- beacon_plan
-
-### TRUE FIRST-LINE VALIDATION
-`reach_users.xzhao81.hcc_true_firstline_validation_v10`
-
-Use ONLY for the true-first-line evidence fields that are not currently stored in v12_2.
-
-Relevant columns:
-- pat
-- regimen
-- start
-- line
-- true_1l_high_confidence_flag
-- true_1l_probable_flag
-- prior_systemic_outside_reach_possible_flag
-- note_firstline
-- note_priorsys
-- note_trial
-- note_outside_care
-- lookback_days
-- adequate_lookback_180d
-- adequate_lookback_365d
-- beacon_initial_plan
-- positive_1l_confirmation
-- era_atezo_bev
-- era_stride
-- era_nivo_ipi
-
-IMPORTANT:
-Join v10 to the canonical v12_2 lines using:
-
-PRIMARY:
-pat + line + regimen + start
-
-If timestamp/date type differs:
-cast to DATE on both sides and join:
-pat + line + regimen + DATE(start)
-
-Before proceeding print:
-- duplicate key count in each table
-- matched rows
-- unmatched rows
-- join multiplicity.
-
-If join multiplicity >1.01:
-STOP and debug.
-
-### RESEARCH STATUS
-`reach_users.xzhao81.hcc_research_status_v12_1`
-
-Relevant columns:
-- pat
-- regimen
-- research_status_final
-- research
-- note_trial
-- beacon_research_overlap
-- research_protocol_flag
-- research_suspected_flag
-
-Use `research_status_final` as the ONLY canonical trial/routine-care variable.
-
-### AFP
-`reach_users.xzhao81.hcc_tumor_biomarkers_v12`
-
-Relevant columns:
-- pat
-- lab_date
-- afp_value
-- component_base_name
-- reference_unit
-
-This table is already the corrected strict AFP phenotype.
-
-DO NOT independently query only `AFPTM`.
-
-### DECOMPENSATION
-`reach_users.xzhao81.hcc_decompensation_validated_v12`
-
-Columns:
-- pat
-- event_date
-- decomp_type
-
-Known event types include:
-- ASCITES_DX
-- PARACENTESIS
-- ENCEPHALOPATHY_DX
-- VARICEAL_BLEED
-- SBP
-- HEPATORENAL
-
-### DEATH
-Use:
-`canonical_death_date`
-from the master roster.
-
-### IV MEDICATION ADMINISTRATIONS
-Use raw `med_admin` plus the persisted component-level table if helpful:
-
-`reach_users.xzhao81.hcc_systemic_drug_exposure_medonc_atlas_v1`
-
-But confirm the persisted table against raw MAR for:
-- atezolizumab
-- bevacizumab
-- durvalumab
-- tremelimumab
-- nivolumab
-- ipilimumab
-- pembrolizumab
-
-MAR ACTIONS:
-- `New Bag`
-- `Given`
-- `Restarted`
-
-Prior work showed `New Bag` is essential.
-
-### ALBI
-DO NOT use:
-`hcc_dynamic_systemic_albi_v10`
-as the final analysis phenotype.
-
-It used observed line-1 patients and non-fixed "worst on treatment" summaries.
-
-Recalculate ALBI from raw liver labs for the exact cohort and exact landmark windows defined below.
-
-ALBI formula:
-
-bilirubin_umol_L = bilirubin_mg_dL × 17.104
-albumin_g_L = albumin_g_dL × 10
-
-ALBI =
-0.66 × log10(bilirubin_umol_L)
-− 0.085 × albumin_g_L
-
-mALBI:
-Grade 1: <= -2.60
-Grade 2a: > -2.60 and <= -2.27
-Grade 2b: > -2.27 and <= -1.39
-Grade 3: > -1.39
-
-Remove sentinel/invalid lab values.
-
-### CHILD-PUGH
-Do NOT use `hcc_child_pugh_v12_2` reconstructed class as a primary covariate.
-
-The diagnosis-absence logic is insufficient.
-
-If explicit clinician-documented CP from:
-`hcc_child_pugh_validated_v12`
-is available, print it separately.
-
-Never substitute ALBI for CP.
-
-### FIRST-LINE FAILURE STATES
-DO NOT use `hcc_post_1l_states_v12_1` as ground truth.
-
-It may infer progression from second-line initiation.
-
-It may be used only as a comparison table after rebuilding the phenotype below.
+These two workstreams may READ the same validated upstream HCC source tables, but their downstream derived tables, notebooks, variables, and analyses must remain separate.
 
 # ============================================================
-# PART 1 — BUILD ONE CANONICAL HIGH-CONFIDENCE TRUE-1L COHORT
+# ALLOWED SHARED UPSTREAM TABLES
 # ============================================================
 
-Start from canonical systemic lines.
+The med-oncology notebook MAY READ validated upstream/canonical tables created during prior HCC data-quality work, including where appropriate:
 
-Join true-first-line evidence.
+- `reach_users.xzhao81.hcc_master_patient_roster_v12_1`
+- `reach_users.xzhao81.hcc_systemic_patients_canonical_v12_2`
+- `reach_users.xzhao81.hcc_systemic_lines_canonical_v12_2`
+- `reach_users.xzhao81.hcc_true_firstline_validation_v10`
+- `reach_users.xzhao81.hcc_research_status_v12_1`
+- `reach_users.xzhao81.hcc_tumor_biomarkers_v12`
+- `reach_users.xzhao81.hcc_decompensation_validated_v12`
+- `reach_users.xzhao81.hcc_inpatient_admissions_v12_2`
+- other validated general-purpose HCC source tables explicitly named in the task.
 
-Select:
+These are upstream DATA ASSETS, not permission to continue the TACE analysis.
 
-`true_1l_high_confidence_flag = 1`
+When using any table that was originally created during TACE-project development, explicitly state:
 
-and only one true-1L row per patient.
+`SHARED UPSTREAM TABLE — READ ONLY FOR MED-ONC PROJECT`
 
-Expected approximate N:
-282.
-
-Required assertions:
-
-1. every selected patient exists in
-`hcc_systemic_patients_canonical_v12_2`
-
-2. exactly one selected 1L regimen per patient
-
-3. line should generally equal 1, but DO NOT force line=1 if a validated true-first-line classification uses another stored line number; instead print discrepancies.
-
-Print:
-
-TOTAL HC TRUE 1L N
-
-by regimen:
-- AB
-- STRIDE
-- NIVO_IPI
-- NIVO_MONO
-- PEMBRO_MONO
-- DURVA_MONO
-- ATEZO_MONO
-- LENVATINIB
-- SORAFENIB
-- CABOZANTINIB
-- other
-
-Also join:
-`research_status_final`
-
-Print:
-- ROUTINE_CARE
-- DEFINITE_INTERVENTIONAL_TRIAL
-- PROBABLE_INTERVENTIONAL_TRIAL
-- UNCERTAIN
-
-Persist:
-`hcc_medonc_lockdown_true1l_v1`
+and document exactly which fields are being reused.
 
 # ============================================================
-# PROJECT A
-# EARLY TUMOR × LIVER DYNAMICS → THERAPEUTIC OPPORTUNITY
+# PROHIBITED CROSS-PROJECT DEPENDENCIES
 # ============================================================
 
-# ============================================================
-# PART 2 — DEFINE THE PROJECT A TARGET POPULATION
-# ============================================================
+Do NOT use a TACE-specific downstream dataframe/table simply because it already exists.
 
-Primary Project A population:
+In particular, the med-oncology project should NOT depend on:
 
-HC true-1L patients receiving an ICI-containing first-line regimen.
+- post-TACE decision-node cohorts
+- TACE equipoise cohorts
+- post-TACE radiology abstraction
+- technical TACE-suitability classifications
+- TACE target-trial dataframes
+- TACE-specific temporary views
+- TACE-specific propensity models
+- TACE-specific treatment-strategy variables
 
-Define ICI-containing regimens explicitly:
+unless a future prompt explicitly instructs otherwise.
 
-- AB
-- STRIDE
-- NIVO_IPI
-- NIVO_MONO
-- PEMBRO_MONO
-- DURVA_MONO
-- ATEZO_MONO
-- CABOZANTINIB+NIVO_MONO
-- LENVATINIB+PEMBRO_MONO
-- LENVATINIB+NIVO_MONO
-- other only if clearly ICI-containing
+Do NOT source a med-oncology variable indirectly from a TACE dataframe if the same variable can be generated from the canonical/raw source.
 
-Print exact inclusion list.
+Example:
 
-DO NOT include pure oral TKI monotherapy in the primary cohort.
+BAD:
+`medonc_df = tace_analysis_df.select("pat","AFP","ALBI",...)`
 
-Construct sensitivity cohorts:
-
-A1:
-all HC true-1L ICI
-
-A2:
-routine-care HC true-1L ICI only
-
-A3:
-modern-era HC true-1L ICI
-
-A4:
-modern-era routine-care HC true-1L ICI
-
-Print N and regimen distribution for each.
-
-Do not choose one yet.
+GOOD:
+construct AFP and ALBI directly from the canonical AFP/lab sources for the med-oncology cohort.
 
 # ============================================================
-# PART 3 — EXACT FIXED-LANDMARK ALBI
+# MED-ONC TABLE NAMESPACE
 # ============================================================
 
-For every Project A patient calculate:
-
-### BASELINE ALBI
-Preferred window:
-day -14 through day 0 relative to 1L start.
-
-Fallback sensitivity:
-day -30 through day 0.
-
-Never use labs after systemic start for baseline.
-
-For each patient:
-- find albumin closest to start
-- find bilirubin closest to start
-- require both within the selected baseline window
-- ideally same day
-- if different days, print date separation
-
-Define:
-`baseline_pair_gap_days`
-
-Primary paired-lab rule:
-albumin and bilirubin no more than 3 days apart.
-
-Sensitivity:
-7 days apart.
-
-### WEEK-6 ALBI
-Target day:
-42.
-
-Primary window:
-day 28 through day 56.
-
-Choose albumin/bilirubin pair closest to day 42.
-
-Require:
-- both labs inside window
-- pair dates <=3 days apart
-
-### WEEK-12 ALBI
-Target day:
-84.
-
-Window:
-day 70 through day 98.
-
-Same pairing logic.
-
-Derive:
-- albi_baseline
-- albi_week6
-- delta_albi_week6
-- malbi_baseline
-- malbi_week6
-- malbi_grade_change_week6
-- week12 analogues
-
-PRINT THE EXACT PYSPARK/SQL WINDOW LOGIC.
-
-Print:
-- N baseline
-- N week6
-- N paired baseline+week6
-- N week12
-- N paired baseline+week12
-
-by regimen.
-
-Print distribution of:
-- days from target landmark to selected labs
-- albumin/bilirubin date gap
-
-Any use of `albi_worst`, `albi_last`, or old v10 dynamic-ALBI summaries is prohibited for the primary phenotype.
-
-Persist:
-`hcc_medonc_lockdown_albi_landmarks_v1`
-
-# ============================================================
-# PART 4 — EXACT FIXED-LANDMARK AFP
-# ============================================================
+Every NEW persisted table generated by this work must have a clearly med-oncology-specific prefix.
 
 Use:
-`hcc_tumor_biomarkers_v12`
 
-### BASELINE AFP
-Primary:
--30 through day 0.
+`hcc_medonc_...`
 
-Sensitivity:
--14 through day 0.
+or for a specific project:
 
-Choose nearest PRE-TREATMENT AFP.
+`hcc_medonc_projectA_...`
+`hcc_medonc_projectB_...`
+`hcc_medonc_projectC_...`
 
-Never use post-treatment AFP as baseline.
+Examples:
 
-### WEEK 6
-days 28 through 56.
+- `hcc_medonc_lockdown_true1l_v1`
+- `hcc_medonc_lockdown_albi_landmarks_v1`
+- `hcc_medonc_lockdown_afp_landmarks_v1`
+- `hcc_medonc_projectA_week6_landmark_v1`
+- `hcc_medonc_projectB_ab_stride_selection_v1`
+- `hcc_medonc_projectC_failure_causes_v1`
 
-Choose AFP closest to day 42.
+Do NOT create new tables named generically:
 
-### WEEK 12
-days 70 through 98.
+- `hcc_analysis`
+- `hcc_final`
+- `hcc_cohort`
+- `hcc_v13`
 
-Choose AFP closest to day 84.
-
-Derive:
-
-- afp_baseline
-- afp_week6
-- afp_week12
-- delta_log_afp_week6
-- delta_log_afp_week12
-- pct_change_afp_week6
-- pct_change_afp_week12
-
-AFP informative status:
-
-Print separate analyses for baseline thresholds:
-- >10 ng/mL
-- >20 ng/mL
-- >100 ng/mL
-- >=400 ng/mL
-
-DO NOT choose the threshold based on outcomes.
-
-For percent change:
-do not treat patients with very low baseline AFP as meaningful percentage responders.
-
-Print for each threshold:
-- eligible N
-- week6 paired N
-- week12 paired N
-
-Print week6 categories descriptively:
-- >=50% decrease
-- 20–49% decrease
-- <20% change
-- increase
-
-Persist:
-`hcc_medonc_lockdown_afp_landmarks_v1`
+Do NOT overwrite any existing `hcc_tace_*`, `post_tace_*`, or equivalent TACE-project table.
 
 # ============================================================
-# PART 5 — WEEK-6 LANDMARK ELIGIBILITY
+# MED-ONC DATAFRAME / TEMP-VIEW NAMESPACE
 # ============================================================
 
-This is essential to avoid immortal-time bias.
-
-At day 42, define eligibility using ONLY information available through day 42.
-
-Patient must:
-- be alive at day 42
-- have been observed in REACH through day 42
-- not have started definite 2L before day 42
-
-DO NOT require:
-- future treatment
-- future AFP
-- future ALBI
-- survival beyond day 42.
-
-Treatment interruption does NOT automatically exclude the patient.
-
-Print:
-
-HC ICI TRUE1L
-→ alive day42
-→ observed day42
-→ no 2L before day42
-→ baseline ALBI
-→ week6 ALBI
-→ baseline AFP
-→ week6 AFP
-→ both dynamic biomarkers available
-
-with exact N at each step.
-
-This exact final N is the primary feasibility denominator for Project A.
-
-Persist:
-`hcc_medonc_projectA_week6_landmark_v1`
-
-# ============================================================
-# PART 6 — DEFINE EARLY TUMOR × LIVER VARIABLES
-# ============================================================
-
-Do not optimize categories to outcomes.
-
-Primary variables should remain CONTINUOUS:
-
-- delta_log_afp_week6
-- delta_albi_week6
-
-Also create descriptive categories.
-
-Tumor:
-
-AFP_FAVORABLE_50 =
->=50% AFP decline if baseline AFP >20
-
-AFP_FAVORABLE_20 =
->=20% decline if baseline AFP >20
-
-AFP_UNINFORMATIVE =
-baseline AFP <=20
-
-Liver:
-
-Use multiple PRESPECIFIED descriptive definitions:
-
-L1:
-delta ALBI <=0 vs >0
-
-L2:
-delta ALBI <0.25 vs >=0.25
-
-L3:
-mALBI grade worsened yes/no
-
-DO NOT select the best definition using outcomes.
-
-Print 2×2 counts for every prespecified combination.
-
-Do not call this a validated biomarker.
-
-# ============================================================
-# PART 7 — INCIDENT DECOMPENSATION AFTER LANDMARK
-# ============================================================
-
-Using:
-`hcc_decompensation_validated_v12`
-
-First identify PREVALENT decompensation before day42.
-
-For each type separately:
-- ascites
-- paracentesis
-- encephalopathy
-- variceal bleed
-- SBP
-- hepatorenal syndrome
-
-Incident post-landmark event requires NO previous same event type before day42.
-
-Create:
-- first_incident_decomp_after_d42
-- decomp_type
-- days_from_landmark
-
-Do NOT treat an old history of ascites as new ascites.
-
-Print exact counts.
-
-# ============================================================
-# PART 8 — DEFINE "SUBSEQUENT THERAPEUTIC OPPORTUNITY"
-# ============================================================
-
-Do NOT create one outcome yet.
-
-Build component outcomes.
-
-### A. ACTUAL 2L RECEIPT
-From canonical systemic lines:
-
-- first systemic line after HC true 1L
-- start date > day42
-- regimen
-- days from day42
-
-Print:
-N who receive any subsequent systemic therapy.
-
-### B. ALIVE WITHOUT 2L
-Print separately.
-
-### C. DEATH WITHOUT 2L
-Print:
-- within 30d after landmark
-- 60d
-- 90d
-- 180d
-- ever during follow-up
-
-### D. INCIDENT DECOMPENSATION BEFORE 2L
-Print:
-N and event type.
-
-### E. HOSPICE BEFORE 2L
-Use only if hospice date source is validated.
-
-### F. DOCUMENTED CLINICAL REASON NO 2L
-Do NOT infer this yet.
-This will be addressed in Project C.
-
-Define two candidate outcomes for future discussion only:
-
-OUTCOME 1:
-receipt of subsequent systemic therapy
-
-OUTCOME 2:
-composite loss of therapeutic opportunity =
-death OR hospice OR new major hepatic decompensation before any subsequent systemic therapy
-
-DO NOT analyze association yet.
-
-Print event counts and competing-event chronology.
-
-# ============================================================
-# PART 9 — PROJECT A FEASIBILITY
-# ============================================================
-
-Print:
-
-A1 all HC true1L ICI:
-N week6 landmark
-N paired AFP
-N paired ALBI
-N paired both
-N subsequent systemic
-N deaths
-N decomp before next systemic
-N hospice before next systemic
-
-Repeat for:
-A2 routine-care
-A3 modern
-A4 modern routine-care
-
-Also print:
-median follow-up from week6 landmark.
-
-Print counts by first-line regimen.
-
-Feasibility flags:
-
-If paired-biomarker N <80:
-`PROJECT A SAMPLE SIZE CONCERN`
-
-If subsequent-therapy events <25:
-`PROJECT A EVENT COUNT CONCERN`
-
-If >30% of landmark cohort missing paired AFP:
-`PROJECT A AFP SELECTION CONCERN`
-
-No project ranking.
-
-# ============================================================
-# PROJECT B
-# AB VS STRIDE TREATMENT-SELECTION MECHANISMS
-# ============================================================
-
-# ============================================================
-# PART 10 — BUILD EXACT PROJECT B COHORT
-# ============================================================
-
-Primary cohort:
-
-HC true-1L
-AND
-research_status_final = ROUTINE_CARE
-AND
-regimen in {AB, STRIDE}
-
-For calendar robustness:
-
-Create:
-B1 all routine-care HC AB/STRIDE
-B2 robust era where BOTH regimens were clinically available
-
-Because dates are shifted ±6 months:
-
-For STRIDE approval boundary, define:
-- definitely unavailable
-- uncertain ±6 months
-- definitely available
-
-Use a documented approval anchor in code comments but do not assume exact observed date is unshifted.
-
-Print exact B1/B2 Ns.
-
-Expected broad approximate counts:
-AB ~71 routine care
-STRIDE ~37 routine care.
-
-Expected modern subset previously:
-AB ~58
-STRIDE ~37.
-
-RECOMPUTE.
-
-Persist:
-`hcc_medonc_projectB_ab_stride_selection_v1`
-
-# ============================================================
-# PART 11 — SELECTION VARIABLE INVENTORY
-# ============================================================
-
-For EACH candidate variable print:
-
-SOURCE TABLE
-FIELD
-TIME WINDOW
-PATIENT COVERAGE
-AB COUNT
-STRIDE COUNT
-MISSINGNESS
-EXACT LOGIC
-
-Variables:
-
-### LIVER RESERVE
-- baseline ALBI
-- mALBI
-- explicit clinician-documented CP if available
-
-Do NOT use reconstructed CP as primary.
-
-### PORTAL HYPERTENSION / BLEEDING
-- prior variceal bleed
-- prior GI bleed
-- ascites
-- paracentesis
-- encephalopathy
-- known varices
-- EGD before treatment
-- variceal banding
-- nonselective beta-blocker use if reliable
-- platelet count
-
-### BEVACIZUMAB-SPECIFIC CONTRAINDICATION SIGNALS
-- proteinuria
-- urine protein/creatinine if available
-- CKD/eGFR
-- uncontrolled hypertension if BP is reliably available
-- recent major surgery/procedure
-- arterial/venous thrombosis
-- anticoagulation
-- antiplatelet use
-
-### ICI-SPECIFIC SIGNALS
-- autoimmune disease
-- chronic immunosuppression
-- prior solid organ transplant
-
-### GENERAL
-- age
-- sex
-- AFP
-- treatment year/era
-- prior LRT
-- baseline hospitalization burden
-- ECOG if note-derived structured extraction is actually available
-
-DO NOT include the current `race_ethnicity` variable until it is repaired.
-
-Do NOT use the atlas's Hispanic field.
-
-# ============================================================
-# PART 12 — REPAIR DEMOGRAPHICS BEFORE ANY USE
-# ============================================================
-
-Investigate:
-`race_ethnicity`
-`first_race`
-`ethnic_group`
-
-The atlas claimed 471/571 systemic patients were Hispanic.
-
-Treat this as a likely mapping bug.
-
-Print raw value distributions for:
-- first_race
-- ethnic_group
-- race_ethnicity
-
-for:
-- all 3,999 HCC
-- 571 systemic
-- 282 HC true1L
-
-Print the code that originally created `race_ethnicity` if recoverable.
-
-Do not use demographics other than age/sex in Project B unless this is reconciled.
-
-# ============================================================
-# PART 13 — AB VS STRIDE CHANNELING DIAGNOSTICS
-# ============================================================
-
-No outcome comparison.
-
-For B2:
-
-Print each covariate by arm:
-- mean/SD or median/IQR
-- missing N
-- standardized mean difference
-
-Use a parsimonious treatment-selection model only if supported.
-
-Because N is small:
+Within the notebook, name major dataframes so their project provenance is obvious.
 
 Prefer:
-- Firth logistic regression
-OR
-- penalized logistic regression
 
-over ordinary maximum-likelihood logistic regression if separation exists.
+`medonc_true1l`
+`medonc_projectA_landmark`
+`medonc_projectB_selection`
+`medonc_projectC_stops`
 
-Outcome:
-STRIDE vs AB selection.
+rather than:
 
-Candidate model should NOT exceed reasonable degrees of freedom.
+`df`
+`final_df`
+`cohort`
+`analysis`
 
-Print:
-- univariable estimates
-- penalized multivariable estimates
-- confidence intervals
-- model convergence
-- apparent discrimination
-- calibration caution
+Temporary SQL views should similarly begin:
 
-The goal is not prediction performance.
+`tmp_medonc_...`
 
-The goal is identifying strong channeling variables.
+At the beginning of the notebook, DROP/avoid any stale temporary med-oncology views from a previous execution if necessary.
 
-Print:
-- propensity distributions
-- common support
-- patients outside support
+Do NOT rely on Python/Spark variables inherited from another notebook/session.
 
-Do NOT estimate AB-vs-STRIDE survival.
+Every required dataframe must be created explicitly in this notebook from a named persisted/raw source.
 
 # ============================================================
-# PART 14 — NOTE REVIEW TARGET FOR PROJECT B
+# NOTEBOOK REPRODUCIBILITY
 # ============================================================
 
-Identify patients where structured data cannot explain treatment choice.
+The new med-oncology notebook must run independently from top to bottom.
 
-For every B2 patient create:
+It must NOT require:
 
-STRUCTURED_SELECTION_SIGNAL:
+- running the TACE notebook first
+- manually copying a dataframe from the TACE notebook
+- relying on an in-memory object created elsewhere
+- relying on a temporary view created by another notebook.
 
-- BEV_AVOIDANCE_SIGNAL
-- DUAL_ICI_AVOIDANCE_SIGNAL
-- BOTH_PLAUSIBLE
-- UNCLEAR
-
-Rules must be printed.
-
-Then select:
-
-ALL UNCLEAR patients
-PLUS
-20 random structured-signal patients
-
-for note review.
-
-Print for each:
-- pat
-- regimen
-- start
-- baseline ALBI
-- AFP
-- varices/bleeding
-- anticoagulation
-- autoimmune disease
-- renal function
-- recent procedure
-- structured signal
-
-Then retrieve oncology note snippets near treatment decision if accessible.
-
-Search phrases:
-- "atezolizumab"
-- "bevacizumab"
-- "durvalumab"
-- "tremelimumab"
-- "STRIDE"
-- "varices"
-- "bleeding"
-- "anticoag"
-- "proteinuria"
-- "hypertension"
-- "autoimmune"
-- "discussed"
-- "preferred"
-- "contraindication"
-
-Print evidence snippets.
-
-Label:
-MODEL-ASSISTED — HUMAN CONFIRMATION REQUIRED.
-
-# ============================================================
-# PROJECT C
-# WHY DOES FIRST-LINE ICI END?
-# ============================================================
-
-# ============================================================
-# PART 15 — PROJECT C COHORT
-# ============================================================
-
-Use the same canonical HC true-1L ICI population as Project A.
-
-Build:
-C1 all HC true1L ICI
-C2 routine-care HC true1L ICI
-C3 modern routine-care HC true1L ICI
-
-Print N.
-
-# ============================================================
-# PART 16 — IDENTIFY THE TRUE 1L STOP DATE
-# ============================================================
-
-Do NOT blindly use the canonical `end` field.
-
-For each regimen build clinical stop logic.
-
-### AB
-Line may continue if:
-- bevacizumab stopped
-- atezolizumab continues
-
-Therefore:
-AB line stops only when the active systemic strategy ends/switches.
-
-### STRIDE
-Tremelimumab is one dose.
-Durvalumab maintenance is continuation of the same line.
-
-Do NOT call STRIDE stopped after tremelimumab disappears.
-
-### NIVO_IPI
-Nivolumab maintenance after induction remains same line.
-
-### MONO ICI
-Use actual administration sequence.
-
-Build:
-
-- last confirmed administration
-- next systemic regimen start
-- explicit plan discontinuation if available
-- death
-- last follow-up
-
-Create:
-`stop_date_confidence`
-HIGH / PROBABLE / UNCERTAIN
-
-Print 20 timelines per major regimen:
-AB
-STRIDE
-NIVO_IPI
-NIVO_MONO
-
-# ============================================================
-# PART 17 — CAUSE OF 1L CESSATION
-# ============================================================
-
-Do NOT infer progression from starting 2L.
-
-For every patient whose first-line therapy ended, search the following evidence hierarchy:
-
-1. Beacon/treatment-plan discontinuation reason
-2. oncology note near treatment stop
-3. explicit radiology progression text
-4. decompensation event chronology
-5. toxicity event chronology
-6. hospice/death chronology
-
-Classify ONLY when supported.
-
-Final mutually exclusive categories:
-
-A. DOCUMENTED_TUMOR_PROGRESSION
-B. HEPATIC_DECOMPENSATION
-C. TREATMENT_TOXICITY
-D. BLEEDING_OR_VEGF_COMPLICATION
-E. OTHER_COMORBIDITY
-F. RESPONSE_OR_PLANNED_STRATEGY_CHANGE
-G. PATIENT_PREFERENCE
-H. TRANSFER_OR_OUTSIDE_CARE
-I. DEATH_DURING_ACTIVE_1L
-J. ONGOING_1L_AT_CENSOR
-K. UNKNOWN
-
-For every classified patient preserve:
-
-- evidence_source
-- evidence_date
-- evidence_text
-- classification_confidence
-
-Do NOT use:
-"2L started therefore progression"
-
-as a classification rule.
-
-# ============================================================
-# PART 18 — EXPLICITLY AUDIT THE OLD STATE TABLE
-# ============================================================
-
-Compare the rebuilt classifications against:
-
-`hcc_post_1l_states_v12_1`
-
-Print a confusion table.
-
-Specifically inspect every old patient classified:
-
-`DOCUMENTED_PROGRESSION_TO_2L`
-
-Print:
-
-N old progression-to-2L
-N with independent progression evidence
-N without independent progression evidence
-
-Also inspect:
-`DOCUMENTED_PROGRESSION_NO_2L`
-
-Print same.
-
-If >10% lack independent progression support:
-print:
-
-`*** OLD FAILURE-MODE PHENOTYPE NOT VALID FOR PRIMARY ANALYSIS ***`
-
-# ============================================================
-# PART 19 — SUBSEQUENT TREATMENT ACCESS
-# ============================================================
-
-After validated 1L cessation classify:
-
-- RECEIVED_2L
-- DIED_BEFORE_2L
-- HOSPICE_BEFORE_2L
-- HEPATIC_DECOMPENSATION_BEFORE_2L
-- TRANSFERRED/UNKNOWN
-- OTHER_NO_2L
-
-Do NOT call someone "eligible but untreated" unless eligibility is documented.
-
-For 2L recipients print:
-- regimen
-- time from 1L stop
-- ALBI near 1L end
-- AFP near 1L end
-- last decomp status
-
-For non-2L patients print:
-- death timing
-- decompensation
-- hospice
-- documented reason.
-
-# ============================================================
-# PART 20 — HUMAN REVIEW BURDEN FOR PROJECT C
-# ============================================================
-
-Print:
-
-N total 1L stops
-N classified from structured data alone
-N requiring note review
-N remaining unknown after note search
-
-If <=100 need note review:
-print ALL patient IDs and relevant evidence snippets.
-
-If >100:
-print all uncertain + fixed-seed random 50 validated.
-
-# ============================================================
-# PART 21 — PROJECT-BY-PROJECT FEASIBILITY TABLE
-# ============================================================
-
-Generate exactly this table:
-
-PROJECT A:
-- HC true1L ICI N
-- week6 landmark N
-- paired ALBI N
-- paired AFP N
-- paired BOTH N
-- subsequent systemic N
-- death N
-- incident decomp before 2L N
-- hospice before 2L N
-- manual review requirement
-- primary missingness concern
-
-PROJECT B:
-- AB N
-- STRIDE N
-- total N
-- ALBI coverage
-- AFP coverage
-- varices/bleed coverage
-- anticoagulation coverage
-- renal coverage
-- autoimmune coverage
-- recent-procedure coverage
-- structured selection signal N
-- unclear selection N
-- note review N
-
-PROJECT C:
-- HC true1L ICI N
-- confirmed 1L stops
-- progression stops
-- hepatic stops
-- toxicity stops
-- other stops
-- ongoing/censored
-- unknown
-- received 2L
-- no 2L
-- note review N
-
-Do NOT score.
-
-# ============================================================
-# PART 22 — GO / NO-GO THRESHOLDS
-# ============================================================
-
-Apply mechanical feasibility checks only.
-
-### PROJECT A
-GO-FOR-DISCUSSION if:
-- paired week6 AFP+ALBI >=100
-AND
-- >=25 subsequent systemic-treatment events
-AND
-- biomarker missingness does not obviously select only long survivors
-
-Otherwise:
-NEEDS MODIFICATION.
-
-### PROJECT B
-GO-FOR-DISCUSSION if:
-- total AB+STRIDE >=80
-AND
-- at least 5 clinically meaningful selection variables have >=80% coverage
-AND
-- structured/note data produce a plausible treatment-selection signal
-
-Otherwise:
-NEEDS MODIFICATION.
-
-### PROJECT C
-GO-FOR-DISCUSSION if:
-- >=150 patients have a confirmed cessation/ongoing state
-AND
-- >=70% of actual 1L stops have a cause classified at HIGH/PROBABLE confidence
-AND
-- unknown cause <=20%
-
-Otherwise:
-NEEDS MODIFICATION.
-
-These are feasibility flags, not project rankings.
-
-# ============================================================
-# PART 23 — COPY-PASTE REVIEW REPORT
-# ============================================================
-
-Print one complete plain-text report:
+At notebook start print:
 
 ============================================================
-HCC MED-ONC PROJECT LOCKDOWN REPORT
+PROJECT: HCC MEDICAL ONCOLOGY
+NOTEBOOK: <actual notebook name>
+WORKSTREAM: SEPARATE FROM TACE PROJECT
 ============================================================
 
-SECTION A — CANONICAL COHORT
-- exact true1L population
-- regimen counts
-- research-status counts
-- discrepancies
+Then print all upstream persisted tables required for execution.
 
-SECTION B — PROJECT A
-- landmark construction code
-- ALBI code
-- AFP code
-- attrition waterfall
-- paired-biomarker N
-- outcomes/event N
-- missingness
-- 2×2 state counts
-- unresolved biases
+At the end print:
 
-SECTION C — PROJECT B
-- exact AB/STRIDE cohort
-- every selection variable
-- source/coverage
-- arm distributions
-- SMDs
-- penalized model diagnostics
-- support
-- note-review findings
-- unresolved biases
+============================================================
+CROSS-PROJECT ISOLATION CHECK
+============================================================
 
-SECTION D — PROJECT C
-- stop-date logic by regimen
-- cause-classification hierarchy
-- counts
-- independent progression evidence
-- old-vs-new state confusion matrix
-- 2L access
-- unknowns
-- human-review burden
+Verify:
 
-SECTION E — FEASIBILITY
-- Project A mechanical feasibility flag
-- Project B mechanical feasibility flag
-- Project C mechanical feasibility flag
+1. No TACE notebook was modified.
+2. No TACE-specific persisted table was overwritten.
+3. Every newly created persisted table begins with `hcc_medonc_`.
+4. Every med-oncology analysis can be regenerated from named persisted/raw sources.
+5. No result relies on an in-memory dataframe from another notebook.
+6. Shared upstream tables were read-only.
+7. The notebook is independently executable from top to bottom.
 
-SECTION F — DATA QUALITY FAILURES
-List every:
-- failed assertion
-- implausible count
-- join issue
-- missing source
-- classification uncertainty
+Print PASS/FAIL for every item.
 
-SECTION G — TABLES PERSISTED
-table name
-rows
-unique patients
-unit
-
-Do not say "see above."
-
-Print actual values.
+If any fails, fix it before completing the run.
 
 # ============================================================
-# PERSIST
+# IMPORTANT SCIENTIFIC PRINCIPLE
 # ============================================================
 
-Persist at minimum:
+Sharing a validated upstream HCC data foundation is desirable.
 
-`hcc_medonc_lockdown_true1l_v1`
-`hcc_medonc_lockdown_albi_landmarks_v1`
-`hcc_medonc_lockdown_afp_landmarks_v1`
-`hcc_medonc_projectA_week6_landmark_v1`
-`hcc_medonc_projectB_ab_stride_selection_v1`
-`hcc_medonc_projectB_selection_variables_v1`
-`hcc_medonc_projectC_stop_dates_v1`
-`hcc_medonc_projectC_failure_causes_v1`
-`hcc_medonc_projectC_2l_access_v1`
+Sharing downstream project-specific assumptions is NOT.
 
-Read each back before completion.
+The architecture should be:
 
-STOP.
+RAW REACH
+        ↓
+GENERAL VALIDATED HCC CANONICAL TABLES
+        ↓
+        ├──────────────────────────────┐
+        ↓                              ↓
+TACE PROJECT                    MED-ONC PROJECT
+independent derived tables      independent derived tables
+independent phenotypes          independent phenotypes
+independent analyses            independent analyses
 
-Do NOT run OS/PFS models.
-Do NOT choose the final project.
+Do not allow either project branch to silently become the source of truth for the other.
